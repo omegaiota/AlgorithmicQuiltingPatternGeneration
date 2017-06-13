@@ -51,13 +51,15 @@ public class fileProcessor {
     private void processPath(Node pathNode) {
         String pathStr = pathNode.getNodeValue();
         System.out.println(pathStr);
-        String withDelimiter = "(?=[a-zA-Z])"；
+        String withDelimiter = "(?=[a-zA-Z])";
         String[] pathElemArray = pathStr.split(withDelimiter);
         for (int i = 0; i < pathElemArray.length; i++) {
             System.out.println(pathElemArray[i]);
+            svgPathCommands.parseString(pathElemArray[i]);
         }
 
-        }
 
     }
+
+}
 
