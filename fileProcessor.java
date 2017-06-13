@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+
 /**
  * Created by JacquelineLi on 6/12/17.
  */
@@ -50,6 +51,13 @@ public class fileProcessor {
     private void processPath(Node pathNode) {
         String pathStr = pathNode.getNodeValue();
         System.out.println(pathStr);
+        String withDelimiter = "(?=[a-zA-Z])"；
+        String[] pathElemArray = pathStr.split(withDelimiter);
+        for (int i = 0; i < pathElemArray.length; i++) {
+            System.out.println(pathElemArray[i]);
+        }
+
+        }
 
     }
-}
+
