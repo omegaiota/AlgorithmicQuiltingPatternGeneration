@@ -16,6 +16,28 @@ public class Point {
         this.y = -12345;
     }
 
+    /** rotate a point with angle radisn around an origin */
+    public static void rotateAroundOrigin(Point point, Double angle) {
+        double cosA = Math.cos(angle);
+        double sinA = Math.sin(angle);
+        double originalX = point.getX();
+        double originalY = point.getY();
+        System.out.println("Rotating angle:" + angle.toString());
+        System.out.println("Before rotation:" + point.toString());
+        point.setX(originalX * cosA - originalY * sinA);
+        point.setY(originalX * sinA + originalY * cosA);
+        System.out.println("After rotation:" + point.toString());
+    }
+
+    public static void minusPoint(Point finalPoint, Point shiftPoint) {
+        finalPoint.setX(finalPoint.getX() - shiftPoint.getX());
+        finalPoint.setY(finalPoint.getY() - shiftPoint.getY());
+    }
+
+    public static void addPoint(Point finalPoint, Point shiftPoint) {
+        finalPoint.setX(finalPoint.getX() + shiftPoint.getX());
+        finalPoint.setY(finalPoint.getY() + shiftPoint.getY());
+    }
     /** generate a point with absolute coordinates*/
     public Point(double x, double y) {
         Double truncatedx = BigDecimal.valueOf(x)
@@ -29,6 +51,10 @@ public class Point {
         this.y = truncatedy;
     }
 
+    public Point(Point other) {
+        this.x = other.getX();
+        this.y = other.getY();
+    }
     public Point(String strWithDelimiter) {
         String[] coordinateStr = strWithDelimiter.split(",");
         assert coordinateStr.length == 2;
