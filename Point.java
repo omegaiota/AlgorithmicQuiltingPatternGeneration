@@ -1,5 +1,8 @@
 package jackiesvgprocessor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * Created by JacquelineLi on 6/13/17.
  */
@@ -15,28 +18,56 @@ public class Point {
 
     /** generate a point with absolute coordinates*/
     public Point(double x, double y) {
-        this.x = x;
-        this.y = y;
+        Double truncatedx = BigDecimal.valueOf(x)
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+        Double truncatedy = BigDecimal.valueOf(y)
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+
+        this.x = truncatedx;
+        this.y = truncatedy;
     }
 
     public Point(String strWithDelimiter) {
         String[] coordinateStr = strWithDelimiter.split(",");
         assert coordinateStr.length == 2;
-        this.x = Double.parseDouble(coordinateStr[0]);
-        this.y = Double.parseDouble(coordinateStr[1]);
+        Double truncatedx = BigDecimal.valueOf(Double.parseDouble(coordinateStr[0]))
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+        Double truncatedy = BigDecimal.valueOf(Double.parseDouble(coordinateStr[1]))
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+
+        this.x = truncatedx;
+        this.y = truncatedy;
     }
 
     /** generate a point with relative coordinates*/
     public Point(Point current, double x, double y) {
-        this.x = x + current.getX();
-        this.y = y + current.getY();
+        Double truncatedx = BigDecimal.valueOf(x + current.getX())
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+        Double truncatedy = BigDecimal.valueOf(y + current.getY())
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+
+        this.x = truncatedx;
+        this.y = truncatedy;
     }
 
     public Point(Point current, String strWithDelimiter) {
         String[] coordinateStr = strWithDelimiter.split(",");
         assert coordinateStr.length == 2;
-        this.x = Double.parseDouble(coordinateStr[0]) + current.getX();
-        this.y = Double.parseDouble(coordinateStr[1]) + current.getY();
+        Double truncatedx = BigDecimal.valueOf(Double.parseDouble(coordinateStr[0]) + current.getX())
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+        Double truncatedy = BigDecimal.valueOf(Double.parseDouble(coordinateStr[1]) + current.getY())
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+
+        this.x = truncatedx;
+        this.y = truncatedy;
     }
 
     public double getX() {

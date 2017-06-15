@@ -1,10 +1,7 @@
 package jackiesvgprocessor;
 
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.BorderPane;
@@ -20,8 +17,11 @@ import java.io.File;
 import java.io.IOException;
 
 public class Main extends Application {
-    private final Button viewSvgButton = new Button("View a .svg file ...");
-    private fileProcessor svgFile;
+    private final Button loadSpineButton = new Button("Load a spine file ...");
+    private final Button loadFeatherButton = new Button("Load a pattern file ...");
+    private final Button generateButton = new Button("Generate");
+    private spinePatternMerger mergedPattern;
+    private fileProcessor spineFile, featherFile;
 
     public static void main(String[] args) {
         launch(args);
@@ -30,16 +30,17 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception{
         final FileChooser fileChooser = new FileChooser();
-        viewSvgButton.setOnAction(
+        loadSpineButton.setOnAction(
                 e -> {
                     File file = fileChooser.showOpenDialog(stage);
                     if (file != null) {
-                        System.out.println("Viewing a .pat ....");
-                        svgFile = new fileProcessor(file);
+                        System.out.println("Loading a spine ....");
+                        spineFile = new fileProcessor(file);
                         try {
                             /** Process the svg file */
                             try {
-                                svgFile.processSvg();
+                                spineFile.processSvg();
+                                spineFile.outputSvg();
                             } catch (ParserConfigurationException e1) {
                                 e1.printStackTrace();
                             } catch (SAXException e1) {
@@ -53,6 +54,38 @@ public class Main extends Application {
                     }
                 });
 
+        loadFeatherButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a pattern....");
+                        featherFile = new fileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                featherFile.processSvg();
+                                featherFile.outputSvg();
+                            } catch (ParserConfigurationException e1) {
+                                e1.printStackTrace();
+                            } catch (SAXException e1) {
+                                e1.printStackTrace();
+                            } catch (XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+        generateButton.setOnAction(
+                e -> {
+                        System.out.println("generating svg...");
+                        mergedPattern = new spinePatternMerger(spineFile.getCommandLists().get(0), featherFile.getCommandLists().get(0));
+                            /** Combine pattern */
+                                mergedPattern.combinePattern();
+                });
+
         stage.setTitle("changing title");
         stage.setScene(new Scene(setLayoutWithGraph(), Color.rgb(35, 39, 50)));
         stage.show();
@@ -61,7 +94,7 @@ public class Main extends Application {
     public BorderPane setLayoutWithGraph() {
         BorderPane layout = new BorderPane();
         HBox buttons = new HBox(3);
-        buttons.getChildren().addAll(viewSvgButton);
+        buttons.getChildren().addAll(loadSpineButton, loadFeatherButton, generateButton);
         layout.setBottom(buttons);
         layout.setPadding(new Insets(40));
         layout.setStyle("-fx-background-color: rgb(35, 39, 50);");
