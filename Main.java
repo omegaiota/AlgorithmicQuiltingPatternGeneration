@@ -15,6 +15,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Main extends Application {
     private final Button loadSpineButton = new Button("Load a spine file ...");
@@ -22,6 +23,7 @@ public class Main extends Application {
     private final Button generateButton = new Button("Generate");
     private spinePatternMerger mergedPattern;
     private fileProcessor spineFile, featherFile;
+    private ArrayList<svgPathCommands> spineCommands, featherCommands;
 
     public static void main(String[] args) {
         launch(args);
@@ -40,6 +42,7 @@ public class Main extends Application {
                             /** Process the svg file */
                             try {
                                 spineFile.processSvg();
+                                spineCommands = spineFile.getCommandLists().get(0);
                                 spineFile.outputSvg();
                             } catch (ParserConfigurationException e1) {
                                 e1.printStackTrace();
@@ -64,6 +67,7 @@ public class Main extends Application {
                             /** Process the svg file */
                             try {
                                 featherFile.processSvg();
+                                featherCommands = featherFile.getCommandLists().get(0);
                                 featherFile.outputSvg();
                             } catch (ParserConfigurationException e1) {
                                 e1.printStackTrace();
@@ -81,7 +85,8 @@ public class Main extends Application {
         generateButton.setOnAction(
                 e -> {
                         System.out.println("generating svg...");
-                        mergedPattern = new spinePatternMerger(spineFile.getCommandLists().get(0), featherFile.getCommandLists().get(0));
+                        mergedPattern = new spinePatternMerger(spineFile, featherFile, spineCommands, featherCommands,
+                                spineFile.getfFileName(), featherFile.getfFileName());
                             /** Combine pattern */
                                 mergedPattern.combinePattern();
                 });
