@@ -29,7 +29,7 @@ public class spinePatternMerger {
         combinedCommands.add(spineCommands.get(0));
         Point prevInsertPoint = spineCommands.get(0).getDestinationPoint();
         Point insertPoint;
-        double gapWidth = patternFileProcessed.getHeight();
+        double gapWidth = patternFileProcessed.getWidth();
         assert (gapWidth > 0);
         System.out.println("gapWidth" + gapWidth);
         double remainingWidth = 0;
@@ -46,7 +46,6 @@ public class spinePatternMerger {
                 insertPoint = Point.middlePointWithLen(spineCommands.get(i - 1).getDestinationPoint(),
                         spineCommands.get(i).getDestinationPoint(), remainingWidth);
                 System.out.println("Next insert point is: " + insertPoint.toString() );
-
                 System.out.println("Point:" + insertPoint.toString() + "passed test");
                 /* insert a lineTo command to this potential point*/
                 svgPathCommands handleRemainingCommand = new svgPathCommands(insertPoint, svgPathCommands.typeLineTo);
@@ -75,7 +74,8 @@ public class spinePatternMerger {
                 }
 
                 /* reset remaining width for next spine point*/
-                remainingWidth = totalLength;
+                remainingWidth = gapWidth -  totalLength;
+                combinedCommands.add(spineCommands.get(i));
             } else {
                 /* this is a super short line that can't even handle remaining width*/
                 combinedCommands.add(spineCommands.get(i));
