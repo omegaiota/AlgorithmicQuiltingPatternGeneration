@@ -15,18 +15,33 @@ public class Point {
         this.x = -12345;
         this.y = -12345;
     }
+    /** return the angle between two points */
+    public static double getAngle(Point start, Point end) {
+        double delta_y = end.getY() - start.getY();
+        double delta_x = end.getX() - start.getX();
+        double angle = Math.atan2(delta_y, delta_x);
+        return angle;
+    }
 
-    /** rotate a point with angle radisn around an origin */
+    /** return the distance between two points */
+    public static double getDistance(Point start, Point end) {
+        double delta_x_sqr = Math.pow(end.getX() - start.getX(), 2);
+        double delta_y_sqr = Math.pow(end.getY() - start.getY(), 2);
+        double distance = Math.sqrt(delta_x_sqr + delta_y_sqr);
+        double truncDist = BigDecimal.valueOf(distance)
+                .setScale(3, RoundingMode.FLOOR)
+                .doubleValue();
+        return truncDist;
+    }
+
+    /** rotate a point with angle radian around an origin */
     public static void rotateAroundOrigin(Point point, Double angle) {
         double cosA = Math.cos(angle);
         double sinA = Math.sin(angle);
         double originalX = point.getX();
         double originalY = point.getY();
-        System.out.println("Rotating angle:" + angle.toString());
-        System.out.println("Before rotation:" + point.toString());
         point.setX(originalX * cosA - originalY * sinA);
         point.setY(originalX * sinA + originalY * cosA);
-        System.out.println("After rotation:" + point.toString());
     }
 
     public static void minusPoint(Point finalPoint, Point shiftPoint) {

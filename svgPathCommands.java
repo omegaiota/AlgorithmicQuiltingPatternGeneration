@@ -21,16 +21,40 @@ public class svgPathCommands {
         this.controlPoint2 = new Point();
         this.commandType = commandType;
     }
-    /** generate a path coomand fron an old command whose center point is shifted*/
+    /** generate a path command from an old command whose center point is shifted*/
     public svgPathCommands(svgPathCommands oldCommand, Point originalStart, Point finalStart) {
-        double shiftX = finalStart.getX() - originalStart.getX();
-        double shiftY = finalStart.getY() - originalStart.getY();
         this.commandType = oldCommand.getCommandType();
-        this.destinationPoint = new Point(oldCommand.getDestinationPoint().getX() + shiftX, oldCommand.getDestinationPoint().getY() + shiftY);
-        this.controlPoint1 = new Point(oldCommand.getControlPoint1().getX() + shiftX, oldCommand.getControlPoint1().getY() + shiftY);
-        this.controlPoint2 = new Point(oldCommand.getControlPoint2().getX() + shiftX, oldCommand.getControlPoint2().getY() + shiftY);
-
+        this.destinationPoint = new Point(oldCommand.getDestinationPoint());
+        this.controlPoint1 = new Point(oldCommand.getControlPoint1());
+        this.controlPoint2 = new Point(oldCommand.getControlPoint2());
+        Point.addPoint(destinationPoint, finalStart);
+        Point.minusPoint(destinationPoint, originalStart);
+        Point.addPoint(controlPoint1, finalStart);
+        Point.minusPoint(controlPoint1, originalStart);
+        Point.addPoint(controlPoint2, finalStart);
+        Point.minusPoint(controlPoint2, originalStart);
     }
+
+    /** generate a path command from an old command whose center point is shifted and rotated*/
+    public svgPathCommands(svgPathCommands oldCommand, Point originalStart, Point finalStart, double angle) {
+        this.commandType = oldCommand.getCommandType();
+        this.destinationPoint = new Point(oldCommand.getDestinationPoint());
+        this.controlPoint1 = new Point(oldCommand.getControlPoint1());
+        this.controlPoint2 = new Point(oldCommand.getControlPoint2());
+        Point.minusPoint(destinationPoint, originalStart);
+        Point.minusPoint(controlPoint1, originalStart);
+        Point.minusPoint(controlPoint2, originalStart);
+
+        Point.rotateAroundOrigin(destinationPoint, angle);
+        Point.rotateAroundOrigin(controlPoint1, angle);
+        Point.rotateAroundOrigin(controlPoint2, angle);
+
+        Point.addPoint(destinationPoint, finalStart);
+        Point.addPoint(controlPoint1, finalStart);
+        Point.addPoint(controlPoint2, finalStart);
+    }
+
+
 
     public svgPathCommands(Point controlPoint1, Point controlPoint2, Point destinationPoint, int commandType) {
         this.destinationPoint = destinationPoint;
@@ -39,6 +63,8 @@ public class svgPathCommands {
         this.commandType = commandType;
         assert commandType > 1;
     }
+
+
 
     public boolean isMoveTo() {
         return commandType == 0;
@@ -66,6 +92,10 @@ public class svgPathCommands {
 
     public int getCommandType() {
         return commandType;
+    }
+
+    public void setCommandType(int commandType) {
+        this.commandType = commandType;
     }
 
     @Override

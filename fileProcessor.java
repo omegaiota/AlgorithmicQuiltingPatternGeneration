@@ -25,6 +25,8 @@ public class fileProcessor {
     private String fFileName;
     private File fSvgFile;
     private NodeList pathNodeList;
+    private Point minPoint = new Point(10000, 10000), maxPoint = new Point(-10000, -10000);
+    private double width = -1, height = -1;
 
     private ArrayList<ArrayList<svgPathCommands>> commandLists = new ArrayList<>();
     int typeMoveTo = 0;
@@ -55,6 +57,9 @@ public class fileProcessor {
             commandLists.add(aCommandList);
             processPath(pathNodeList.item(i), aCommandList);
         }
+        width = maxPoint.getX() - minPoint.getX();
+        height = maxPoint.getY() - minPoint.getY();
+        System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString() +  "width=" + width + "; height=" + height);
     }
 
     private void processPath(Node pathNode, ArrayList<svgPathCommands> pathCommandList) {
@@ -63,7 +68,15 @@ public class fileProcessor {
         String[] pathElemArray = pathStr.split(withDelimiter);
         Point current = new Point(0.0, 0.0);
         for (int i = 0; i < pathElemArray.length; i++) {
-            current = parseString(pathElemArray[i], pathCommandList, current);
+
+            /** if the last command is close path, line to initial point*/
+            if ((i == pathElemArray.length - 1) && (pathElemArray[i].substring(0,1).equalsIgnoreCase("z"))) {
+                System.out.println("closing path");
+                svgPathCommands initialComm = pathCommandList.get(0);
+                pathCommandList.add(new svgPathCommands(initialComm.getControlPoint1(), initialComm.getControlPoint2(),
+                        initialComm.getDestinationPoint(), 1));
+            } else
+                current = parseString(pathElemArray[i], pathCommandList, current);
         }
 
         printCommandList(pathCommandList);
@@ -83,18 +96,18 @@ public class fileProcessor {
         Point destPoint;
         Point controlPoint1;
         Point controlPoint2;
-        for (String arg : arguments) {
-//            System.out.println(arg);
-        }
+
         switch (commandChar) {
             case 'm':
                 destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
+                updateBoundWithPoint(destPoint);
                 current = destPoint;
                 pathCommandList.add(new svgPathCommands(destPoint, typeMoveTo));
 //                System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
 
                 for (int i = 2; i < arguments.length; i++) {
                     destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
+                    updateBoundWithPoint(destPoint);
                     current = destPoint;
                     pathCommandList.add(new svgPathCommands(destPoint, typeLineTo));
 //                    System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
@@ -103,12 +116,14 @@ public class fileProcessor {
                 break;
             case 'l':
                 destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
+                updateBoundWithPoint(destPoint);
                 current = destPoint;
                 pathCommandList.add(new svgPathCommands(destPoint, typeLineTo));
 //                System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
 
                 for (int i = 2; i < arguments.length; i++) {
                     destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
+                    updateBoundWithPoint(destPoint);
                     current = destPoint;
                     pathCommandList.add(new svgPathCommands(destPoint, typeLineTo));
 //                    System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
@@ -120,6 +135,7 @@ public class fileProcessor {
                     controlPoint1 = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
                     controlPoint2 = useAbsCoordinate ? new Point(arguments[i + 1]) : new Point(current, arguments[i + 1]);
                     destPoint = useAbsCoordinate ? new Point(arguments[i + 2]) : new Point(current, arguments[i + 2]);
+                    updateBoundWithPoint(destPoint);
                     pathCommandList.add(new svgPathCommands(controlPoint1, controlPoint2, destPoint, typeCurveTo));
 //                    System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
                     current = destPoint;
@@ -128,6 +144,17 @@ public class fileProcessor {
         }
 
         return current;
+    }
+
+    public void updateBoundWithPoint(Point current) {
+        if (current.getX() < minPoint.getX())
+            minPoint.setX(current.getX());
+        if (current.getY() < minPoint.getY())
+            minPoint.setY(current.getY());
+        if (current.getX() > maxPoint.getX())
+            maxPoint.setX(current.getX());
+        if (current.getY() > maxPoint.getY())
+            maxPoint.setY(current.getY());
     }
 
     public void outputSvg() {
@@ -179,17 +206,24 @@ public class fileProcessor {
     public Path getfFilePath() {
         return fFilePath;
     }
-
-    public void setfFilePath(Path fFilePath) {
-        this.fFilePath = fFilePath;
-    }
-
     public String getfFileName() {
         return fFileName;
     }
 
-    public void setfFileName(String fFileName) {
-        this.fFileName = fFileName;
+    public Point getMinPoint() {
+        return minPoint;
+    }
+
+    public Point getMaxPoint() {
+        return maxPoint;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public double getHeight() {
+        return height;
     }
 
     @Override

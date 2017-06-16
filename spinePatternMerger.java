@@ -9,20 +9,36 @@ import java.util.ArrayList;
  */
 public class spinePatternMerger {
     private ArrayList<svgPathCommands> spineCommands, patternCommands, combinedCommands = new ArrayList<>();
+    private String spineName, patternName;
+    private fileProcessor spineFileProcessed, patternFileProcessed;
+    private boolean rotationOn = true;
 
-    public spinePatternMerger( ArrayList<svgPathCommands> spineCommands,  ArrayList<svgPathCommands> patternCommands) {
-        this.spineCommands = spineCommands;
-        this.patternCommands = patternCommands;
+    public spinePatternMerger( fileProcessor spineFile, fileProcessor patternFile) {
+        this.spineCommands = spineFile.getCommandLists().get(0);
+        this.patternCommands = patternFile.getCommandLists().get(0);
+        this.spineName = spineFile.getfFileName();
+        this.patternName = patternFile.getfFileName();
+        this.spineFileProcessed = spineFile;
+        this.patternFileProcessed = patternFile;
     }
 
     public void combinePattern() {
         System.out.println("# of spine commands: " + spineCommands.size() + "# of patternCommands: " + patternCommands.size());
         svgPathCommands newCommand;
-        for (int i = 0; i < spineCommands.size(); i++) {
+        combinedCommands.add(spineCommands.get(0));
+        double gapWidth = patternFileProcessed.getHeight();
+        for (int i = 1; i < spineCommands.size(); i++) {
+            combinedCommands.add(spineCommands.get(i));
             Point spinePoint = spineCommands.get(i).getDestinationPoint();
             Point patternPoint = patternCommands.get(0).getDestinationPoint();
+            double rotationAngle = Point.getAngle(spineCommands.get(i-1).getDestinationPoint(), spinePoint);
+
+            /** Draw free-motion quilting pattern around spinePoint*/
             for (int j = 0; j < patternCommands.size(); j++) {
-                newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, spinePoint);
+                if (rotationOn) /** with rotation*/
+                    newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, spinePoint, rotationAngle);
+                else /** without rotation*/
+                    newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, spinePoint);
                 combinedCommands.add(newCommand);
             }
         }
@@ -30,9 +46,10 @@ public class spinePatternMerger {
         outputGeneratedPattern();
     }
 
+
     public void outputGeneratedPattern() {
         try{
-            PrintWriter writer = new PrintWriter( "generated" + ".svg", "UTF-8");
+            PrintWriter writer = new PrintWriter( "spine-" + spineName + "-pat-" + patternName + ".svg", "UTF-8");
             writer.println("<svg");
             writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
             writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");

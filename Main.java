@@ -85,8 +85,7 @@ public class Main extends Application {
         generateButton.setOnAction(
                 e -> {
                         System.out.println("generating svg...");
-                        mergedPattern = new spinePatternMerger(spineFile, featherFile, spineCommands, featherCommands,
-                                spineFile.getfFileName(), featherFile.getfFileName());
+                        mergedPattern = new spinePatternMerger(spineFile, featherFile);
                             /** Combine pattern */
                                 mergedPattern.combinePattern();
                 });
