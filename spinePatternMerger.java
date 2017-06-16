@@ -23,29 +23,89 @@ public class spinePatternMerger {
     }
 
     public void combinePattern() {
-        System.out.println("# of spine commands: " + spineCommands.size() + "# of patternCommands: " + patternCommands.size());
+        System.out.println("# of spine commands: " + spineCommands.size() +
+                "# of patternCommands: " + patternCommands.size());
         svgPathCommands newCommand;
         combinedCommands.add(spineCommands.get(0));
+        Point prevInsertPoint = spineCommands.get(0).getDestinationPoint();
+        Point insertPoint;
         double gapWidth = patternFileProcessed.getHeight();
+        assert (gapWidth > 0);
+        System.out.println("gapWidth" + gapWidth);
+        double remainingWidth = 0;
         for (int i = 1; i < spineCommands.size(); i++) {
-            combinedCommands.add(spineCommands.get(i));
-            Point spinePoint = spineCommands.get(i).getDestinationPoint();
-            Point patternPoint = patternCommands.get(0).getDestinationPoint();
-            double rotationAngle = Point.getAngle(spineCommands.get(i-1).getDestinationPoint(), spinePoint);
+            double totalLength = Point.getDistance(spineCommands.get(i - 1).getDestinationPoint(),
+                    spineCommands.get(i).getDestinationPoint());
+            System.out.println("Command:" + i + " totalLength:" + totalLength);
+            /* first handle remaining width*/
 
-            /** Draw free-motion quilting pattern around spinePoint*/
-            for (int j = 0; j < patternCommands.size(); j++) {
-                if (rotationOn) /** with rotation*/
-                    newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, spinePoint, rotationAngle);
-                else /** without rotation*/
-                    newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, spinePoint);
-                combinedCommands.add(newCommand);
+            /*TODO handle remaining width = 0*/
+
+            /*if inserted point is on this line*/
+            if (totalLength > remainingWidth ) {
+                insertPoint = Point.middlePointWithLen(spineCommands.get(i - 1).getDestinationPoint(),
+                        spineCommands.get(i).getDestinationPoint(), remainingWidth);
+                System.out.println("Next insert point is: " + insertPoint.toString() );
+
+                System.out.println("Point:" + insertPoint.toString() + "passed test");
+                /* insert a lineTo command to this potential point*/
+                svgPathCommands handleRemainingCommand = new svgPathCommands(insertPoint, svgPathCommands.typeLineTo);
+                combinedCommands.add(handleRemainingCommand);
+                /* insert a pattern on this potential point*/
+                    double rotationAngle = Point.getAngle(spineCommands.get(i-1).getDestinationPoint(), spineCommands.get(i).getDestinationPoint());
+                    insertPatternToList(patternCommands, combinedCommands, insertPoint, rotationAngle);
+
+                /* break this spine command to handle remaining length with each gapWid apart*/
+                totalLength -= remainingWidth;
+                System.out.println("totalLength after handle remain:" + totalLength);
+                prevInsertPoint = insertPoint;
+
+                while (totalLength > gapWidth) {
+                    insertPoint = Point.middlePointWithLen(prevInsertPoint, spineCommands.get(i).getDestinationPoint(), gapWidth);
+                    System.out.println("Point:" + insertPoint.toString() + "passed test");
+                    /* insert a lineTo command to this potential point*/
+                    svgPathCommands lineToGap = new svgPathCommands(insertPoint, svgPathCommands.typeLineTo);
+                    combinedCommands.add(lineToGap);
+                    /* insert a pattern on this potential point*/
+                    insertPatternToList(patternCommands, combinedCommands, insertPoint, rotationAngle); //rotation angle should remain on the same line
+                    /* break this spine command to handle remaining length with each gapWid apart*/
+                    totalLength -= gapWidth;
+                    System.out.println("totalLength:" + totalLength);
+                    prevInsertPoint = insertPoint;
+                }
+
+                /* reset remaining width for next spine point*/
+                remainingWidth = totalLength;
+            } else {
+                /* this is a super short line that can't even handle remaining width*/
+                combinedCommands.add(spineCommands.get(i));
+                remainingWidth -= totalLength;
+                assert (remainingWidth > 0);
             }
-        }
 
+
+                /** without gap adjustion, i.e., position a pattern at every point*/
+//                combinedCommands.add(spineCommands.get(i));
+//                Point spinePoint = spineCommands.get(i).getDestinationPoint();
+//                double rotationAngle = Point.getAngle(spineCommands.get(i-1).getDestinationPoint(), spinePoint);
+//                    /** Draw free-motion quilting pattern around spinePoint*/
+//                    insertPatternToList(patternCommands, combinedCommands, spinePoint, rotationAngle);
+            }
         outputGeneratedPattern();
     }
 
+    public void insertPatternToList(ArrayList<svgPathCommands> patternCommands, ArrayList<svgPathCommands> combinedCommands, Point insertionPoint, double rotationAngle) {
+        Point patternPoint = patternCommands.get(0).getDestinationPoint();
+        svgPathCommands newCommand;
+        for (int j = 0; j < patternCommands.size(); j++) {
+            if (rotationOn) /** with rotation*/
+                newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, insertionPoint, rotationAngle);
+            else /** without rotation*/
+                newCommand = new svgPathCommands(patternCommands.get(j), patternPoint, insertionPoint);
+            combinedCommands.add(newCommand);
+        }
+
+    }
 
     public void outputGeneratedPattern() {
         try{
