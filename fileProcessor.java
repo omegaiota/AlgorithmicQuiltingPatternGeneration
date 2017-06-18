@@ -26,14 +26,9 @@ public class fileProcessor {
     private File fSvgFile;
     private NodeList pathNodeList;
     private Point minPoint = new Point(10000, 10000), maxPoint = new Point(-10000, -10000);
-    private double width = -1, height = -1;
+    private double width = -1, height = -1, patternHeight = -1, widthRight = -1;
 
     private ArrayList<ArrayList<svgPathCommands>> commandLists = new ArrayList<>();
-    int typeMoveTo = 0;
-    int typeLineTo = 1;
-    int typeCurveTo = 2;
-    int typeSmoothTo = 3;
-
 
     public fileProcessor(File importFile) {
         this.fFilePath = Paths.get(importFile.getPath());
@@ -42,6 +37,7 @@ public class fileProcessor {
     }
 
     public void processSvg() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+        System.out.println("\n processing new svg:\n");
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(fSvgFile);
@@ -59,7 +55,13 @@ public class fileProcessor {
         }
         width = maxPoint.getX() - minPoint.getX();
         height = maxPoint.getY() - minPoint.getY();
-        System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString() +  "width=" + width + "; height=" + height);
+        patternHeight = commandLists.get(0).get(0).getDestinationPoint().getY() - minPoint.getY();
+        widthRight = maxPoint.getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
+
+        System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
+                +  "width=" + width + "; height=" + height + "pattern height:" + patternHeight + " first height:"
+                + commandLists.get(0).get(0).getDestinationPoint().getY());
+        System.out.println();
     }
 
     private void processPath(Node pathNode, ArrayList<svgPathCommands> pathCommandList) {
@@ -69,29 +71,36 @@ public class fileProcessor {
         Point current = new Point(0.0, 0.0);
         for (int i = 0; i < pathElemArray.length; i++) {
 
-            /** if the last command is close path, line to initial point*/
+            /** if the last command is close path, add a command that lineTo initial point*/
             if ((i == pathElemArray.length - 1) && (pathElemArray[i].substring(0,1).equalsIgnoreCase("z"))) {
                 System.out.println("closing path");
                 svgPathCommands initialComm = pathCommandList.get(0);
                 pathCommandList.add(new svgPathCommands(initialComm.getControlPoint1(), initialComm.getControlPoint2(),
                         initialComm.getDestinationPoint(), 1));
             } else
+                /** else parse the next command set*/
                 current = parseString(pathElemArray[i], pathCommandList, current);
         }
 
         printCommandList(pathCommandList);
     }
 
-    private void printCommandList(ArrayList<svgPathCommands> pathCommandList) {
+    public static void printCommandList(ArrayList<svgPathCommands> pathCommandList) {
         for (int i = 0; i < pathCommandList.size(); i++) {
-            System.out.println(pathCommandList.get(i).toString());
+            System.out.println("Command " + i + ":" + pathCommandList.get(i).toString());
         }
     }
 
     public Point parseString(String commandString, ArrayList<svgPathCommands> pathCommandList, Point current) {
         String[] arguments = commandString.split(" ");
-        char commandChar = arguments[0].charAt(0);
-        boolean useAbsCoordinate = Character.isUpperCase(commandChar);
+        for (String arg: arguments) {
+            System.out.println(arg);
+
+        }
+        char commandChar = arguments[0].toLowerCase().charAt(0);
+        System.out.println("Command is:" + commandChar);
+        boolean useAbsCoordinate = Character.isUpperCase(arguments[0].charAt(0));
+        System.out.println("is Upper case:" + useAbsCoordinate);
 
         Point destPoint;
         Point controlPoint1;
@@ -102,14 +111,14 @@ public class fileProcessor {
                 destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
                 updateBoundWithPoint(destPoint);
                 current = destPoint;
-                pathCommandList.add(new svgPathCommands(destPoint, typeMoveTo));
+                pathCommandList.add(new svgPathCommands(destPoint, svgPathCommands.typeMoveTo));
 //                System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
 
                 for (int i = 2; i < arguments.length; i++) {
                     destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
                     updateBoundWithPoint(destPoint);
                     current = destPoint;
-                    pathCommandList.add(new svgPathCommands(destPoint, typeLineTo));
+                    pathCommandList.add(new svgPathCommands(destPoint,  svgPathCommands.typeLineTo));
 //                    System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
 
                 }
@@ -118,14 +127,14 @@ public class fileProcessor {
                 destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
                 updateBoundWithPoint(destPoint);
                 current = destPoint;
-                pathCommandList.add(new svgPathCommands(destPoint, typeLineTo));
+                pathCommandList.add(new svgPathCommands(destPoint,  svgPathCommands.typeLineTo));
 //                System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
 
                 for (int i = 2; i < arguments.length; i++) {
                     destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
                     updateBoundWithPoint(destPoint);
                     current = destPoint;
-                    pathCommandList.add(new svgPathCommands(destPoint, typeLineTo));
+                    pathCommandList.add(new svgPathCommands(destPoint,  svgPathCommands.typeLineTo));
 //                    System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
                 }
                 break;
@@ -136,7 +145,7 @@ public class fileProcessor {
                     controlPoint2 = useAbsCoordinate ? new Point(arguments[i + 1]) : new Point(current, arguments[i + 1]);
                     destPoint = useAbsCoordinate ? new Point(arguments[i + 2]) : new Point(current, arguments[i + 2]);
                     updateBoundWithPoint(destPoint);
-                    pathCommandList.add(new svgPathCommands(controlPoint1, controlPoint2, destPoint, typeCurveTo));
+                    pathCommandList.add(new svgPathCommands(controlPoint1, controlPoint2, destPoint,  svgPathCommands.typeCurveTo));
 //                    System.out.println(pathCommandList.get(pathCommandList.size() - 1).toString());
                     current = destPoint;
                 }
@@ -157,9 +166,9 @@ public class fileProcessor {
             maxPoint.setY(current.getY());
     }
 
-    public void outputSvg() {
+    public static void outputSvgCommands(ArrayList<svgPathCommands> outputCommandList, String fileName) {
         try{
-            PrintWriter writer = new PrintWriter( fFileName + "-absolute" + ".svg", "UTF-8");
+            PrintWriter writer = new PrintWriter( fileName + ".svg", "UTF-8");
             writer.println("<svg");
             writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
             writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");
@@ -180,7 +189,7 @@ public class fileProcessor {
             writer.println("    <path");
             writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
             writer.print("    d=\"");
-            for (svgPathCommands command : commandLists.get(0)) {
+            for (svgPathCommands command : outputCommandList) {
                 writer.print(command.toSvgCode());
             }
             writer.println("\"");
@@ -224,6 +233,14 @@ public class fileProcessor {
 
     public double getHeight() {
         return height;
+    }
+
+    public double getPatternHeight() {
+        return patternHeight;
+    }
+
+    public double getWidthRight() {
+        return widthRight;
     }
 
     @Override
