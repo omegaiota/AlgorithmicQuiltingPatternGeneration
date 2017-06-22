@@ -110,12 +110,6 @@ public class Distribution {
             square(top,  angle);
             commandList.add(new svgPathCommands(bottomLeft, svgPathCommands.typeMoveTo));
 
-//            square(bottomRight,  angle + Math.PI / 5 * 6);
-//            commandList.add(new svgPathCommands(bottomLeft, svgPathCommands.typeMoveTo));
-//
-//            square(bottomLeft, angle + Math.PI * 2 / 3);
-//            commandList.add(new svgPathCommands(bottomLeft, svgPathCommands.typeMoveTo));
-
 
         }
     }
