@@ -124,7 +124,7 @@ public class Distribution {
         commandList.add(new svgPathCommands(new Point(0,0), svgPathCommands.typeMoveTo));
         commandList.addAll(regionFileProcessed.getCommandLists().get(0));
 
-        fileProcessor.outputSvgCommands(commandList, "distribution-" + type);
+        fileProcessor.outputSvgCommands(commandList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
     }
 
 
