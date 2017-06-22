@@ -1,7 +1,5 @@
 package jackiesvgprocessor;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 
 /**
@@ -13,13 +11,14 @@ public class spinePatternMerger {
     private fileProcessor spineFileProcessed, patternFileProcessed;
     private boolean rotationOn = true;
 
-    public spinePatternMerger( fileProcessor spineFile, fileProcessor patternFile) {
+    public spinePatternMerger( fileProcessor spineFile, fileProcessor patternFile, boolean rotation) {
         this.spineCommands = spineFile.getCommandLists().get(0);
         this.patternCommands = patternFile.getCommandLists().get(0);
         this.spineName = spineFile.getfFileName();
         this.patternName = patternFile.getfFileName();
         this.spineFileProcessed = spineFile;
         this.patternFileProcessed = patternFile;
+        this.rotationOn = rotation;
     }
 
     public void combinePattern() {
@@ -81,7 +80,7 @@ public class spinePatternMerger {
                     }
                 }
                 System.out.println("remaining width is:" + remainingWidth);
-                insertPoint = Point.middlePointWithLen(spineCommands.get(i - 1).getDestinationPoint(),
+                insertPoint = Point.intermediatePointWithLen(spineCommands.get(i - 1).getDestinationPoint(),
                         spineCommands.get(i).getDestinationPoint(), remainingWidth);
                 System.out.println("prev command dest:" + spineCommands.get(i - 1).getDestinationPoint());
                 System.out.println("this command dest:" + spineCommands.get(i).getDestinationPoint());
@@ -98,8 +97,8 @@ public class spinePatternMerger {
 //                System.out.println("totalLength after handle remain:" + totalLength);
                 prevInsertPoint = insertPoint;
 
-                while (totalLength > gapWidth) {
-                    insertPoint = Point.middlePointWithLen(prevInsertPoint, spineCommands.get(i).getDestinationPoint(), gapWidth);
+                while (Double.compare(totalLength, gapWidth) > 0) {
+                    insertPoint = Point.intermediatePointWithLen(prevInsertPoint, spineCommands.get(i).getDestinationPoint(), gapWidth);
                     /* insert a lineTo command to this potential point*/
                     svgPathCommands lineToGap = new svgPathCommands(insertPoint, svgPathCommands.typeLineTo);
                     combinedCommands.add(lineToGap);
@@ -122,7 +121,7 @@ public class spinePatternMerger {
             }
 
         }
-        outputGeneratedPattern();
+        fileProcessor.outputSvgCommands(combinedCommands, "spine-" + spineName + "-pat-" + patternName + (rotationOn ? "-on" : "-off"));
     }
 
     public void insertPatternToList(ArrayList<svgPathCommands> patternCommands,
@@ -140,42 +139,4 @@ public class spinePatternMerger {
 
     }
 
-    public void outputGeneratedPattern() {
-        try{
-            PrintWriter writer = new PrintWriter( "spine-" + spineName + "-pat-" + patternName + ".svg", "UTF-8");
-            writer.println("<svg");
-            writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
-            writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");
-            writer.println("   xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"");
-            writer.println("   xmlns:svg=\"http://www.w3.org/2000/svg\"");
-            writer.println("   xmlns=\"http://www.w3.org/2000/svg\"");
-            writer.println("   xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\"");
-            writer.println("   xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"");
-            writer.println("   width=\"210mm\"");
-            writer.println("   height=\"297mm\">");
-            writer.println("   <g");
-            writer.println("     inkscape:label=\"Layer 1\"");
-            writer.println("     inkscape:groupmode=\"layer\"");
-            writer.println("     id=\"layer1\">");
-            writer.println("");
-            writer.println("");
-
-            writer.println("    <path");
-            writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
-            writer.print("    d=\"");
-            for (svgPathCommands command : combinedCommands) {
-              writer.print(command.toSvgCode());
-            }
-            writer.println("\"");
-            writer.println("       id=\"path3342\"\n");
-            writer.println("       inkscape:connector-curvature=\"0\" />");
-            writer.println("  </g>");
-            writer.println("</svg>");
-            writer.close();
-
-
-        } catch (IOException e) {
-            // do something
-        }
-    }
 }

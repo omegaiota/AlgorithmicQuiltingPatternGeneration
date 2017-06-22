@@ -36,6 +36,14 @@ public class fileProcessor {
         this.fSvgFile = importFile;
     }
 
+    public Region getBoundary() {
+        ArrayList<Point> destList = new ArrayList<>();
+        for ( svgPathCommands command : commandLists.get(0)) {
+            destList.add(command.getDestinationPoint());
+        }
+        Region boundaryRegion = new Region(destList);
+        return  boundaryRegion;
+    }
     public void processSvg() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
         System.out.println("\n processing new svg:\n");
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -250,4 +258,3 @@ public class fileProcessor {
                 '}';
     }
 }
-

@@ -6,6 +6,7 @@ package jackiesvgprocessor;
 public class svgPathCommands {
     private Point destinationPoint, controlPoint1, controlPoint2;
     private int commandType;
+    public static final int typeMoveTo = 0, typeLineTo = 1, typeCurveTo = 2, typeSmoothTo = 3;
 
 
     public svgPathCommands(Point destinationPoint) {
@@ -61,21 +62,20 @@ public class svgPathCommands {
         this.controlPoint1 = controlPoint1;
         this.controlPoint2  = controlPoint2;
         this.commandType = commandType;
-        assert commandType > 1;
     }
 
 
 
     public boolean isMoveTo() {
-        return commandType == 0;
+        return commandType == typeMoveTo;
     }
 
     public boolean isLineTo() {
-        return commandType == 1;
+        return commandType == typeLineTo;
     }
 
     public boolean isCurveTo() {
-        return commandType == 2;
+        return commandType == typeCurveTo;
     }
 
     public Point getDestinationPoint() {
