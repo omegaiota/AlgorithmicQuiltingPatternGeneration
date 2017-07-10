@@ -1,9 +1,12 @@
 package jackiesvgprocessor;
 
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -25,8 +28,15 @@ public class Main extends Application {
     private final Button generateNoRotateButton = new Button("Generate - rotate off");
     private final Button tessellationButton = new Button("tessellation generate");
     private final Button hbcGenerateButton = new Button("hilbert curve Generate");
-    private spinePatternMerger mergedPattern;
-    private fileProcessor spineFile, featherFile, regionFile;
+    private final Button patternRotateButton = new Button("rotate patternGenerate");
+    private final Button pathFillButton = new Button("fill Path");
+    private final Button pathFillWithDecoButton = new Button("fill Path with decoration");
+    private final Button pathPatternFillButton = new Button("Pebble fill");
+    private final Button patternEchoButton = new Button("echo patternGenerate");
+
+    private SpinePatternMerger mergedPattern;
+    private TextField textField = new TextField();
+    private svgFileProcessor spineFile, featherFile, regionFile, stitchPathFile;
 
     public static void main(String[] args) {
         launch(args);
@@ -40,17 +50,13 @@ public class Main extends Application {
                     File file = fileChooser.showOpenDialog(stage);
                     if (file != null) {
                         System.out.println("Loading a spine ....");
-                        spineFile = new fileProcessor(file);
+                        spineFile = new svgFileProcessor(file);
                         try {
                             /** Process the svg file */
                             try {
                                 spineFile.processSvg();
-                                fileProcessor.outputSvgCommands(spineFile.getCommandLists().get(0), spineFile.getfFileName() + "-toAbsCoor");
-                            } catch (ParserConfigurationException e1) {
-                                e1.printStackTrace();
-                            } catch (SAXException e1) {
-                                e1.printStackTrace();
-                            } catch (XPathExpressionException e1) {
+                                svgFileProcessor.outputSvgCommands(spineFile.getCommandLists().get(0), spineFile.getfFileName() + "-toAbsCoor");
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
                                 e1.printStackTrace();
                             }
                         } catch (IOException e1) {
@@ -64,17 +70,13 @@ public class Main extends Application {
                     File file = fileChooser.showOpenDialog(stage);
                     if (file != null) {
                         System.out.println("Loading a pattern....");
-                        featherFile = new fileProcessor(file);
+                        featherFile = new svgFileProcessor(file);
                         try {
                             /** Process the svg file */
                             try {
                                 featherFile.processSvg();
-                                fileProcessor.outputSvgCommands(featherFile.getCommandLists().get(0), featherFile.getfFileName() + "-toAbsCoor");
-                            } catch (ParserConfigurationException e1) {
-                                e1.printStackTrace();
-                            } catch (SAXException e1) {
-                                e1.printStackTrace();
-                            } catch (XPathExpressionException e1) {
+                                svgFileProcessor.outputSvgCommands(featherFile.getCommandLists().get(0), featherFile.getfFileName() + "-toAbsCoor");
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
                                 e1.printStackTrace();
                             }
                         } catch (IOException e1) {
@@ -86,14 +88,14 @@ public class Main extends Application {
         generateRotateButton.setOnAction(
                 e -> {
                         System.out.println("generating svg...");
-                        mergedPattern = new spinePatternMerger(spineFile, featherFile, true);
+                        mergedPattern = new SpinePatternMerger(spineFile, featherFile, true);
                             /** Combine pattern */
                                 mergedPattern.combinePattern();
                 });
         generateNoRotateButton.setOnAction(
                 e -> {
                     System.out.println("generating svg...");
-                    mergedPattern = new spinePatternMerger(spineFile, featherFile, false);
+                    mergedPattern = new SpinePatternMerger(spineFile, featherFile, false);
                     /** Combine pattern */
                     mergedPattern.combinePattern();
                 });
@@ -101,7 +103,7 @@ public class Main extends Application {
         hbcGenerateButton.setOnAction(
                 e -> {
                     System.out.println("generating hilbertCurve...");
-                    hilbertCurveGenerator hilbertcurve = new hilbertCurveGenerator(new Point(0, 0), new Point(800, 0), new Point(0, 800), 4);
+                    HilbertCurveGenerator hilbertcurve = new HilbertCurveGenerator(new Point(0, 0), new Point(800, 0), new Point(0, 800), 4);
                     hilbertcurve.patternGeneration();
                     hilbertcurve.outputPath();
                 });
@@ -111,17 +113,13 @@ public class Main extends Application {
                     File file = fileChooser.showOpenDialog(stage);
                     if (file != null) {
                         System.out.println("Loading a region ....");
-                        regionFile = new fileProcessor(file);
+                        regionFile = new svgFileProcessor(file);
                         try {
                             /** Process the svg file */
                             try {
                                 regionFile.processSvg();
                                 regionFile.outputSvgCommands(regionFile.getCommandLists().get(0),"region-" + regionFile.getfFileName());
-                            } catch (ParserConfigurationException e1) {
-                                e1.printStackTrace();
-                            } catch (SAXException e1) {
-                                e1.printStackTrace();
-                            } catch (XPathExpressionException e1) {
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
                                 e1.printStackTrace();
                             }
                         } catch (IOException e1) {
@@ -131,12 +129,142 @@ public class Main extends Application {
                 });
         tessellationButton.setOnAction(
                 e -> {
-                    System.out.println("generating tesselation...");
+                    System.out.println("generating tessellation...");
                     Region boundary = regionFile.getBoundary();
-                    Distribution distribute = new Distribution(Distribution.typeTTFTFTessellation, boundary, 20, regionFile);
+                    Distribution distribute = new Distribution(Distribution.typeGridTessellation, boundary, 20, regionFile);
                     distribute.generate();
                     distribute.outputDistribution();
+                    distribute.getTraversalSvg();
                 });
+
+        patternRotateButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a region ....");
+                        stitchPathFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                stitchPathFile.processSvg();
+                                svgFileProcessor.outputSvgCommands(stitchPathFile.getCommandLists().get(0), stitchPathFile.getfFileName() + "-toAbs");
+                                PatternRenderer renderer = new PatternRenderer(stitchPathFile, PatternRenderer.RenderType.ROTATION);
+                                renderer.repeatWithRotation(Double.valueOf(textField.getText()));
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+        patternEchoButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a region ....");
+                        stitchPathFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                stitchPathFile.processSvg();
+                                svgFileProcessor.outputSvgCommands(stitchPathFile.getCommandLists().get(0), stitchPathFile.getfFileName() + "-toAbs");
+                                PatternRenderer renderer = new PatternRenderer(stitchPathFile, PatternRenderer.RenderType.ECHO);
+                                renderer.echoPattern(Integer.valueOf(textField.getText()));
+                            } catch (ParserConfigurationException | SAXException e1) {
+                                e1.printStackTrace();
+                            } catch (XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+        pathFillButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a region ....");
+                        stitchPathFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                stitchPathFile.processSvg();
+                                svgFileProcessor.outputSvgCommands(stitchPathFile.getCommandLists().get(0), stitchPathFile.getfFileName() + "-toAbs");
+                                PatternRenderer renderer = new PatternRenderer(stitchPathFile, PatternRenderer.RenderType.NO_DECORATION);
+                                renderer.fixedWidthFilling(5);
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+        pathFillWithDecoButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a region ....");
+                        stitchPathFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                stitchPathFile.processSvg();
+                                svgFileProcessor.outputSvgCommands(stitchPathFile.getCommandLists().get(0), stitchPathFile.getfFileName() + "-toAbs");
+                                PatternRenderer renderer = new PatternRenderer(stitchPathFile, featherFile, PatternRenderer.RenderType.WITH_DECORATION);
+                                renderer.fixedWidthFilling(5);
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+        /* Pebble */
+        pathPatternFillButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a region ....");
+                        regionFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                regionFile.processSvg();
+                                svgFileProcessor.outputSvgCommands(regionFile.getCommandLists().get(0), regionFile.getfFileName() + "-toAbs");
+                                Region boundary = regionFile.getBoundary();
+                                Distribution distribute = new Distribution(Distribution.typeGridTessellation, boundary, 20, regionFile);
+                                distribute.generate();
+                                distribute.toRegularGraph();
+                                distribute.toSpanningTree();
+                                distribute.outputDistribution();
+                                svgFileProcessor.outputSvgCommands(regionFile.getCommandLists().get(0), regionFile.getfFileName() + "-toAbs");
+
+                                PatternRenderer renderer = new PatternRenderer(distribute.getSpanningTree(), PatternRenderer.RenderType.LANDFILL);
+                                renderer.landFill();
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+        textField.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                if (!newValue.matches("\\d*")) {
+                    textField.setText(newValue.replaceAll("[^\\d]", ""));
+                }
+            }
+        });
 
         stage.setTitle("changing title");
         stage.setScene(new Scene(setLayoutWithGraph(), Color.rgb(35, 39, 50)));
@@ -147,10 +275,14 @@ public class Main extends Application {
         BorderPane layout = new BorderPane();
         VBox patternSpineCombine = new VBox(3);
         VBox pathGeneration = new VBox(3);
+        VBox patternRotate = new VBox( 3);
+        VBox pathRender = new VBox( 3);
         HBox menu = new HBox(5);
         patternSpineCombine.getChildren().addAll(loadSpineButton, loadFeatherButton, generateRotateButton, generateNoRotateButton);
         pathGeneration.getChildren().addAll(hbcGenerateButton, loadRegionButton, tessellationButton);
-        menu.getChildren().addAll(patternSpineCombine, pathGeneration);
+        patternRotate.getChildren().addAll(patternRotateButton, patternEchoButton, textField);
+        pathRender.getChildren().addAll(pathFillButton, pathFillWithDecoButton, pathPatternFillButton);
+        menu.getChildren().addAll(patternSpineCombine, pathGeneration, patternRotate, pathRender);
         layout.setBottom(menu);
         layout.setPadding(new Insets(40));
         layout.setStyle("-fx-background-color: rgb(35, 39, 50);");
