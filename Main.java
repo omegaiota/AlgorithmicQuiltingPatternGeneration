@@ -33,6 +33,7 @@ public class Main extends Application {
     private final Button pathFillWithDecoButton = new Button("fill Path with decoration");
     private final Button pathPatternFillButton = new Button("Pebble fill");
     private final Button patternEchoButton = new Button("echo patternGenerate");
+    private final Button svgToPatButton = new Button("svg to pat.");
 
     private SpinePatternMerger mergedPattern;
     private TextField textField = new TextField();
@@ -56,6 +57,26 @@ public class Main extends Application {
                             try {
                                 spineFile.processSvg();
                                 svgFileProcessor.outputSvgCommands(spineFile.getCommandLists().get(0), spineFile.getfFileName() + "-toAbsCoor");
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+        svgToPatButton.setOnAction(
+                e -> {
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a spine ....");
+                        spineFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                spineFile.processSvg();
+                                svgFileProcessor.outputPat(spineFile.getCommandLists().get(0), spineFile.getfFileName());
                             } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
                                 e1.printStackTrace();
                             }
@@ -278,7 +299,7 @@ public class Main extends Application {
         VBox patternRotate = new VBox( 3);
         VBox pathRender = new VBox( 3);
         HBox menu = new HBox(5);
-        patternSpineCombine.getChildren().addAll(loadSpineButton, loadFeatherButton, generateRotateButton, generateNoRotateButton);
+        patternSpineCombine.getChildren().addAll(svgToPatButton, loadSpineButton, loadFeatherButton, generateRotateButton, generateNoRotateButton);
         pathGeneration.getChildren().addAll(hbcGenerateButton, loadRegionButton, tessellationButton);
         patternRotate.getChildren().addAll(patternRotateButton, patternEchoButton, textField);
         pathRender.getChildren().addAll(pathFillButton, pathFillWithDecoButton, pathPatternFillButton);
