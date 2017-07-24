@@ -1,11 +1,8 @@
 package jackiesvgprocessor;
 
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
@@ -36,13 +33,7 @@ public class Main extends Application {
     private final Button pebbleButton = new Button("Pebble fill");
     private final Button patternEchoButton = new Button("echo patternGenerate");
     private final Button svgToPatButton = new Button("svg to pat.");
-    ObservableList<String> options =
-            FXCollections.observableArrayList(
-                    "Option 1",
-                    "Option 2",
-                    "Option 3"
-            );
-    final ComboBox comboBox = new ComboBox(options);
+    private final Button generateButton = new Button("Generate");
 
     private SpinePatternMerger mergedPattern;
     private TextField textField = new TextField();
@@ -290,21 +281,14 @@ public class Main extends Application {
                     }
                 });
 
-        textField.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                if (!newValue.matches("\\d*")) {
-                    textField.setText(newValue.replaceAll("[^\\d]", ""));
-                }
-            }
-        });
 
-        stage.setTitle("changing title");
-        stage.setScene(new Scene(setLayoutWithGraph(), Color.rgb(35, 39, 50)));
+
+        stage.setTitle("Quilt Pattern Generation");
+        stage.setScene(new Scene(setLayoutWithGraph(stage), Color.rgb(35, 39, 50)));
         stage.show();
     }
 
-    public BorderPane setLayoutWithGraph() {
+    public BorderPane setLayoutWithGraphN() {
         BorderPane layout = new BorderPane();
         VBox patternSpineCombine = new VBox(3);
         VBox pathGeneration = new VBox(3);
@@ -314,7 +298,7 @@ public class Main extends Application {
         patternSpineCombine.getChildren().addAll(svgToPatButton, loadSpineButton, loadFeatherButton, generateRotateButton, generateNoRotateButton);
         pathGeneration.getChildren().addAll(hbcGenerateButton, loadRegionButton, tessellationButton);
         patternRotate.getChildren().addAll(patternRotateButton, patternEchoButton, textField);
-        pathRender.getChildren().addAll(pathFillButton, pathFillWithDecoButton, pebbleButton, comboBox);
+        pathRender.getChildren().addAll(pathFillButton, pathFillWithDecoButton, pebbleButton);
         menu.getChildren().addAll(patternSpineCombine, pathGeneration, patternRotate, pathRender);
         layout.setBottom(menu);
         layout.setPadding(new Insets(40));
@@ -322,9 +306,9 @@ public class Main extends Application {
         return layout;
     }
 
-    public BorderPane setLayoutWithGraphN() {
+    public BorderPane setLayoutWithGraph(Stage stage) {
         BorderPane layout = new BorderPane();
-        int columnItemSpacing = 5;
+        int columnItemSpacing = 15;
         VBox regionColumn = new VBox(columnItemSpacing);
         VBox skeletonColumn = new VBox(columnItemSpacing);
         VBox patternColumn = new VBox(columnItemSpacing);
@@ -398,37 +382,142 @@ public class Main extends Application {
         HBox fileSourceBox = new HBox(2);
         ToggleButton patternFromFile = new ToggleButton("from file");
         patternFromFile.setFont(buttonFont);
+
+        ToggleButton noPattern = new ToggleButton("none");
+        noPattern.setFont(buttonFont);
         ToggleButton patternFromLibrary = new ToggleButton("from library");
         patternFromLibrary.setFont(buttonFont);
-        patternFromFile.setToggleGroup(patternSourceGroup);
-        patternFromLibrary.setToggleGroup(patternSourceGroup);
+        
+        patternSourceGroup.getToggles().addAll(patternFromFile, patternFromLibrary, noPattern);
         patternFromLibrary.setSelected(true);
-        patternSourceBox.getChildren().addAll(patternFromFile, patternFromLibrary);
+        patternSourceBox.getChildren().addAll(patternFromFile, patternFromLibrary, noPattern);
         patternSelection.getChildren().addAll(patternSelectionLabel, patternSourceBox);
 
         ComboBox patternLibraryComboBox = new ComboBox();
+
+
+        patternColumn.getChildren().addAll(patternLabel ,patternSelection, fileSourceBox);
+
+        menu.getChildren().addAll(regionColumn, skeletonColumn, patternColumn);
+
+        layout.setCenter(menu);
+        layout.setBottom(generateButton);
+        generateButton.setFont(columnLabelFont);
+        generateButton.setTextFill(Color.DARKBLUE);
+        layout.setPadding(new Insets(60));
+        BorderPane.setAlignment(generateButton, Pos.BOTTOM_CENTER);
+        BorderPane.setMargin(generateButton, new Insets(20, 8, 8, 8));
+        layout.setStyle("-fx-background-color: rgb(35, 39, 50);");
+
+        //Selection Listeners
+        /* Pattern Source Listener */
         patternLibraryComboBox.getItems().addAll("feather");
         patternSourceGroup.selectedToggleProperty().addListener((ov, toggle, new_toggle) -> {
             if (new_toggle == null) {
                 fileSourceBox.getChildren().removeAll();
             } else {
-                if (((ToggleButton) patternSourceGroup.getSelectedToggle()) == patternFromFile) {
-                    fileSourceBox.getChildren().removeAll();
+                if (patternSourceGroup.getSelectedToggle() == patternFromFile) {
+                    System.out.println("New Pattern Source: Pattern From File ");
                     fileSourceBox.getChildren().setAll(loadFeatherButton);
-                } else {
-                    fileSourceBox.getChildren().removeAll();
+                } else if (patternSourceGroup.getSelectedToggle() == patternFromLibrary){
+                    System.out.println("New Pattern Source: Pattern From Library ");
                     fileSourceBox.getChildren().setAll(patternLibraryComboBox);
+                } else if (patternSourceGroup.getSelectedToggle() == noPattern) {
+                    System.out.println("New Pattern Source: No Pattern");
+                    fileSourceBox.getChildren().removeAll(loadFeatherButton, patternLibraryComboBox);
                 }
             }
         });
-        patternColumn.getChildren().addAll(patternLabel ,patternSelection, fileSourceBox);
 
-        menu.getChildren().addAll(regionColumn, skeletonColumn, patternColumn);
+        /* Skeleton Generation Listener */
+        skeletonGenComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            String newSelected = skeletonGenComboBox.getValue().toString();
+            System.out.println("Skeleton generation method changed: ");
+            if (newSelected.equals("3.3.4.3.4 Tessellation") || newSelected.equals("Grid Tessellation")) {
+                System.out.println("case 1: tree structure");
+                skeletonRenderComboBox.getItems().setAll("No Rendering", "Fixed-width Filling", "Squiggles", "Pebble");
+            } else if (newSelected.equals( "Hilbert Curve") || newSelected.equals( "Echo") || newSelected.equals( "Medial Axis") ) {
+                System.out.println("case 2: none tree structure");
+                skeletonRenderComboBox.getItems().setAll("No Rendering", "Squiggles");
+            }
+        });
 
+        //Buttons
+        loadRegionButton.setOnAction(
+                e -> {
+                    final FileChooser fileChooser = new FileChooser();
+                    File file = fileChooser.showOpenDialog(stage);
+                    if (file != null) {
+                        System.out.println("Loading a region ....");
+                        regionFile = new svgFileProcessor(file);
+                        try {
+                            /** Process the svg file */
+                            try {
+                                regionFile.processSvg();
+                                regionFile.outputSvgCommands(regionFile.getCommandLists().get(0),"region-" + regionFile.getfFileName());
+                            } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
 
-        layout.setBottom(menu);
-        layout.setPadding(new Insets(40));
-        layout.setStyle("-fx-background-color: rgb(35, 39, 50);");
+        generateButton.setOnAction(
+                e -> {
+                    /* Set Boundary */
+                    Region boundary = regionFile.getBoundary();
+
+                    /* Skeleton Path Generation */
+                    Distribution distribute;
+                    switch (skeletonGenComboBox.getButtonCell().getText()) {
+                        case "Grid Tessellation":
+                            System.out.println("Skeleton Path: Grid Tessellation");
+                            distribute = new Distribution(Distribution.RenderType.GRID,
+                                    boundary, 20, regionFile);
+                            distribute.generate();
+                            distribute.outputDistribution();
+                            distribute.getTraversalSvg();
+                            break;
+                        case "3.3.4.3.4 Tessellation":
+                            System.out.println("Skeleton Path: 3.3.4.3.4 Tessellation");
+                            distribute = new Distribution(Distribution.RenderType.THREE_THREE_FOUR_THREE_FOUR,
+                                    boundary, 20, regionFile);
+                            distribute.generate();
+                            distribute.outputDistribution();
+                            distribute.getTraversalSvg();
+                            break;
+                        case "Hilbert Curve":
+                            System.out.println("Skeleton Path: Hilbert Curve...");
+                            HilbertCurveGenerator hilbertcurve = new HilbertCurveGenerator(new Point(0, 0), new Point(800, 0), new Point(0, 800), 4);
+                            hilbertcurve.patternGeneration();
+                            hilbertcurve.outputPath();
+                            break;
+                        case "Echo":
+                            System.out.println("Skeleton Path: Echo...");
+                            PatternRenderer renderer = new PatternRenderer(regionFile, PatternRenderer.RenderType.ECHO);
+                            renderer.echoPattern(Integer.valueOf(textField.getText()));
+                            break;
+                        case "Medial Axis":
+                            System.out.println("Skeleton Path: Medial Axis...");
+                            break;
+                    }
+
+                    /* Skeleton Path Rendering */
+                    switch (skeletonRenderComboBox.getButtonCell().getText()) {
+                        case "Fixed-width Filling":
+                            break;
+                        case "3.3.4.3.4 Tessellation":
+                            break;
+                        case "Squiggles":
+                            break;
+                        case "Pebble":
+                            break;
+                        case "No Rendering":
+                            break;
+                    }
+                });
         return layout;
     }
 
