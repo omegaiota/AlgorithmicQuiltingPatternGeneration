@@ -20,16 +20,13 @@ public class Point {
 
     /** given two endpoints of a line, return the retPoint on the line such that dist(retPoint,startPoint) == dist */
     public static Point intermediatePointWithLen(Point start, Point end, double dist) {
-
-        if (Math.abs(end.getX() - start.getX()) < 0.000001)
+        System.out.println(start.toString() + end.toString() + " :" + dist);
+        if (Math.abs(end.getX() - start.getX()) < 0.01)
             return new Point(start.getX(), start.getY() + dist * (start.getY() < end.getY() ?  1 : -1));
         if (dist == 0)
             return start;
         double k = (end.getY() - start.getY()) / (end.getX() - start.getX());
         double b = start.getY() - k * start.getX();
-        /*(y2-y1)^2 + (x2-x1)^2 = l^2
-         *(kx2 + b -y1)^2 + (x2-x1)^2 = l^2
-           * (k^2+1)x2^2 + [2(b-y1)k-2x1]x2 + (b - y1)^2 + x1^2 - l^2 = 0*/
         double x = start.getX(), y = start.getY();
         double   A = k * k + 1,
                 BB = 2 * (b - y) * k - 2 * x,
@@ -37,13 +34,18 @@ public class Point {
         int sign = start.getX() < end.getX() ? 1 : -1;
         double interX = (-1 * BB + sign * Math.sqrt(BB * BB - 4 * A * C))/ (2 * A);
         double interY = k * interX + b;
-       /* System.out.println();
-        System.out.println("startPoint:" + start.toString() + " endPoint:" + end.toString() + " length:" + dist + "distBtw:" + getDistance(start, end));
-        System.out.println("A=" + A + " B=" + BB + "C=" + C + " k=" + k + " b=" + b);
-        System.out.println("middlePWLen:" +  interX + " " + interY);*/
+        System.out.println(interX + " " + interY);
+
         return new Point(truncateDouble(interX, 3), truncateDouble(interY, 3));
     }
 
+    public static Point intermediatePointWithProportion(Point start, Point end, double propertion) {
+        double dist = Point.getDistance(start, end);
+        System.out.println("Dist: " + dist);
+        System.out.println("Proportion: " + propertion);
+        System.out.println("Len: " + dist * propertion);
+        return  intermediatePointWithLen(start, end, dist * propertion);
+    }
     /** given two endpoints of a line, return true if the argument point is in the middle of the line */
     public static boolean onLine(Point start, Point end, Point testPoint) {
         double minX = start.getX() < end.getX() ? start.getX() : end.getX();
@@ -67,6 +69,11 @@ public class Point {
         double delta_y = end.getY() - start.getY();
         double delta_x = end.getX() - start.getX();
         double angle = Math.atan2(delta_y, delta_x);
+        while (angle < 0)
+            angle += Math.PI * 2;
+        while (angle > Math.PI * 2)
+            angle -= Math.PI * 2;
+
         return angle;
     }
 
@@ -92,6 +99,19 @@ public class Point {
     public static void rotateAroundCenter(Point point, Point center, Double angle) {
         Point temporary = new Point(point.getX() - center.getX(),point.getY() - center.getY());
         Point.rotateAroundOrigin(temporary, angle);
+        point.setX(truncateDouble(temporary.getX() + center.getX(), 3));
+        point.setY(truncateDouble(temporary.getY() + center.getY(),3));
+    }
+
+    /** scale a point around origin */
+    public static void scaleAroundOrigin(Point point, Double proportion) {
+        point.setX(truncateDouble(point.getX() * proportion, 3));
+        point.setY(truncateDouble(point.getY() * proportion, 3));
+    }
+
+    public static void scaleAroundCenter(Point point, Point center, Double proportion) {
+        Point temporary = new Point(point.getX() - center.getX(),point.getY() - center.getY());
+        Point.scaleAroundOrigin(temporary, proportion);
         point.setX(temporary.getX() + center.getX());
         point.setY(temporary.getY() + center.getY());
     }
@@ -109,6 +129,15 @@ public class Point {
     public static Point pointAdd(Point finalPoint, Point shiftPoint) {
 
         return new Point(finalPoint.getX() + shiftPoint.getX(), finalPoint.getY() + shiftPoint.getY());
+    }
+
+    public static Point vertOffset(Point dest, Point src, double offset) {
+        Point srcRotated = new Point(src);
+        if (offset > 0)
+            rotateAroundCenter(srcRotated, dest, Math.PI / 2);
+        else
+            rotateAroundCenter(srcRotated, dest, Math.PI/ 2 * 3);
+        return intermediatePointWithLen(dest, srcRotated, Math.abs(offset));
     }
     /** generate a point with absolute coordinates*/
     public Point(double x, double y) {

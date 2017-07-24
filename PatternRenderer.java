@@ -1,40 +1,52 @@
 package jackiesvgprocessor;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by JacquelineLi on 6/25/17.
  */
 public class PatternRenderer {
-    private ArrayList<SvgPathCommand> stitchPathCommands, patternCommands, renderedCommands = new ArrayList<>();
-    private svgFileProcessor stitchPathFileProcessed, patternFileProcessed;
-
+    private List<SvgPathCommand> skeletonPathCommands, decorativeElementCommands, renderedCommands = new ArrayList<>();
     private TreeNode<Point> spanningTree;
     private Graph<Point> pointGraph;
     private RenderType renderType;
+    private String patternName = "", skeletonPathName = "";
     public enum RenderType {
         NO_DECORATION, WITH_DECORATION, ROTATION, ECHO, LANDFILL
     }
+    public List<SvgPathCommand> getRenderedCommands() {
+        return renderedCommands;
+    }
 
-    public PatternRenderer(svgFileProcessor stitchPathFileProcessed, RenderType type) {
-        this.stitchPathFileProcessed = stitchPathFileProcessed;
-        this.stitchPathCommands = stitchPathFileProcessed.getCommandLists().get(0);
+
+
+    public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, RenderType type) {
+        this.skeletonPathName = skeletonPathName;
+        this.skeletonPathCommands = skeletonPathCommands;
         this.renderType = type;
     }
 
-    public PatternRenderer(svgFileProcessor stitchPathFileProcessed, svgFileProcessor patternFileProcessed, RenderType type) {
-        this.stitchPathFileProcessed = stitchPathFileProcessed;
-        this.stitchPathCommands = stitchPathFileProcessed.getCommandLists().get(0);
-        this.patternFileProcessed = patternFileProcessed;
-        this.patternCommands =  patternFileProcessed.getCommandLists().get(0);
+
+    public PatternRenderer(List<SvgPathCommand> commands, RenderType type) {
+        this.skeletonPathCommands = commands;
         this.renderType = type;
     }
 
-    public PatternRenderer(svgFileProcessor patternFileProcessed, TreeNode<Point> spanningTree, RenderType type) {
-        this.patternFileProcessed = patternFileProcessed;
-        this.patternCommands =  patternFileProcessed.getCommandLists().get(0);
+    public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, String patternName, List<SvgPathCommand> decorativeElementCommands, RenderType type) {
+        this.skeletonPathName = skeletonPathName;
+        this.skeletonPathCommands = skeletonPathCommands;
+        this.patternName = patternName;
+        this.decorativeElementCommands =  decorativeElementCommands;
+        this.renderType = type;
+    }
+
+    public PatternRenderer(String patternName, List<SvgPathCommand> decorativeElementCommands, TreeNode<Point> spanningTree, RenderType type) {
+        this.patternName = patternName;
+        this.decorativeElementCommands =  decorativeElementCommands;
         this.spanningTree = spanningTree;
         this.renderType = type;
     }
@@ -46,8 +58,7 @@ public class PatternRenderer {
     }
 
     public PatternRenderer(ArrayList<SvgPathCommand> commands, RenderType type) {
-        this.stitchPathFileProcessed = null;
-        this.stitchPathCommands = commands;
+        this.skeletonPathCommands = commands;
         this.renderType = type;
     }
     public void landFill() {
@@ -158,11 +169,11 @@ public class PatternRenderer {
 
     public void fixedWidthFilling(double width) {
         System.out.println("Rendering with fixed width");
-        renderedCommands.add(stitchPathCommands.get(0));
-        for (int i = 1; i < stitchPathCommands.size() - 1; i++) {
-            SvgPathCommand commandThis = stitchPathCommands.get(i),
-                    commandPrev = stitchPathCommands.get(i - 1),
-                    commandNext = stitchPathCommands.get(i+1);
+        renderedCommands.add(skeletonPathCommands.get(0));
+        for (int i = 1; i < skeletonPathCommands.size() - 1; i++) {
+            SvgPathCommand commandThis = skeletonPathCommands.get(i),
+                    commandPrev = skeletonPathCommands.get(i - 1),
+                    commandNext = skeletonPathCommands.get(i+1);
 
             double angleNext = Point.getAngle( commandThis.getDestinationPoint(), commandNext.getDestinationPoint());
             double anglePrev = Point.getAngle(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint());
@@ -179,7 +190,7 @@ public class PatternRenderer {
                 Point pointRight = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width * (-1));
                 renderedCommands.add(new SvgPathCommand(pointRight, SvgPathCommand.CommandType.LINE_TO));
                 if (renderType == RenderType.WITH_DECORATION) {
-                    insertPatternToList(patternCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
+                    insertPatternToList(decorativeElementCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
                 }
                 renderedCommands.add(new SvgPathCommand(pointLeft, SvgPathCommand.CommandType.LINE_TO));
             } else {
@@ -187,19 +198,19 @@ public class PatternRenderer {
                 Point divEnd = new Point(commandNext.getDestinationPoint());
                 Point.rotateAroundCenter(divEnd, commandThis.getDestinationPoint(), rotationAngle);
                 Point divPoint = Point.intermediatePointWithLen(commandThis.getDestinationPoint(), divEnd, width);
-                //renderedCommands.add(stitchPathCommands.get(i));
+                //renderedCommands.add(skeletonPathCommands.get(i));
                 renderedCommands.add(new SvgPathCommand(divPoint, SvgPathCommand.CommandType.LINE_TO));
-                //renderedCommands.add(stitchPathCommands.get(i));
+                //renderedCommands.add(skeletonPathCommands.get(i));
             }
 
         }
-        renderedCommands.add(stitchPathCommands.get(stitchPathCommands.size() - 1));
+        renderedCommands.add(skeletonPathCommands.get(skeletonPathCommands.size() - 1));
         System.out.println("Outputing.....");
         outputRendered(width);
     }
 
-    public void insertPatternToList(ArrayList<SvgPathCommand> patternCommands,
-                                    ArrayList<SvgPathCommand> combinedCommands,
+    public void insertPatternToList(List<SvgPathCommand> patternCommands,
+                                    List<SvgPathCommand> combinedCommands,
                                     Point insertionPoint, double rotationAngle) {
         Point patternPoint = patternCommands.get(0).getDestinationPoint();
         SvgPathCommand newCommand;
@@ -217,32 +228,32 @@ public class PatternRenderer {
         Double time = Math.PI * 2 / angle;
         System.out.println(time.intValue());
         int repeat =  time.intValue();
-        SvgPathCommand originCommand = new SvgPathCommand(stitchPathCommands.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO);
-        renderedCommands.addAll(stitchPathCommands);
+        SvgPathCommand originCommand = new SvgPathCommand(skeletonPathCommands.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO);
+        renderedCommands.addAll(skeletonPathCommands);
         for (int i = 1; i < repeat; i++) {
             renderedCommands.add(originCommand);
-            for (int j = 1; j < stitchPathCommands.size(); j++) {
-                renderedCommands.add(new SvgPathCommand(stitchPathCommands.get(j), originCommand.getDestinationPoint(), i* angle ));
+            for (int j = 1; j < skeletonPathCommands.size(); j++) {
+                renderedCommands.add(new SvgPathCommand(skeletonPathCommands.get(j), originCommand.getDestinationPoint(), i* angle ));
             }
         }
 
         outputRotated(repetition);
     }
 
-    public void echoPattern(int number) {
+    public File echoPattern(int number) {
         double midX = 0, midY = 0;
-        for (SvgPathCommand command : stitchPathCommands) {
+        for (SvgPathCommand command : skeletonPathCommands) {
             midX += command.getDestinationPoint().getX();
             midY += command.getDestinationPoint().getY();
         }
-        midX /= stitchPathCommands.size();
-        midY /= stitchPathCommands.size();
+        midX /= skeletonPathCommands.size();
+        midY /= skeletonPathCommands.size();
 
         double proportion = 1.0 / number;
         System.out.println(proportion);
-        renderedCommands.addAll(stitchPathCommands);
-        Point start = stitchPathCommands.get(0).getDestinationPoint();
-        Point end = stitchPathCommands.get(stitchPathCommands.size() - 1).getDestinationPoint();
+        renderedCommands.addAll(skeletonPathCommands);
+        Point start = skeletonPathCommands.get(0).getDestinationPoint();
+        Point end = skeletonPathCommands.get(skeletonPathCommands.size() - 1).getDestinationPoint();
         Point center = Point.intermediatePointWithProportion(start, end, 0.5);
         for (int k = 1; k < number; k++) {
             Point baseDestination = Point.intermediatePointWithProportion(start, end, 1 - proportion * k / 2);
@@ -252,8 +263,8 @@ public class PatternRenderer {
             else
                 renderedCommands.add( new SvgPathCommand(complementBaseDestination, SvgPathCommand.CommandType.LINE_TO));
             System.out.println("Calling command with proportion:" + (1 - proportion * k));
-            ArrayList<SvgPathCommand> scaled = SvgPathCommand.commandsScaling(stitchPathCommands, 1 - proportion * k, new Point(midX, midY));
-            ArrayList<SvgPathCommand> newSet = new ArrayList<>();
+            List<SvgPathCommand> scaled = SvgPathCommand.commandsScaling(skeletonPathCommands, 1 - proportion * k, new Point(midX, midY));
+            List<SvgPathCommand> newSet = new ArrayList<>();
             if (k % 2 == 1){
                 System.out.println("this loop");
             for (int i = scaled.size() - 2; i >= 1; i--) {
@@ -276,22 +287,22 @@ public class PatternRenderer {
         renderedCommands.add( new SvgPathCommand(center, SvgPathCommand.CommandType.LINE_TO));
 
 
-        outputEchoed(number);
+        return outputEchoed(number);
 
     }
     private void outputLandFill() {
         svgFileProcessor.outputSvgCommands(renderedCommands, "landFill");
     }
 
-    private void outputEchoed(int number) {
-        svgFileProcessor.outputSvgCommands(renderedCommands, stitchPathFileProcessed.getfFileName() + "-echo-" + number);
+    private File outputEchoed(int number) {
+        return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number);
     }
 
-    private void outputRendered(double width) {
-        svgFileProcessor.outputSvgCommands(renderedCommands, stitchPathFileProcessed.getfFileName() + "-render-" + width);
+    private File  outputRendered(double width) {
+        return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-render-" + width);
     }
-    public void outputRotated(Integer angle) {
-        svgFileProcessor.outputSvgCommands(renderedCommands, stitchPathFileProcessed.getfFileName() + "-rotation-" + angle.intValue());
+    public File  outputRotated(Integer angle) {
+        return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue());
     }
 
 

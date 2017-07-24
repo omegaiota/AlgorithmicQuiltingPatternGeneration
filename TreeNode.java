@@ -1,25 +1,49 @@
 package jackiesvgprocessor;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by JacquelineLi on 6/22/17.
  */
 public class TreeNode<T> {
-   T data;
-   TreeNode<T> parent;
-   List<TreeNode<T>> children;
+   private T data;
+   private TreeNode<T> parent;
+   private List<Vertex<T>> neighbors;
+   private List<TreeNode<T>> children;
 
-   public TreeNode(T data) {
+   public TreeNode(T data, List<Vertex<T>> neighbors) {
        this.data = data;
-       this.children = new LinkedList<>();
+       this.children = new ArrayList<>();
+       this.neighbors = neighbors;
    }
 
-   public TreeNode<T> addChild(T child) {
-       TreeNode<T> childNode = new TreeNode<T>(child);
-       childNode.parent = this;
-       this.children.add(childNode);
-       return childNode;
-   }
- }
+    public void addChild(TreeNode<T> child) {
+        this.children.add(child);
+    }
+
+    public T getData() {
+        return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+
+    public TreeNode<T> getParent() {
+        return parent;
+    }
+
+    public void setParent(TreeNode<T> parent) {
+        this.parent = parent;
+    }
+
+    public List<TreeNode<T>> getChildren() {
+//       naiveSorting();
+       return children;
+    }
+
+    public void setChildren(List<TreeNode<T>> children) {
+        this.children = children;
+    }
+}

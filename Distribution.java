@@ -201,11 +201,11 @@ public class Distribution {
             }
     }
 
-    public void getTraversalSvg() {
+    public List<SvgPathCommand> toTraversal() {
         toRegularGraph();
         toSpanningTree();
         List<SvgPathCommand> commands = this.traverseTree();
-        svgFileProcessor.outputSvgCommands(commands, "traversal-" + regionFileProcessed.getfFileName() + "-" + type + "dis-" + disLen);
+        return commands;
     }
 
     public void toSpanningTree() {
