@@ -12,7 +12,6 @@ import java.util.List;
 public class PatternRenderer {
     private List<SvgPathCommand> skeletonPathCommands, decorativeElementCommands, renderedCommands = new ArrayList<>();
     private TreeNode<Point> spanningTree;
-    private Graph<Point> pointGraph;
     private RenderType renderType;
     private String patternName = "", skeletonPathName = "";
     public enum RenderType {
@@ -51,10 +50,9 @@ public class PatternRenderer {
         this.renderType = type;
     }
 
-    public PatternRenderer(TreeNode<Point> spanningTree, Graph<Point> graph, RenderType type) {
+    public PatternRenderer(TreeNode<Point> spanningTree, RenderType type) {
         this.spanningTree = spanningTree;
         this.renderType = type;
-        this.pointGraph = graph;
     }
 
     public PatternRenderer(ArrayList<SvgPathCommand> commands, RenderType type) {
@@ -294,11 +292,11 @@ public class PatternRenderer {
         svgFileProcessor.outputSvgCommands(renderedCommands, "landFill");
     }
 
-    private File outputEchoed(int number) {
+    public File outputEchoed(int number) {
         return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number);
     }
 
-    private File  outputRendered(double width) {
+    public File  outputRendered(double width) {
         return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-render-" + width);
     }
     public File  outputRotated(Integer angle) {
