@@ -1,29 +1,33 @@
 package jackiesvgprocessor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by JacquelineLi on 6/13/17.
  */
-public class svgPathCommands {
+public class SvgPathCommand {
     private Point destinationPoint, controlPoint1, controlPoint2;
-    private int commandType;
-    public static final int typeMoveTo = 0, typeLineTo = 1, typeCurveTo = 2, typeSmoothTo = 3;
+    private CommandType commandType;
+    public enum CommandType {
+        MOVE_TO, LINE_TO, CURVE_TO, SMOOTH_TO, DEFAULT
+    }
 
-
-    public svgPathCommands(Point destinationPoint) {
+    public SvgPathCommand(Point destinationPoint) {
         this.destinationPoint = destinationPoint;
         this.controlPoint1 = new Point();
         this.controlPoint2 = new Point();
-        this.commandType = -1;
+        this.commandType = CommandType.DEFAULT;
     }
 
-    public svgPathCommands(Point destinationPoint, int commandType) {
+    public SvgPathCommand(Point destinationPoint, CommandType commandType) {
         this.destinationPoint = destinationPoint;
         this.controlPoint1 = new Point();
         this.controlPoint2 = new Point();
         this.commandType = commandType;
     }
     /** generate a path command from an old command whose center point is shifted*/
-    public svgPathCommands(svgPathCommands oldCommand, Point originalStart, Point finalStart) {
+    public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart) {
         this.commandType = oldCommand.getCommandType();
         this.destinationPoint = new Point(oldCommand.getDestinationPoint());
         this.controlPoint1 = new Point(oldCommand.getControlPoint1());
@@ -37,7 +41,7 @@ public class svgPathCommands {
     }
 
     /** generate a path command from an old command whose center point is shifted and rotated*/
-    public svgPathCommands(svgPathCommands oldCommand, Point originalStart, Point finalStart, double angle) {
+    public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double angle) {
         this.commandType = oldCommand.getCommandType();
         this.destinationPoint = new Point(oldCommand.getDestinationPoint());
         this.controlPoint1 = new Point(oldCommand.getControlPoint1());
@@ -55,27 +59,66 @@ public class svgPathCommands {
         Point.addPoint(controlPoint2, finalStart);
     }
 
+    /** generate a path command from an old command who is rotated around the center point for angle*/
+    public SvgPathCommand(SvgPathCommand oldCommand, Point center, double angle) {
+        this.commandType = oldCommand.getCommandType();
+        this.destinationPoint = new Point(oldCommand.getDestinationPoint());
+        this.controlPoint1 = new Point(oldCommand.getControlPoint1());
+        this.controlPoint2 = new Point(oldCommand.getControlPoint2());
+        Point.rotateAroundCenter(destinationPoint, center, angle);
+        Point.rotateAroundCenter(controlPoint1, center, angle);
+        Point.rotateAroundCenter(controlPoint2, center, angle);
+    }
+
+    /** generate a path command from an old command who scales around center for proportion*/
+    public SvgPathCommand(SvgPathCommand oldCommand, Point center, double proportion, int type) {
+        System.out.println("Generating a command from scaling:" + proportion);
+        this.commandType = oldCommand.getCommandType();
+        this.destinationPoint = new Point(oldCommand.getDestinationPoint());
+        this.controlPoint1 = new Point(oldCommand.getControlPoint1());
+        this.controlPoint2 = new Point(oldCommand.getControlPoint2());
+        Point.scaleAroundCenter(destinationPoint, center, proportion);
+        Point.scaleAroundCenter(controlPoint1, center, proportion);
+        Point.scaleAroundCenter(controlPoint2, center, proportion);
+    }
 
 
-    public svgPathCommands(Point controlPoint1, Point controlPoint2, Point destinationPoint, int commandType) {
+    public SvgPathCommand(Point controlPoint1, Point controlPoint2, Point destinationPoint, CommandType commandType) {
         this.destinationPoint = destinationPoint;
         this.controlPoint1 = controlPoint1;
         this.controlPoint2  = controlPoint2;
         this.commandType = commandType;
     }
 
+    public static List<SvgPathCommand> commandsScaling(List<SvgPathCommand> commands, double proportion, Point center) {
+        List<SvgPathCommand> returnCommands = new ArrayList<>();
+        for (SvgPathCommand command : commands) {
+            returnCommands.add(new SvgPathCommand(command, center, proportion, 1));
+        }
+
+        return returnCommands;
+    }
+
+    public static List<SvgPathCommand> commandsShift(List<SvgPathCommand> commands, Point newStart) {
+        List<SvgPathCommand> returnCommands = new ArrayList<>();
+        for (SvgPathCommand command : commands) {
+            returnCommands.add(new SvgPathCommand(command, commands.get(0).getDestinationPoint(), newStart));
+        }
+
+        return returnCommands;
+    }
 
 
     public boolean isMoveTo() {
-        return commandType == typeMoveTo;
+        return commandType == commandType.MOVE_TO;
     }
 
     public boolean isLineTo() {
-        return commandType == typeLineTo;
+        return commandType == commandType.LINE_TO;
     }
 
     public boolean isCurveTo() {
-        return commandType == typeCurveTo;
+        return commandType ==  commandType.CURVE_TO;
     }
 
     public Point getDestinationPoint() {
@@ -90,25 +133,25 @@ public class svgPathCommands {
         return controlPoint2;
     }
 
-    public int getCommandType() {
+    public CommandType getCommandType() {
         return commandType;
     }
 
-    public void setCommandType(int commandType) {
+    public void setCommandType(CommandType commandType) {
         this.commandType = commandType;
     }
 
     @Override
     public String toString() {
         if (isCurveTo())
-            return "svgPathCommands{" +
+            return "SvgPathCommand{" +
                     "destinationPoint=" + destinationPoint +
                     ", controlPoint1=" + controlPoint1 +
                     ", controlPoint2=" + controlPoint2 +
                     ", commandType=" + commandType +
                     '}';
         else
-            return "svgPathCommands{" +
+            return "SvgPathCommand{" +
                     "destinationPoint=" + destinationPoint +
                     ", commandType=" + commandType +
                     '}';

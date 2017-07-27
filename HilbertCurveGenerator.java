@@ -1,17 +1,18 @@
 package jackiesvgprocessor;
 
+import java.io.File;
 import java.util.ArrayList;
 
 /**
  * Created by JacquelineLi on 6/18/17.
  */
-public class hilbertCurveGenerator {
-    private ArrayList<svgPathCommands> commandList = new ArrayList<>();
+public class HilbertCurveGenerator {
+    private ArrayList<SvgPathCommand> commandList = new ArrayList<>();
     private int level;
     private Point bottomLeft, unitX, unitY;
 
 
-    public hilbertCurveGenerator(Point bottomLeft, Point unitX, Point unitY, int level) {
+    public HilbertCurveGenerator(Point bottomLeft, Point unitX, Point unitY, int level) {
         this.level = level;
         this.bottomLeft = bottomLeft;
         this.unitX = unitX;
@@ -26,9 +27,9 @@ public class hilbertCurveGenerator {
         if (level <= 0) {
             Point destination = new Point(bottomLeftCorner.getX() + (unitX.getX() + unitY.getX())/ 2,
                     bottomLeftCorner.getY() + (unitX.getY() + unitY.getY())/ 2);
-            commandList.add(new svgPathCommands(destination, svgPathCommands.typeLineTo));
+            commandList.add(new SvgPathCommand(destination, SvgPathCommand.CommandType.LINE_TO));
             if (commandList.size() == 1) {
-                commandList.get(0).setCommandType(svgPathCommands.typeMoveTo);
+                commandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
             }
         } else {
             Point newUnitX = new Point(unitX.getX() / 2, unitX.getY() / 2);
@@ -44,11 +45,12 @@ public class hilbertCurveGenerator {
         }
     }
 
-    public void outputPath() {
-        fileProcessor.outputSvgCommands(commandList, "hilbertCurve-level" + level + "-w" + unitX.getX() + "-h" + unitY.getY());
+    public File outputPath() {
+        return svgFileProcessor.outputSvgCommands(commandList, "hilbertCurve-level" + level + "-w" + unitX.getX() + "-h" + unitY.getY());
     }
 
-    public ArrayList<svgPathCommands> getCommandList() {
+
+    public ArrayList<SvgPathCommand> getCommandList() {
         return commandList;
     }
 }
