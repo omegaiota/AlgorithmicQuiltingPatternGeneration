@@ -98,7 +98,7 @@ public class Main extends Application {
         //Skeleton
         /* Skeleton Path Generation */
         skeletonGenComboBox.getItems().addAll("Grid Tessellation", "3.3.4.3.4 Tessellation",
-                "Hilbert Curve", "Echo", "Medial Axis");
+                "Hilbert Curve", "Echo", "Medial Axis", "Snake");
         skeletonGenComboBox.setValue("Grid Tessellation");
         skeletonGeneration.getChildren().addAll(skeletonGnerationlabel, skeletonGenComboBox);
 
@@ -139,11 +139,12 @@ public class Main extends Application {
         BorderPane.setMargin(generateButton, new Insets(20, 8, 8, 8));
         layout.setStyle("-fx-background-color: rgb(35, 39, 50);");
 
-
+        //Listeners
         setupListeners();
-        buttonActions(stage);
 
         //Buttons, File loader
+        buttonActions(stage);
+
 
         return layout;
     }
@@ -313,6 +314,8 @@ public class Main extends Application {
                         case "Medial Axis":
                             System.out.println("Skeleton Path: Medial Axis...");
                             break;
+                        case "Snake":
+                            break;
                     }
 
                     /* Skeleton Path Rendering */
@@ -425,7 +428,7 @@ public class Main extends Application {
             if (newSelected.equals("3.3.4.3.4 Tessellation") || newSelected.equals("Grid Tessellation")) {
                 System.out.println("case 1: tree structure");
                 skeletonRenderComboBox.getItems().setAll("No Rendering", "Fixed-width Filling", "Squiggles", "Pebble");
-            } else if (newSelected.equals("Hilbert Curve") || newSelected.equals("Echo") || newSelected.equals("Medial Axis")) {
+            } else if (newSelected.equals("Hilbert Curve") || newSelected.equals("Echo") || newSelected.equals("Medial Axis") || newSelected.equals("Snake")) {
                 System.out.println("case 2: none tree structure");
                 skeletonRenderComboBox.getItems().setAll("No Rendering", "Squiggles", "Pattern Along Path");
             }
