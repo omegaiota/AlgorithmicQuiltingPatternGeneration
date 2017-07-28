@@ -30,6 +30,15 @@ public class svgFileProcessor {
     private double width = -1, height = -1, patternHeight = -1, widthRight = -1;
 
     private ArrayList<ArrayList<SvgPathCommand>> commandLists = new ArrayList<>();
+    public Point getMinPoint() {
+        return minPoint;
+    }
+
+    public Point getMaxPoint() {
+        return maxPoint;
+    }
+
+
 
     public svgFileProcessor(File importFile) {
         this.fFilePath = Paths.get(importFile.getPath());
@@ -65,7 +74,8 @@ public class svgFileProcessor {
         width = maxPoint.getX() - minPoint.getX();
         height = maxPoint.getY() - minPoint.getY();
         patternHeight = commandLists.get(0).get(0).getDestinationPoint().getY() - minPoint.getY();
-        widthRight = maxPoint.getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
+        //widthRight = maxPoint.getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
+        widthRight = getCommandLists().get(0).get(getCommandLists().get(0).size() - 1).getDestinationPoint().getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
 
         System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
                 +  "width=" + width + "; height=" + height + "pattern height:" + patternHeight + " first height:"
@@ -75,9 +85,10 @@ public class svgFileProcessor {
 
     private void processPath(Node pathNode, ArrayList<SvgPathCommand> pathCommandList) {
         String pathStr = pathNode.getNodeValue();
-        String withDelimiter = "(?=[a-zA-Z])";
+        String withDelimiter = "(?=[cCmMlLzZ])";
         String[] pathElemArray = pathStr.split(withDelimiter);
         Point current = new Point(0.0, 0.0);
+        System.out.println("pathElemArrayLength is" + pathElemArray.length);
         for (int i = 0; i < pathElemArray.length; i++) {
 
             /** if the last command is close path, add a command that lineTo initial point*/
