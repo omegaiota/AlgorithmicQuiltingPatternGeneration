@@ -14,19 +14,43 @@ public class SvgPathCommand {
     }
 
     public SvgPathCommand(Point destinationPoint) {
-        this.destinationPoint = destinationPoint;
+        this.destinationPoint = new Point(destinationPoint);
         this.controlPoint1 = new Point();
         this.controlPoint2 = new Point();
         this.commandType = CommandType.DEFAULT;
     }
 
+    public SvgPathCommand(SvgPathCommand oldCommand) {
+        this.destinationPoint = new Point(oldCommand.getDestinationPoint());
+        this.controlPoint1 = new Point(oldCommand.getControlPoint1());
+        this.controlPoint2 = new Point(oldCommand.getControlPoint2());
+        this.commandType = oldCommand.getCommandType();
+    }
+
     public SvgPathCommand(Point destinationPoint, CommandType commandType) {
-        this.destinationPoint = destinationPoint;
+        this.destinationPoint = new Point(destinationPoint);
         this.controlPoint1 = new Point();
         this.controlPoint2 = new Point();
         this.commandType = commandType;
     }
     /** generate a path command from an old command whose center point is shifted*/
+    public static SvgPathCommand commandFromShift(SvgPathCommand oldCommand, Point originalStart, Point finalStart) {
+        SvgPathCommand copy = new SvgPathCommand(oldCommand);
+        Point.addPoint(copy.getDestinationPoint(), finalStart);
+        Point.minusPoint(copy.getDestinationPoint(), originalStart);
+
+        Point.addPoint(copy.getControlPoint1(), finalStart);
+        Point.minusPoint(copy.getControlPoint1(), originalStart);
+
+        Point.addPoint(copy.getControlPoint2(), finalStart);
+        Point.minusPoint(copy.getControlPoint2(), originalStart);
+        return copy;
+
+    }
+
+    public void setLineTo() {
+        this.commandType = CommandType.LINE_TO;
+    }
     public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart) {
         this.commandType = oldCommand.getCommandType();
         this.destinationPoint = new Point(oldCommand.getDestinationPoint());

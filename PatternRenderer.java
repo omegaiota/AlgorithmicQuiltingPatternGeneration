@@ -14,6 +14,8 @@ public class PatternRenderer {
     private TreeNode<Point> spanningTree;
     private RenderType renderType;
     private String patternName = "", skeletonPathName = "";
+
+
     public enum RenderType {
         NO_DECORATION, WITH_DECORATION, ROTATION, ECHO, LANDFILL
     }

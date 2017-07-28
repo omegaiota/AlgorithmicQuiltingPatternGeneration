@@ -18,6 +18,7 @@ public class Distribution {
 
     private Graph<Point> pointGraph;
     private double disLen = 0;
+
     public enum RenderType {
         THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM
     }
@@ -61,9 +62,11 @@ public class Distribution {
         System.out.println("Distribution finished");
 
     }
+
     public void threeFourTessellation(Point start) {
         squareToTriangle(start, 0, disLen);
     }
+
     public void gridTessellation(Point start) {
         squareToSquare(start, 0, disLen);
     }
@@ -77,10 +80,11 @@ public class Distribution {
                 break;
             }
         }
-        return  flag;
+        return flag;
     }
+
     private void squareToTriangle(Point bottomRight, double angle, double dist) {
-        if (boundary.insideRegion(bottomRight) && regionFree(bottomRight) ) {
+        if (boundary.insideRegion(bottomRight) && regionFree(bottomRight)) {
             double newDist = dist;
             pointList.add(bottomRight);
             pairList.add(new PointRotation(bottomRight, angle));
@@ -97,10 +101,10 @@ public class Distribution {
             commandList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
-            triangleToSquare(upperRight,   angle + Math.PI / 2, newDist);
+            triangleToSquare(upperRight, angle + Math.PI / 2, newDist);
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            triangleToSquare(upperLeft, angle, newDist );
+            triangleToSquare(upperLeft, angle, newDist);
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
             triangleToSquare(bottomLeft, angle - Math.PI / 2, newDist);
@@ -116,7 +120,7 @@ public class Distribution {
             pointList.add(bottomLeft);
             pairList.add(new PointRotation(bottomLeft, angle));
             Point bottomRight = new Point(bottomLeft.getX() + dist, bottomLeft.getY());
-            Point top = new Point(bottomLeft.getX() + (dist / 2), bottomLeft.getY() -  dist / 2 * (Math.sqrt(3)));
+            Point top = new Point(bottomLeft.getX() + (dist / 2), bottomLeft.getY() - dist / 2 * (Math.sqrt(3)));
             Point.rotateAroundCenter(bottomRight, bottomLeft, angle);
             Point.rotateAroundCenter(top, bottomLeft, angle);
 
@@ -125,19 +129,19 @@ public class Distribution {
 //            commandList.add(new SvgPathCommand(top, SvgPathCommand.typeLineTo));
 //            commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.typeLineTo));
 
-            squareToTriangle(top,  angle, newDist);
+            squareToTriangle(top, angle, newDist);
             commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
         }
     }
 
     private void squareToSquare(Point bottomRight, double angle, double dist) {
-        assert(Double.compare(dist, disLen) <= 0);
-        if (boundary.insideRegion(bottomRight) && regionFree(bottomRight) ) {
+        assert (Double.compare(dist, disLen) <= 0);
+        if (boundary.insideRegion(bottomRight) && regionFree(bottomRight)) {
             double newDist = disLen;
             /* Include randomness if type is RANDOM */
             if (type == RenderType.RANDOM) {
                 Random rand = new Random();
-                int  n = rand.nextInt(2);
+                int n = rand.nextInt(2);
                 double randNum = (n / 10.0) + 0.7;
                 newDist *= randNum;
             }
@@ -156,7 +160,7 @@ public class Distribution {
             commandList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
-            squareToSquare(upperRight,   angle + Math.PI / 2, newDist);
+            squareToSquare(upperRight, angle + Math.PI / 2, newDist);
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
             squareToSquare(upperLeft, angle, newDist);
@@ -168,7 +172,7 @@ public class Distribution {
     }
 
     public void outputDistribution() {
-        commandList.add(new SvgPathCommand(new Point(0,0), SvgPathCommand.CommandType.MOVE_TO));
+        commandList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
         commandList.addAll(regionFileProcessed.getCommandLists().get(0));
         svgFileProcessor.outputSvgCommands(commandList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
     }
@@ -216,15 +220,12 @@ public class Distribution {
         TreeTraversal renderer = new TreeTraversal(spanningTree);
         renderer.traverseTree();
         List<SvgPathCommand> stitchPath = renderer.getRenderedCommands();
-      return  stitchPath;
+        return stitchPath;
     }
 
     public Graph<Point> getPointGraph() {
         return pointGraph;
     }
-
-
-
 
 
 }

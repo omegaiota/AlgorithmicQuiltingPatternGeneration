@@ -192,6 +192,7 @@ public class svgFileProcessor {
             writer.println("    <path");
             writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
             writer.print("    d=\"");
+            outputCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
             for (SvgPathCommand command : outputCommandList) {
                 writer.print(command.toSvgCode());
             }
@@ -270,4 +271,6 @@ public class svgFileProcessor {
                 "commandLists=" + commandLists.iterator().toString() +
                 '}';
     }
+
+
 }
