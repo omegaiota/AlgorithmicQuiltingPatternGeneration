@@ -90,13 +90,10 @@ public class Main extends Application {
     }
 
     private void setDefaultValue() {
-        //skeletonGenComboBox.setValue("Grid Tessellation");
-        skeletonGenComboBox.setValue("Snake");
-        //skeletonRenderComboBox.setValue("No Rendering");
-        skeletonRenderComboBox.setValue("Tiling");
+        skeletonGenComboBox.setValue("Grid Tessellation");
+        skeletonRenderComboBox.setValue("No Rendering");
         patternRenderComboBox.setValue("No Rendering");
-        //noPattern.setSelected(true);
-        patternFromFile.setSelected(true);
+        noPattern.setSelected(true);
     }
 
     public BorderPane setLayoutWithGraph(Stage stage) {
@@ -312,8 +309,14 @@ public class Main extends Application {
 
                 case "Hilbert Curve":
                     System.out.println("Skeleton Path: Hilbert Curve...");
+
+                    HilbertCurveGenerator hilbertcurve = new HilbertCurveGenerator(regionFile.getMinPoint(),
+                            new Point(regionFile.getMaxPoint().getX(), 0),
+                            new Point(0, regionFile.getMaxPoint().getY()), Integer.valueOf(skeletonGenTextField.getText()));
+                    /*
                     HilbertCurveGenerator hilbertcurve = new HilbertCurveGenerator(new Point(0, 0),
-                            new Point(800, 0), new Point(0, 800), 4);
+                            new Point(800, 0), new Point(0, 800),  Integer.valueOf(skeletonGenTextField.getText()));
+                            */
                     hilbertcurve.patternGeneration();
                     skeletonPathFile = hilbertcurve.outputPath();
                     List<SvgPathCommand> fittedPath = boundary.fitCommandsToRegion(hilbertcurve.getCommandList());
@@ -329,7 +332,7 @@ public class Main extends Application {
                 case "Medial Axis":
                     System.out.println("Skeleton Path: Medial Axis...");
                     break;
-                    
+
                 case "Snake":
                     System.out.println("Skeleton Path: Snake...");
                     SkeletonPathGenerator generator = new SkeletonPathGenerator(boundary);
