@@ -48,7 +48,12 @@ public class Region {
             if (outsideStartIndex != -1) {
                 Point lastIn = commandsOriginal.get(outsideStartIndex).getDestinationPoint();
                 Point nextIn = commandsOriginal.get(index).getDestinationPoint();
-                int indexToLast = nearestBoundaryPointIndex(lastIn), indexToNext = nearestBoundaryPointIndex(nextIn);
+                int indexToLast = nearestBoundaryPointIndex(lastIn),
+                        indexToNext = nearestBoundaryPointIndex(nextIn);
+                /* First line to the nearest point on boundary*/
+                commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(lastIn), SvgPathCommand.CommandType.LINE_TO));
+
+                /* Trace the segment of the region boundary*/
                 if (indexToLast <= indexToNext) {
                     for (int i = indexToLast; i <= indexToNext; i++)
                         commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
@@ -58,6 +63,9 @@ public class Region {
                     for (int i = 0; i <= indexToNext; i++)
                         commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
                 }
+
+                /* Move the tracer to the nearest point on boundary*/
+                commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(nextIn), SvgPathCommand.CommandType.LINE_TO));
             }
 
             while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
@@ -80,6 +88,22 @@ public class Region {
                 ans = i;
             }
         }
+        return ans;
+    }
+
+    public Point nearestBoundaryPoint(Point inputPoint) {
+        double distMin = Double.MAX_VALUE;
+        Point ans = boundary.get(0);
+        for (int i = 0; i < boundary.size(); i++) {
+            Point otherPointOnLine = (i == boundary.size() - 1) ? boundary.get(0) : boundary.get(i + 1);
+            Point perpendicularFoot = Point.perpendicularFoot(inputPoint, boundary.get(i), otherPointOnLine);
+            double testDist = Point.getDistance(inputPoint, perpendicularFoot);
+            if (Double.compare(testDist, distMin) <= 0) {
+                ans = perpendicularFoot;
+                distMin = testDist;
+            }
+        }
+
         return ans;
     }
 }
