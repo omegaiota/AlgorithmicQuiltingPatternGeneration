@@ -27,7 +27,7 @@ public class SpinePatternMerger {
 
     public void tilePattern(double rowHeight){
         patternCommands = SvgPathCommand.commandsScaling(patternCommands, rowHeight / patternFileProcessed.getHeight(), patternCommands.get(0).getDestinationPoint());
-        tileAlong(patternFileProcessed.getWidth() * rowHeight / patternFileProcessed.getHeight());
+        tileAlong(patternFileProcessed.getWidthRight() * rowHeight / patternFileProcessed.getHeight());
     }
 
     public void tileAlong(double patternWidth) {
@@ -53,7 +53,11 @@ public class SpinePatternMerger {
                 int col = (int) Math.ceil(pathWidth / patternWidth);
                 System.out.println("Column " + col);
                 for (int j = 0; j < col; j++) {
-                    Point startPoint = new Point(xPos  + patternWidth * (leftToRight ?  j : -1 * j), yPos);
+                    Point startPoint;
+                    if (j == 0)
+                        startPoint = new Point(xPos  + patternWidth * (leftToRight ?  j : -1 * j), yPos);
+                    else
+                        startPoint = new Point(combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint());
                     //combinedCommands.add(new SvgPathCommand(startPoint, SvgPathCommand.CommandType.LINE_TO));
                     System.out.println("is LefttoRight " + leftToRight + "original 1st" + patternCommands.get(0).getDestinationPoint().toString() );
                     insertPatternToListNoRotation(leftToRight ? patternCommands : patternReverseOrder, combinedCommands, startPoint);

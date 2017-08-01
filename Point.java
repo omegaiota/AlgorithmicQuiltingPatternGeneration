@@ -198,6 +198,32 @@ public class Point {
                 '}';
     }
 
+    /** perpendicular foot returns the closest point on line (lineVertexL, lineVertexR) to inputPoint **/
+    public static Point perpendicularFoot(Point inputPoint, Point lineVertexL, Point lineVertexR) {
+        /* find the standard form of line (lineVertexL, lineVertexR)
+            Ax + By + C = 0 */
+        double A = 0,B = 0,C = 0, k = 0, b = 0, distanceToLine = 0;
+        if (Math.abs(lineVertexR.getX() - lineVertexL.getX()) < 0.01) {
+            A = 1;
+            B = 0;
+            C = -1 * (lineVertexR.getX());
+        } else {
+            /* y = kx + b
+            * - kx + y - b = 0*/
+            k = (lineVertexR.getY() - lineVertexL.getY()) / (lineVertexR.getX() - lineVertexL.getX());
+            b = lineVertexL.getY() - k * lineVertexL.getX();
+            A = -1 * k;
+            B = 1;
+            C = -1 * b;
+        }
 
 
+        /* distance = |ax0+by0+c| / sqrt(a^2+b^2)*/
+        /* closest point x=(b(bx0-ay0)-ac)/(a^2+b^2) y=(b(-bx0+ay0)-bc)/(a^2+b^2) */
+        double divisor = A * A + B * B;
+        double X = (B * (B * inputPoint.getX() - A * inputPoint.getY()) - A * C) / divisor,
+                Y = (A * (-1 * B * inputPoint.getX() + A * inputPoint.getY()) - B * C) / divisor;
+        return new Point(X, Y);
+
+    }
 }
