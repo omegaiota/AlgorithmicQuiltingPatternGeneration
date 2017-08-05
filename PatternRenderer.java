@@ -76,9 +76,6 @@ public class PatternRenderer {
         renderedCommands.add(new SvgPathCommand(new Point(spanningTree.getData().getX() + dist, spanningTree.getData().getY()), SvgPathCommand.CommandType.MOVE_TO));
         HashMap<Point, Double> radiusList = new HashMap<>();
         landFillPebble(spanningTree, 0, dist, radiusList);
-
-
-        outputLandFill();
     }
 
     public void landFillPebble(TreeNode<Point> thisNode, int angle, double dist, HashMap<Point, Double> radiusList) {
@@ -206,7 +203,6 @@ public class PatternRenderer {
         }
         renderedCommands.add(skeletonPathCommands.get(skeletonPathCommands.size() - 1));
         System.out.println("Outputing.....");
-        outputRendered(width);
     }
 
     public void insertPatternToList(List<SvgPathCommand> patternCommands,

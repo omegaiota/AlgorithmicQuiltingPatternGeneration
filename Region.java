@@ -103,7 +103,28 @@ public class Region {
                 distMin = testDist;
             }
         }
-
         return ans;
+    }
+
+    public List<SvgPathCommand> generateMedialAxis() {
+        List<SvgPathCommand> medialAxis = new ArrayList<>();
+        List<Point> pointList = new ArrayList<>();
+        pointList.addAll(boundary);
+        pointList.remove(boundary.size() - 1);
+        int size = pointList.size();
+
+        for (int i = 0; i <= Math.ceil(size / 2.0); i++ ) {
+            int otherIndex = (size - i) % size;
+            Point thisPoint = pointList.get(i);
+            Point oppositePoint = pointList.get(otherIndex);
+            Point midPoint = Point.intermediatePointWithProportion(thisPoint, oppositePoint, 0.5);
+            //System.out.println("\nthis:" + i + thisPoint.toString() + "\nother: " + ((size - i) % size + oppositePoint.toString() + "\nmid:" + midPoint.toString()));
+
+            if (insideRegion(midPoint) || (otherIndex == i))
+                medialAxis.add(new SvgPathCommand(midPoint, SvgPathCommand.CommandType.LINE_TO));
+        }
+
+        medialAxis.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
+        return medialAxis;
     }
 }

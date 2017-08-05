@@ -101,7 +101,7 @@ public class svgFileProcessor {
                 /** else parse the next command set*/
                 current = parseString(pathElemArray[i], pathCommandList, current);
         }
-        printCommandList(pathCommandList);
+        //printCommandList(pathCommandList);
     }
 
     public static void printCommandList(ArrayList<SvgPathCommand> pathCommandList) {
@@ -112,14 +112,14 @@ public class svgFileProcessor {
 
     public Point parseString(String commandString, ArrayList<SvgPathCommand> pathCommandList, Point current) {
         String[] arguments = commandString.split(" ");
-        for (String arg: arguments) {
-            System.out.println(arg);
-
-        }
+//        for (String arg: arguments) {
+//            System.out.println(arg);
+//
+//        }
         char commandChar = arguments[0].toLowerCase().charAt(0);
-        System.out.println("Command is:" + commandChar);
+//        System.out.println("Command is:" + commandChar);
         boolean useAbsCoordinate = Character.isUpperCase(arguments[0].charAt(0));
-        System.out.println("is Upper case:" + useAbsCoordinate);
+//        System.out.println("is Upper case:" + useAbsCoordinate);
 
         Point destPoint;
         Point controlPoint1;
@@ -182,7 +182,7 @@ public class svgFileProcessor {
 
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName) {
         try{
-            PrintWriter writer = new PrintWriter( "/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + fileName + ".svg", "UTF-8");
+            PrintWriter writer = new PrintWriter( "./out/" + fileName + ".svg", "UTF-8");
             writer.println("<svg");
             writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
             writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");
@@ -223,7 +223,7 @@ public class svgFileProcessor {
 
     public static void outputPat(List<SvgPathCommand> outputCommandList, String fileName) {
         try {
-            PrintWriter writer = new PrintWriter("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/pat" + fileName + ".pat", "UTF-8");
+            PrintWriter writer = new PrintWriter("./out/pat" + fileName + ".pat", "UTF-8");
             int count = 0;
             for (SvgPathCommand command : outputCommandList) {
 

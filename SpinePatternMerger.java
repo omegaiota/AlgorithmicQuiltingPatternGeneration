@@ -189,7 +189,6 @@ public class SpinePatternMerger {
 
         }
         System.out.println("Output combined: combined now has " + combinedCommands.size() + " commands");
-        svgFileProcessor.outputSvgCommands(combinedCommands, "spine-" + spineName + "-pat-" + patternName + (rotationOn ? "-on" : "-off"));
     }
 
 
