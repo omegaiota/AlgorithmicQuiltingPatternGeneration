@@ -20,11 +20,11 @@ public class Vertex<T> {
 
     public void connect(Vertex<T> otherNode) {
         Random rand = new Random();
-        int n = rand.nextInt(100) + 1;
+        int weight = rand.nextInt(100) + 1;
         otherNode.neighbors.add(this);
-        otherNode.weight.add(n);
+        otherNode.weight.add(weight);
         this.neighbors.add(otherNode);
-        this.weight.add(n);
+        this.weight.add(weight);
     }
 
     public boolean isConnected(Vertex<T> otherNode) {
