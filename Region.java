@@ -43,15 +43,19 @@ public class Region {
             end--;
 
         int index = start;
-        int outsideStartIndex = -1, outsideEndIndex;
+        int outsideStartIndex = -1;
         while (index <= end) {
             if (outsideStartIndex != -1) {
-                Point lastIn = commandsOriginal.get(outsideStartIndex).getDestinationPoint();
+                Point lastIn = commandsOriginal.get(outsideStartIndex - 1).getDestinationPoint();
                 Point nextIn = commandsOriginal.get(index).getDestinationPoint();
                 int indexToLast = nearestBoundaryPointIndex(lastIn),
                         indexToNext = nearestBoundaryPointIndex(nextIn);
+
                 /* First line to the nearest point on boundary*/
-                commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(lastIn), SvgPathCommand.CommandType.LINE_TO));
+                Point intersectPointLast = intersectionPoint(commandsOriginal.get((outsideStartIndex - 1) % commandsOriginal.size()).getDestinationPoint(),
+                        commandsOriginal.get((outsideStartIndex) % commandsOriginal.size()).getDestinationPoint());
+                commandsTrimed.add(new SvgPathCommand(intersectPointLast, SvgPathCommand.CommandType.LINE_TO));
+                //commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(lastIn), SvgPathCommand.CommandType.LINE_TO));
 
                 /* Trace the segment of the region boundary*/
                 if (indexToLast <= indexToNext) {
@@ -65,16 +69,23 @@ public class Region {
                 }
 
                 /* Move the tracer to the nearest point on boundary*/
-                commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(nextIn), SvgPathCommand.CommandType.LINE_TO));
+                Point intersectPointNext = intersectionPoint(commandsOriginal.get((index - 1) % commandsOriginal.size()).getDestinationPoint(),
+                                        commandsOriginal.get((index) % commandsOriginal.size()).getDestinationPoint());
+                Point perpendicularPoint = nearestBoundaryPoint(nextIn);
+                //commandsTrimed.add(new SvgPathCommand(perpendicularPoint, SvgPathCommand.CommandType.LINE_TO));
+                commandsTrimed.add(new SvgPathCommand(intersectPointNext, SvgPathCommand.CommandType.LINE_TO));
             }
 
             while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
                 commandsTrimed.add(commandsOriginal.get(index));
                 index++;
             }
+            /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
             outsideStartIndex = index;
             while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
                 index++;
+            /* index is the index of the command that's first INSIDe of the region after the outside segment startin gat
+            * outside start index*/
         }
         return commandsTrimed;
     }
@@ -106,6 +117,19 @@ public class Region {
         return ans;
     }
 
+    public Point intersectionPoint(Point srcPoint, Point destPoint) {
+        double distMin = Double.MAX_VALUE;
+        Point ans = boundary.get(0);
+        for (int i = 0; i < boundary.size(); i++) {
+            Point otherPointOnLine = boundary.get((i + 1) % (boundary.size()));
+            if (Point.intersect(srcPoint, destPoint, boundary.get(i), otherPointOnLine)) {
+                return Point.intersectionPoint(srcPoint, destPoint, boundary.get(i), otherPointOnLine);
+            }
+        }
+        System.out.println("couldn't find segment on region");
+        return  nearestBoundaryPoint(srcPoint);
+    }
+
     public List<SvgPathCommand> generateMedialAxis() {
         List<SvgPathCommand> medialAxis = new ArrayList<>();
         List<Point> pointList = new ArrayList<>();
@@ -118,7 +142,6 @@ public class Region {
             Point thisPoint = pointList.get(i);
             Point oppositePoint = pointList.get(otherIndex);
             Point midPoint = Point.intermediatePointWithProportion(thisPoint, oppositePoint, 0.5);
-            //System.out.println("\nthis:" + i + thisPoint.toString() + "\nother: " + ((size - i) % size + oppositePoint.toString() + "\nmid:" + midPoint.toString()));
 
             if (insideRegion(midPoint) || (otherIndex == i))
                 medialAxis.add(new SvgPathCommand(midPoint, SvgPathCommand.CommandType.LINE_TO));

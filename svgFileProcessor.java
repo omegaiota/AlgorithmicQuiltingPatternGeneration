@@ -204,7 +204,12 @@ public class svgFileProcessor {
             writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
             writer.print("    d=\"");
             outputCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
-            for (SvgPathCommand command : outputCommandList) {
+            for (int i = 0; i < outputCommandList.size(); i++) {
+                SvgPathCommand command = outputCommandList.get(i);
+                if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
+                    System.out.println("WARNING: MOVE_TO inside commandlist");
+                    command.setCommandType(SvgPathCommand.CommandType.LINE_TO);
+                }
                 writer.print(command.toSvgCode());
             }
             writer.println("\"");

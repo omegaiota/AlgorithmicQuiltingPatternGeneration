@@ -8,14 +8,65 @@ import java.math.RoundingMode;
  */
 public class Point {
     private double x,y;
+    /** generate a point with absolute coordinates*/
+    public Point(double x, double y) {
+        this.x = truncateDouble(x, 3);
+        this.y = truncateDouble(y, 3);
+    }
 
-    /** round a double value  */
+    public Point(Point other) {
+        this.x = other.getX();
+        this.y = other.getY();
+    }
+    public Point(String strWithDelimiter) {
+        String[] coordinateStr = strWithDelimiter.split(",");
+        assert coordinateStr.length == 2;
+        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]), 3);
+        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]), 3);
+    }
+
+    /** constructs a point with relative coordinates*/
+    public Point(Point current, double x, double y) {
+        this.x = truncateDouble(x + current.getX(), 3);
+        this.y = truncateDouble(y + current.getY(), 3);
+    }
+
+    /** constructs point (x,y) from string s = "x,y" **/
+    public Point(Point current, String strWithDelimiter) {
+        String[] coordinateStr = strWithDelimiter.split(",");
+        assert coordinateStr.length == 2;
+
+        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]) + current.getX(), 3);
+        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]) + current.getY(), 3);
+    }
+
+    public double getX() {
+        return x;
+    }
+    public double getY() {
+        return y;
+    }
+    public void setX(double x) {
+        this.x = x;
+    }
+    public void setY(double y) {
+        this.y = y;
+    }
+
+    public boolean equals(Point compare) {
+        return  ((Math.abs(x - compare.getX()) < 0.000001) && (Math.abs(x - compare.getX()) < 0.000001));
+    }
+
+    @Override
+    public String toString() {
+        return "Point{" + "x=" + x + ", y=" + y + '}';
+    }
+
+    /** truncateDouble: truncates value so that it fits precision
+     *  requires: none
+     *  ensures: function rounts value to floor into at most precision digits*/
     public static double truncateDouble(double value, int precision) {
-//        System.out.println("calling truncateDouble:\n" + value);
-        return BigDecimal.valueOf(value)
-                .setScale(precision, RoundingMode.FLOOR).doubleValue();
-
-
+        return BigDecimal.valueOf(value).setScale(precision, RoundingMode.FLOOR).doubleValue();
     }
 
     /** given two endpoints of a line, return the retPoint on the line such that dist(retPoint,startPoint) == dist */
@@ -139,91 +190,64 @@ public class Point {
             rotateAroundCenter(srcRotated, dest, Math.PI/ 2 * 3);
         return intermediatePointWithLen(dest, srcRotated, Math.abs(offset));
     }
-    /** generate a point with absolute coordinates*/
-    public Point(double x, double y) {
-        this.x = truncateDouble(x, 3);
-        this.y = truncateDouble(y, 3);
-    }
 
-    public Point(Point other) {
-        this.x = other.getX();
-        this.y = other.getY();
-    }
-    public Point(String strWithDelimiter) {
-        String[] coordinateStr = strWithDelimiter.split(",");
-        assert coordinateStr.length == 2;
-        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]), 3);
-        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]), 3);
-    }
 
-    /** generate a point with relative coordinates*/
-    public Point(Point current, double x, double y) {
-        this.x = truncateDouble(x + current.getX(), 3);
-        this.y = truncateDouble(y + current.getY(), 3);
-    }
-
-    public Point(Point current, String strWithDelimiter) {
-        String[] coordinateStr = strWithDelimiter.split(",");
-        assert coordinateStr.length == 2;
-
-        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]) + current.getX(), 3);
-        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]) + current.getY(), 3);
-    }
-
-    public double getX() {
-        return x;
-    }
-
-    public void setX(double x) {
-        this.x = x;
-    }
-
-    public double getY() {
-        return y;
-    }
-
-    public void setY(double y) {
-        this.y = y;
-    }
-
-    public boolean equals(Point compare) {
-        return  ((Math.abs(x - compare.getX()) < 0.000001) && (Math.abs(x - compare.getX()) < 0.000001));
-    }
-
-    @Override
-    public String toString() {
-        return "Point{" +
-                "x=" + x +
-                ", y=" + y +
-                '}';
-    }
-
-    /** perpendicular foot returns the closest point on line (lineVertexL, lineVertexR) to inputPoint **/
-    public static Point perpendicularFoot(Point inputPoint, Point lineVertexL, Point lineVertexR) {
-        /* find the standard form of line (lineVertexL, lineVertexR)
+    /** perpendicularFoot: returns point P2 such that PP2 is perpendicular to L1L2
+     *  requires: P is not on L1L2
+     *  ensures: function returns P2 **/
+    public static Point perpendicularFoot(Point P, Point L1, Point L2) {
+        /* find the standard form of line (L1, L2)
             Ax + By + C = 0 */
         double A = 0,B = 0,C = 0, k = 0, b = 0, distanceToLine = 0;
-        if (Math.abs(lineVertexR.getX() - lineVertexL.getX()) < 0.01) {
+        if (Math.abs(L2.getX() - L1.getX()) < 0.01) {
             A = 1;
             B = 0;
-            C = -1 * (lineVertexR.getX());
+            C = -1 * (L2.getX());
         } else {
             /* y = kx + b
             * - kx + y - b = 0*/
-            k = (lineVertexR.getY() - lineVertexL.getY()) / (lineVertexR.getX() - lineVertexL.getX());
-            b = lineVertexL.getY() - k * lineVertexL.getX();
+            k = (L2.getY() - L1.getY()) / (L2.getX() - L1.getX());
+            b = L1.getY() - k * L1.getX();
             A = -1 * k;
             B = 1;
             C = -1 * b;
         }
-
-
         /* distance = |ax0+by0+c| / sqrt(a^2+b^2)*/
         /* closest point x=(b(bx0-ay0)-ac)/(a^2+b^2) y=(b(-bx0+ay0)-bc)/(a^2+b^2) */
         double divisor = A * A + B * B;
-        double X = (B * (B * inputPoint.getX() - A * inputPoint.getY()) - A * C) / divisor,
-                Y = (A * (-1 * B * inputPoint.getX() + A * inputPoint.getY()) - B * C) / divisor;
+        double X = (B * (B * P.getX() - A * P.getY()) - A * C) / divisor,
+                Y = (A * (-1 * B * P.getX() + A * P.getY()) - B * C) / divisor;
         return new Point(X, Y);
 
+    }
+
+    /** intersectionPoint: returns the intersection point of two line segments L1:AB and L2:CD using Cramer's rule
+     *  requires: AB, CD are not co-linear
+     *  ensures: function returns the intersection point **/
+    public static Point intersectionPoint(Point A, Point B, Point C, Point D) {
+       double x3_x4 = C.getX() - D.getX(),
+               y3_y4 = C.getY() - D.getY(),
+               x1_x2 = A.getX() - B.getX(),
+               y1_y2 = A.getY() - B.getY(),
+               x1y2_y1x2 = A.getX() * B.getY() - A.getY() * B.getX(),
+               x3y4_y3x4 = C.getX() * D.getY() - C.getY() * D.getX();
+       double x = (x1y2_y1x2 * x3_x4 - x1_x2 * x3y4_y3x4) / (x1_x2 * y3_y4 - y1_y2 * x3_x4),
+               y = (x1y2_y1x2 * y3_y4 - y1_y2 * x3y4_y3x4) / (x1_x2 * y3_y4 - y1_y2 * x3_x4);
+       return new Point(x, y);
+
+    }
+
+    /** intersect: determines whether two segments L1:AB, L2:CD intersects.
+     *  requires: L1,L2 are not co-linear
+     *  ensures: function returns true if L1,L2 intersects, false otherwise **/
+    public static boolean intersect(Point A, Point B, Point C, Point D) {
+        return ((CCW(A, C, D) != CCW(B, C, D)) && (CCW(A, B, C) != CCW(A, B, D)));
+    }
+
+    /** CCW: determines if point A,B,C are lists in counterclockwise order
+     *  requires: none
+     *  ensures: function returns true if A,B,C are listed in CCW order, false otherwise **/
+    private static boolean CCW(Point A, Point B, Point C) {
+        return ((C.getY() - A.getY())*(B.getX() - A.getX()) > (B.getY() - A.getY()) * (C.getX() - A.getX()));
     }
 }

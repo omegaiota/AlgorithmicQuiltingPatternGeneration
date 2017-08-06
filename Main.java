@@ -344,7 +344,6 @@ public class Main extends Application {
                     System.out.println("Skeleton Path: Medial Axis...");
                     skeletonName += "_medialAxis";
                     skeletonPathCommands = boundary.generateMedialAxis();
-                    skeletonPathCommands.addAll(regionFile.getCommandLists().get(0));
                     skeletonPathFile = svgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName);
                     break;
 
