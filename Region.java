@@ -126,7 +126,7 @@ public class Region {
                 return Point.intersectionPoint(srcPoint, destPoint, boundary.get(i), otherPointOnLine);
             }
         }
-        System.out.println("couldn't find segment on region");
+        System.out.println("WARNING: couldn't find segment on region");
         return  nearestBoundaryPoint(srcPoint);
     }
 

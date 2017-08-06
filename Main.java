@@ -77,9 +77,10 @@ public class Main extends Application {
             patternFromLibrary = new ToggleButton("from library");
 
     /* Folder */
-    File tileLibrary = new File("./src/resources/patterns/tiles/");
+    File tileLibrary = new File("./src/resources/patterns/tiles/"),
+        alongPathLibrary = new File("./src/resources/patterns/alongPath/");
+    List<String> tileList =  new ArrayList<>(), alongPathList = new ArrayList<>();
 
-    File[] tileList = tileLibrary.listFiles();
 
     public static void main(String[] args) {
         launch(args);
@@ -129,9 +130,21 @@ public class Main extends Application {
 
         /*  Toggle group*/
         patternSourceGroup.getToggles().addAll(patternFromFile, patternFromLibrary, noPattern);
-
         patternSourceBox.getChildren().addAll(patternFromFile, patternFromLibrary, noPattern);
         patternSelection.getChildren().addAll(patternSelectionLabel, patternSourceBox, fileSourceBox);
+
+        /* initialize pattern library */
+        for (File tileFile : tileLibrary.listFiles()) {
+            String fileName = tileFile.getName();
+            fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
+            tileList.add(fileName);
+        }
+
+        for (File tileFile : alongPathLibrary.listFiles()) {
+            String fileName = tileFile.getName();
+            fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
+            alongPathList.add(fileName);
+        }
 
         /* Pattern rendering */
         patternRenderComboBox.getItems().addAll("Repeat with Rotation", "Echo", "No Rendering");
@@ -160,8 +173,6 @@ public class Main extends Application {
 
         //Buttons, File loader
         buttonActions(stage);
-
-
         return layout;
     }
 
@@ -244,6 +255,7 @@ public class Main extends Application {
                     break;
                 case "from library":
                     decoFileName = "library";
+
                     break;
             }
             /* Pattern rendering */
@@ -470,7 +482,7 @@ public class Main extends Application {
         patternLibraryComboBox.getItems().addAll("feather");
         patternSourceGroup.selectedToggleProperty().addListener((ov, toggle, new_toggle) -> {
             if (new_toggle == null) {
-                fileSourceBox.getChildren().removeAll();
+                fileSourceBox.getChildren().setAll();
             } else {
                 if (patternSourceGroup.getSelectedToggle() == patternFromFile) {
                     System.out.println("New Pattern Source: Pattern From File ");
@@ -480,12 +492,15 @@ public class Main extends Application {
                 if (patternSourceGroup.getSelectedToggle() == patternFromLibrary) {
                     System.out.println("New Pattern Source: Pattern From Library ");
                     fileSourceBox.getChildren().setAll(patternLibraryComboBox);
-                    patternLibraryComboBox.getItems().setAll(tileList);
+                    if (skeletonRenderComboBox.getValue().toString().equals("Tiling"))
+                        patternLibraryComboBox.getItems().setAll(tileList);
+                    else
+                        patternLibraryComboBox.getItems().setAll(alongPathList);
                 }
 
                 if (patternSourceGroup.getSelectedToggle() == noPattern) {
                     System.out.println("New Pattern Source: No Pattern");
-                    fileSourceBox.getChildren().removeAll(loadDecoElementButton, patternSourceBox, patternPropertyInput);
+                    fileSourceBox.getChildren().setAll();
                 }
             }
         });
@@ -524,11 +539,39 @@ public class Main extends Application {
             System.out.println("Skeleton rendering method changed: " + newSelected);
             if (newSelected.equals("Pebble")) {
                 System.out.println("Pebble");
-                patternSourceBox.getChildren().setAll(noPattern);
+                patternSourceGroup.selectToggle(noPattern);
             } else {
-                patternSourceBox.getChildren().setAll(patternFromFile, patternFromLibrary, noPattern);
+                patternSourceGroup.selectToggle(patternFromFile);
             }
+
+            if (newSelected.equals("Tiling")) {
+                    patternLibraryComboBox.getItems().setAll(tileList);
+            } else
+                patternLibraryComboBox.getItems().setAll(alongPathList);
         });
+
+        /* Library ComboBox Listener/ pattern library combobox Listener */
+        patternLibraryComboBox.valueProperty().addListener(((observable, oldValue, newValue) -> {
+            String newPatternFile = patternLibraryComboBox.getValue().toString();
+            File library = (skeletonRenderComboBox.getValue().toString().equals("Tiling") ? tileLibrary : alongPathLibrary);
+            File file = new File(library.getPath() + "/" + newPatternFile + ".svg");
+            System.out.println("Loading a pattern....");
+            decoElementFile = new svgFileProcessor(file);
+            try {
+                decoElementFile.processSvg();
+                svgFileProcessor.outputSvgCommands(decoElementFile.getCommandLists().get(0),
+                        "decoElem-" + decoElementFile.getfFileName());
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (SAXException e) {
+                e.printStackTrace();
+            } catch (XPathExpressionException e) {
+                e.printStackTrace();
+            }
+
+        }));
 
         /* Pattern rendering Listener */
         patternRenderComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
