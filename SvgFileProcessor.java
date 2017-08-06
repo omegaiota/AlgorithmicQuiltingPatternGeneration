@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Created by JacquelineLi on 6/12/17.
  */
-public class svgFileProcessor {
+public class SvgFileProcessor {
     private Path fFilePath;
     private String fFileName;
     private File fSvgFile;
@@ -40,7 +40,7 @@ public class svgFileProcessor {
 
 
 
-    public svgFileProcessor(File importFile) {
+    public SvgFileProcessor(File importFile) {
         this.fFilePath = Paths.get(importFile.getPath());
         this.fFileName = importFile.getName();
         this.fSvgFile = importFile;
@@ -283,7 +283,7 @@ public class svgFileProcessor {
 
     @Override
     public String toString() {
-        return "svgFileProcessor{" +
+        return "SvgFileProcessor{" +
                 "commandLists=" + commandLists.iterator().toString() +
                 '}';
     }
