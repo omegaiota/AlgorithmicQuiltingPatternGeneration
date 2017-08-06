@@ -58,7 +58,7 @@ public class Main extends Application {
             patternLibraryComboBox = new ComboBox(), patternRenderComboBox = new ComboBox();
     /* Fonts */
     Font columnLabelFont = new Font("Luminari", 22), functionLabelFont = new Font("Avenir Light", 14),
-            buttonFont = new Font("Avenir", 10);
+            buttonFont = new Font("Avenir", 10), titleFont = new Font("Luminari", 40);
     Color labelColor = Color.ORANGE, columnLabelColor = Color.SILVER;
 
     /* Labels */
@@ -68,7 +68,7 @@ public class Main extends Application {
             skeletonGnerationlabel = new Label("Skeleton Path Generation"), patternLabel = new Label("Pattern"),
             patternSelectionLabel = new Label("Select Pattern"), skeletonRenderinglabel = new Label("Skeleton Path Rendering"),
             patternRenderLabel = new Label("Pattern Rendering"), toolLabel = new Label("Tools"),
-            svgToPatLabel = new Label(".SVG to .PAT");
+            svgToPatLabel = new Label(".SVG to .PAT"), quiltingPatternGeneration = new Label("Quilting Pattern Generation");
 
 
     /* Toggle Group */
@@ -162,10 +162,12 @@ public class Main extends Application {
 
         layout.setCenter(menu);
         layout.setBottom(generateButton);
+        layout.setTop(quiltingPatternGeneration);
 
         layout.setPadding(new Insets(60));
         BorderPane.setAlignment(generateButton, Pos.BOTTOM_CENTER);
-        BorderPane.setMargin(generateButton, new Insets(20, 8, 8, 8));
+        BorderPane.setAlignment(quiltingPatternGeneration, Pos.TOP_CENTER);
+        BorderPane.setMargin(generateButton, new Insets(10, 8, 8, 8));
         layout.setStyle("-fx-background-color: rgb(35, 39, 50);");
 
         //Listeners
@@ -472,6 +474,8 @@ public class Main extends Application {
             button.setFont(buttonFont);
 
         generateButton.setFont(columnLabelFont);
+        quiltingPatternGeneration.setFont(titleFont);
+        quiltingPatternGeneration.setTextFill(Color.ALICEBLUE);
         generateButton.setTextFill(Color.DARKBLUE);
 
     }
