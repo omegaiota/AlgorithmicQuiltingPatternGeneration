@@ -13,10 +13,10 @@ public class SpinePatternMerger {
 
     private List<SvgPathCommand> combinedCommands = new ArrayList<>();
     private String spineName, patternName;
-    private svgFileProcessor spineFileProcessed = null, patternFileProcessed = null;
+    private SvgFileProcessor spineFileProcessed = null, patternFileProcessed = null;
     private boolean rotationOn = true;
 
-    public SpinePatternMerger(String spineName, List<SvgPathCommand> spineCommands, svgFileProcessor patternFile, boolean rotation) {
+    public SpinePatternMerger(String spineName, List<SvgPathCommand> spineCommands, SvgFileProcessor patternFile, boolean rotation) {
         this.spineCommands = spineCommands;
         this.patternCommands = patternFile.getCommandLists().get(0);
         this.spineName = spineName;
@@ -26,8 +26,11 @@ public class SpinePatternMerger {
     }
 
     public void tilePattern(double rowHeight){
-        patternCommands = SvgPathCommand.commandsScaling(patternCommands, rowHeight / patternFileProcessed.getHeight(), patternCommands.get(0).getDestinationPoint());
-        tileAlong(patternFileProcessed.getWidthRight() * rowHeight / patternFileProcessed.getHeight());
+        //double patternHeight = patternFileProcessed.getHeight();
+        double patternHeight = patternFileProcessed.getEffectiveHeight();
+
+        patternCommands = SvgPathCommand.commandsScaling(patternCommands, rowHeight / patternHeight, patternCommands.get(0).getDestinationPoint());
+        tileAlong(patternFileProcessed.getWidthRight() * rowHeight / patternHeight);
     }
 
     public void tileAlong(double patternWidth) {
@@ -41,7 +44,6 @@ public class SpinePatternMerger {
             if (Double.compare(Math.abs(spineCommands.get(i - 1).getDestinationPoint().getY() -
                     spineCommands.get(i).getDestinationPoint().getY()), 0.01) <= 0) {
                 System.out.println("\ni:" + i + " " + spineCommands.get(i).toString());
-
             // On the same row
                 double yPos = spineCommands.get(i - 1).getDestinationPoint().getY();
                 double xThis = spineCommands.get(i). getDestinationPoint().getX(),
@@ -84,9 +86,6 @@ public class SpinePatternMerger {
 
     }
 
-    public void outputCommands() {
-        svgFileProcessor.outputSvgCommands(combinedCommands, "tiling-" + "skeleton-" + spineName + "-pat-" + patternName);
-    }
     public void combinePattern() {
         System.out.println("# of spine commands: " + spineCommands.size() + "# of patternCommands: " + patternCommands.size());
         combinedCommands.add(spineCommands.get(0));

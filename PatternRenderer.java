@@ -287,18 +287,18 @@ public class PatternRenderer {
 
     }
     private void outputLandFill() {
-        svgFileProcessor.outputSvgCommands(renderedCommands, "landFill");
+        SvgFileProcessor.outputSvgCommands(renderedCommands, "landFill");
     }
 
     public File outputEchoed(int number) {
-        return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number);
+        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number);
     }
 
     public File  outputRendered(double width) {
-        return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-render-" + width);
+        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-render-" + width);
     }
     public File  outputRotated(Integer angle) {
-        return svgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue());
+        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue());
     }
 
 

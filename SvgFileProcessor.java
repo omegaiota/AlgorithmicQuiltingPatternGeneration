@@ -28,8 +28,8 @@ public class SvgFileProcessor {
     private NodeList pathNodeList;
     private Point minPoint = new Point(10000, 10000), maxPoint = new Point(-10000, -10000);
     private double width = -1, height = -1, patternHeight = -1, widthRight = -1;
-
     private ArrayList<ArrayList<SvgPathCommand>> commandLists = new ArrayList<>();
+
     public Point getMinPoint() {
         return minPoint;
     }
@@ -78,7 +78,8 @@ public class SvgFileProcessor {
         widthRight = getCommandLists().get(0).get(getCommandLists().get(0).size() - 1).getDestinationPoint().getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
 
         System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
-                +  "width=" + width + "; height=" + height + "pattern height:" + patternHeight + " first height:"
+                +  "width=" + width + ";\n height=" + height + "effective height" + getEffectiveHeight() +
+                "\npattern height:" + patternHeight + " first height:"
                 + commandLists.get(0).get(0).getDestinationPoint().getY());
         System.out.println();
     }
@@ -281,6 +282,67 @@ public class SvgFileProcessor {
         return widthRight;
     }
 
+    public double getEffectiveHeight() {
+        List<SvgPathCommand> commands = getCommandLists().get(0);
+        double effectiveHeight = 0;
+        for (int i = 1; i < commands.size(); i++)
+            for (int j = i + 1; j < commands.size(); j++) {
+                Point A = commands.get(i - 1).getDestinationPoint();
+                Point B = commands.get(i).getDestinationPoint();
+                Point C = commands.get(j - 1).getDestinationPoint();
+                Point D = commands.get(j).getDestinationPoint();
+                Point temp;
+                /* Standardize vector direction from leftToRight*/
+                if (A.getX() > B.getX()) {
+                    temp = A;
+                    A = B;
+                    B = temp;
+                }
+                if (C.getX() > D.getX()) {
+                    temp = C;
+                    C = D;
+                    D = temp;
+                }
+                double lengthAB = Point.getDistance(A, B),
+                        lengthCD = Point.getDistance(C, D);
+                double xLeft = 0, xRight = 0;
+                if (xIsBetween(A, C, D) || xIsBetween(B, C, D) || xIsBetween(C, A, B) || xIsBetween(D, A, B)) {
+                    Point leftAB, rightAB, leftCD, rightCD;
+                    if (A.getX() > C.getX()) {
+                        xLeft = A.getX();
+                        leftAB = A;
+                        leftCD = Point.interMediatePointWithX(C, D, xLeft);
+                    } else {
+                        xLeft = C.getX();
+                        leftCD = C;
+                        leftAB = Point.interMediatePointWithX(A, B, xLeft);
+                    }
+
+                    if (B.getX() < D.getX()) {
+                        xRight = B.getX();
+                        rightAB = B;
+                        rightCD = Point.interMediatePointWithX(C, D, xRight);
+                    } else {
+                        xRight = D.getX();
+                        rightAB = Point.interMediatePointWithX(A, B, xRight);
+                        rightCD = D;
+                    }
+
+                    effectiveHeight = Double.max(effectiveHeight,
+                            Double.max(Point.getDistance(leftAB, leftCD),
+                                    Point.getDistance(rightAB, rightCD)));
+                }
+
+            }
+        return effectiveHeight;
+    }
+
+    /** return true if the xPosition of A is between that of C and D **/
+    private boolean xIsBetween(Point A, Point C, Point D) {
+        return ((A.getX() >= C.getX()) && A.getX() <= D.getX()) ||
+                ((A.getX() <= C.getX()) && A.getX() >= D.getX());
+
+    }
     @Override
     public String toString() {
         return "SvgFileProcessor{" +

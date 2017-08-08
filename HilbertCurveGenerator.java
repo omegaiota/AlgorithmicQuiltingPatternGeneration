@@ -46,7 +46,7 @@ public class HilbertCurveGenerator {
     }
 
     public File outputPath() {
-        return svgFileProcessor.outputSvgCommands(commandList, "hilbertCurve-level" + level + "-w" + unitX.getX() + "-h" + unitY.getY());
+        return SvgFileProcessor.outputSvgCommands(commandList, "hilbertCurve-level" + level + "-w" + unitX.getX() + "-h" + unitY.getY());
     }
 
 

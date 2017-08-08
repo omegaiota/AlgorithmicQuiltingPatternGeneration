@@ -8,7 +8,7 @@ import java.util.Random;
  * Created by JacquelineLi on 6/21/17.
  */
 public class Distribution {
-    private svgFileProcessor regionFileProcessed;
+    private SvgFileProcessor regionFileProcessed;
     private ArrayList<Point> pointList = new ArrayList<>();
     private ArrayList<SvgPathCommand> commandList = new ArrayList<>();
     private ArrayList<PointRotation> pairList = new ArrayList<>();
@@ -29,7 +29,7 @@ public class Distribution {
 
     private TreeNode<Point> spanningTree;
 
-    public Distribution(RenderType type, Region boundary, double disLen, svgFileProcessor regionFile) {
+    public Distribution(RenderType type, Region boundary, double disLen, SvgFileProcessor regionFile) {
         this.type = type;
         this.boundary = boundary;
         this.disLen = disLen;
@@ -174,7 +174,7 @@ public class Distribution {
     public void outputDistribution() {
         commandList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
         commandList.addAll(regionFileProcessed.getCommandLists().get(0));
-        svgFileProcessor.outputSvgCommands(commandList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
+        SvgFileProcessor.outputSvgCommands(commandList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
     }
 
     public void toRegularGraph() {

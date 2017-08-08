@@ -56,6 +56,6 @@ public class SkeletonPathGenerator {
     }
 
     public File outputSnake(int rows) {
-        return svgFileProcessor.outputSvgCommands(skeletonPath, "snake-" + rows);
+        return SvgFileProcessor.outputSvgCommands(skeletonPath, "snake-" + rows);
     }
 }

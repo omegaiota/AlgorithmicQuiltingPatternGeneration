@@ -90,6 +90,32 @@ public class Point {
         return new Point(truncateDouble(interX, 3), truncateDouble(interY, 3));
     }
 
+    public static Point interMediatePointWithX(Point L1, Point L2, double x) {
+        /* find the standard form of line (L1, L2)
+            Ax + By + C = 0 */
+        double A = 0,B = 0,C = 0, k = 0, b = 0, distanceToLine = 0;
+        if (Math.abs(L2.getX() - L1.getX()) < 0.01) {
+            /*
+            A = 1;
+            B = 0;
+            C = -1 * (L2.getX());
+            */
+            return new Point(L1);
+        } else {
+            /* y = kx + b
+            * - kx + y - b = 0*/
+            k = (L2.getY() - L1.getY()) / (L2.getX() - L1.getX());
+            b = L1.getY() - k * L1.getX();
+            A = -1 * k;
+            B = 1;
+            C = -1 * b;
+        }
+        /* y = (-C-Ax) / B*/
+        double y = (-1 * (C + A * x)) / B;
+        return new Point(x, y);
+
+    }
+
     public static Point intermediatePointWithProportion(Point start, Point end, double propertion) {
         double dist = Point.getDistance(start, end);
         System.out.println("Dist: " + dist);
