@@ -389,6 +389,7 @@ public class Main extends Application {
 
             /* Skeleton Path Rendering */
             PatternRenderer skeletonrenderer = null;
+            List<SvgPathCommand> fittedPath = new ArrayList<>();
             switch (skeletonRenderComboBox.getValue().toString()) {
                 case "Fixed-width Filling":
                     if (skeletonPathCommands.size() != 0) {
@@ -430,7 +431,9 @@ public class Main extends Application {
                     mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                     /** Combine pattern */
                     mergedPattern.combinePattern();
-                    SvgFileProcessor.outputSvgCommands(mergedPattern.getCombinedCommands(), skeletonName + "_" + decoFileName);
+                     fittedPath = boundary.fitCommandsToRegion(mergedPattern.getCombinedCommands());
+                    SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
+                    //SvgFileProcessor.outputSvgCommands(mergedPattern.getCombinedCommands(), );
                     break;
                 case "No Rendering":
                     skeletonName += "_no_render";
@@ -442,7 +445,7 @@ public class Main extends Application {
                     mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                     /** Combine pattern */
                     mergedPattern.tilePattern(patternHeight);
-                    List<SvgPathCommand> fittedPath = boundary.fitCommandsToRegion(mergedPattern.getCombinedCommands());
+                    fittedPath = boundary.fitCommandsToRegion(mergedPattern.getCombinedCommands());
                     SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
                     break;
 
