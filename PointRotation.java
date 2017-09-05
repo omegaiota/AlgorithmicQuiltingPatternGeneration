@@ -1,4 +1,4 @@
-package jackiesvgprocessor;
+package jackiequiltpatterndeterminaiton;
 
 /**
  * Created by JacquelineLi on 6/22/17.

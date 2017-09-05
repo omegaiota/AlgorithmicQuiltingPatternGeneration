@@ -1,4 +1,4 @@
-package jackiesvgprocessor;
+package jackiequiltpatterndeterminaiton;
 
 public class Controller {
 }

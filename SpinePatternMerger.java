@@ -1,4 +1,4 @@
-package jackiesvgprocessor;
+package jackiequiltpatterndeterminaiton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,54 +26,53 @@ public class SpinePatternMerger {
     }
 
     public void tilePattern(double rowHeight){
-        //double patternHeight = patternFileProcessed.getHeight();
         double patternHeight = patternFileProcessed.getEffectiveHeight();
+        double scalingProportion = rowHeight / patternHeight;
+        patternCommands = SvgPathCommand.commandsScaling(patternCommands, scalingProportion, patternCommands.get(0).getDestinationPoint());
 
-        patternCommands = SvgPathCommand.commandsScaling(patternCommands, rowHeight / patternHeight, patternCommands.get(0).getDestinationPoint());
-        tileAlong(patternFileProcessed.getWidthRight() * rowHeight / patternHeight);
+        // pattern's first and last command should start at the same Y position
+        patternCommands.get(0).getDestinationPoint().setY(patternCommands.get(patternCommands.size() - 1).getDestinationPoint().getY());
+        tileAlong(patternFileProcessed.getWidthRight() * scalingProportion, rowHeight);
     }
 
-    public void tileAlong(double patternWidth) {
+    public void tileAlong(double patternWidth, double rowHeight) {
         /* Create a copy of pattern commands in reverse order */
         List<SvgPathCommand> patternReverseOrder = new ArrayList<>();
+        double yPos = 0;
         for (int i = patternCommands.size() - 1; i >= 0; i--)
             patternReverseOrder.add(patternCommands.get(i));
 
         /* place commands along path*/
-        for (int i = 1; i < spineCommands.size(); i++)
-            if (Double.compare(Math.abs(spineCommands.get(i - 1).getDestinationPoint().getY() -
-                    spineCommands.get(i).getDestinationPoint().getY()), 0.01) <= 0) {
-                System.out.println("\ni:" + i + " " + spineCommands.get(i).toString());
+        for (int i = 1; i < spineCommands.size(); i++) {
+            //  System.out.println("\ni:" + i + " " + spineCommands.get(i).toString());
             // On the same row
-                double yPos = spineCommands.get(i - 1).getDestinationPoint().getY();
-                double xThis = spineCommands.get(i). getDestinationPoint().getX(),
-                        xPrev = spineCommands.get(i - 1). getDestinationPoint().getX();
-                boolean leftToRight = Double.compare(xPrev, xThis) <= 0;
-                double pathWidth = Math.abs(xPrev - xThis);
-                double xPos = (i == 1) ? xPrev : combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint().getX();
+            double xThis = spineCommands.get(i).getDestinationPoint().getX(),
+                    xPrev = spineCommands.get(i - 1).getDestinationPoint().getX();
+            boolean leftToRight = Double.compare(xPrev, xThis) <= 0;
+            yPos = (leftToRight) ? spineCommands.get(i - 1).getDestinationPoint().getY() : (yPos + rowHeight);
+            yPos = spineCommands.get(i - 1).getDestinationPoint().getY();
+            double pathWidth = Math.abs(xPrev - xThis);
+            double xPos = (i == 1) ? xPrev : combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint().getX();
 
-                int col = (int) Math.ceil(pathWidth / patternWidth);
-                System.out.println("Column " + col);
-                for (int j = 0; j < col; j++) {
-                    Point startPoint;
-                    if (j == 0)
-                        startPoint = new Point(xPos  + patternWidth * (leftToRight ?  j : -1 * j), yPos);
-                    else
-                        startPoint = new Point(combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint());
-                    //combinedCommands.add(new SvgPathCommand(startPoint, SvgPathCommand.CommandType.LINE_TO));
-                    System.out.println("is LefttoRight " + leftToRight + "original 1st" + patternCommands.get(0).getDestinationPoint().toString() );
-                    insertPatternToListNoRotation(leftToRight ? patternCommands : patternReverseOrder, combinedCommands, startPoint);
-                }
-            } else {
-                System.out.println("\ni: " + i + " not on same line with prev");
+            int col = (int) Math.ceil(pathWidth / patternWidth); // # of tiles need to put in a single row
+            // System.out.println("Column " + col);
+            for (int j = 0; j < col; j++) {
+                Point startPoint;
+                if (j == 0)
+                    startPoint = new Point(xPos + patternWidth * (leftToRight ? j : -1 * j), yPos);
+                else
+                    startPoint = new Point(combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint());
+                //combinedCommands.add(new SvgPathCommand(startPoint, SvgPathCommand.CommandType.LINE_TO));
+                //System.out.println("is LefttoRight: " + leftToRight + "original 1st:" + patternCommands.get(0).getDestinationPoint().toString() );
+                insertPatternToListNoRotation(leftToRight ? patternCommands : patternReverseOrder, combinedCommands, startPoint);
             }
+        }
 
 
     }
     public void insertPatternToListNoRotation(List<SvgPathCommand> patternCommands,
                                               List<SvgPathCommand> combinedCommands,
                                               Point insertionPoint) {
-        System.out.println("calling insertPatternToList");
         Point patternPoint = patternCommands.get(0).getDestinationPoint();
         SvgPathCommand newCommand;
         for (int j = 0; j < patternCommands.size(); j++) {
@@ -81,8 +80,8 @@ public class SpinePatternMerger {
             newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
             combinedCommands.add(newCommand);
         }
-        System.out.println("inserted " + patternCommands.size() + " commands starting at: " + insertionPoint.toString());
-        System.out.println("combined now has " + combinedCommands.size() + " commands");
+
+
 
     }
 

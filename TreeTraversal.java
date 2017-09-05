@@ -1,4 +1,4 @@
-package jackiesvgprocessor;
+package jackiequiltpatterndeterminaiton;
 
 import java.util.ArrayList;
 import java.util.Collections;

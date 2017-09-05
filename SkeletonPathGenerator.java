@@ -1,4 +1,4 @@
-package jackiesvgprocessor;
+package jackiequiltpatterndeterminaiton;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,8 +33,6 @@ public class SkeletonPathGenerator {
         }
 
         height = maxY - minY;
-
-
         for (int i = 0; i <= rows; i++) {
             if (i % 2 == 0) {
                 // Line from left to right

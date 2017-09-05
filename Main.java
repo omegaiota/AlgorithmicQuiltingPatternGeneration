@@ -1,4 +1,4 @@
-package jackiesvgprocessor;
+package jackiequiltpatterndeterminaiton;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
