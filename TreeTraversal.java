@@ -3,24 +3,20 @@ package jackiequiltpatterndeterminaiton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by JacquelineLi on 6/27/17.
  */
 public class TreeTraversal {
-    private TreeNode<Point> tree;
+    public static AtomicInteger counter = new AtomicInteger(0);
     List<SvgPathCommand> renderedCommands = new ArrayList<>();
+    List<SvgPathCommand> squiggleCommands = new ArrayList<>();
+    private TreeNode<Point> tree;
 
     public TreeTraversal(TreeNode<Point> tree) {
         this.tree = tree;
         renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
-    }
-
-    public List<SvgPathCommand> traverseTree() {
-        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
-        treeOrdering(tree, null);
-        preOrderTraversal(tree, null);
-        return renderedCommands;
     }
 
     public static void treeOrdering(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
@@ -47,6 +43,23 @@ public class TreeTraversal {
         }
     }
 
+    public List<SvgPathCommand> traverseTree(List<SvgPathCommand> renderedDecoCommands) {
+        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
+        treeOrdering(tree, null);
+        preOrderTraversal(tree, null);
+        squiggleCommands = new ArrayList<>();
+        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
+        return renderedCommands;
+    }
+
+    public List<SvgPathCommand> traverseSquiggleTree(List<SvgPathCommand> renderedDecoCommands) {
+        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
+        treeOrdering(tree, null);
+        squiggleCommands = new ArrayList<>();
+        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
+        return squiggleCommands;
+    }
+
     private void preOrderTraversal(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
         //no filling
         renderedCommands.add(new SvgPathCommand(treeNode.getData(), SvgPathCommand.CommandType.LINE_TO));
@@ -58,6 +71,47 @@ public class TreeTraversal {
         }
     }
 
+    private void sguigglePreorderTraversal(TreeNode<Point> treeNode, TreeNode<Point> parentNode, List<SvgPathCommand> renderedDecoCommands) {
+        //no filling
+
+        Point parentPoint = (parentNode == null) ? new Point() : parentNode.getData();
+
+        final List<SvgPathCommand> sguiggalized;
+        if (parentNode != null)
+            sguiggalized = SvgPathCommand.sguiggalized(parentNode.getData(), treeNode.getData(), SvgPathCommand.CommandType.LINE_TO);
+        else
+            (sguiggalized = new ArrayList<>()).add(new SvgPathCommand(treeNode.getData(), SvgPathCommand.CommandType.LINE_TO));
+        System.out.println("Squiggalized size: " + sguiggalized.size());
+        List<SvgPathCommand> sguiggalizedReverse = new ArrayList<>();
+        for (int i = sguiggalized.size() - 1; i >= 0; i--)
+            sguiggalizedReverse.add(sguiggalized.get(i));
+        squiggleCommands.addAll(sguiggalized);
+
+        counter.incrementAndGet();
+        //SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-1");
+        List<TreeNode<Point>> children = treeNode.getChildren();
+        TreeNode<Point>[] childArray = children.toArray(new TreeNode[children.size()]);
+        int counter2 = 0;
+
+
+        if (childArray.length == 0) {
+            PatternRenderer.insertPatternToList(renderedDecoCommands, squiggleCommands, treeNode.getData(), Point.getAngle(treeNode.getData(), parentPoint));
+            //  SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-3");
+            squiggleCommands.addAll(sguiggalizedReverse);
+
+        } else {
+            for (TreeNode<Point> child : childArray) {
+                sguigglePreorderTraversal(child, treeNode, renderedDecoCommands);
+                squiggleCommands.addAll(sguiggalizedReverse);
+                //   SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-2-" + (counter2++) );
+
+            }
+        }
+    }
+
+    public List<SvgPathCommand> getSquiggleCommands() {
+        return squiggleCommands;
+    }
     public List<SvgPathCommand> getRenderedCommands() {
         return renderedCommands;
     }

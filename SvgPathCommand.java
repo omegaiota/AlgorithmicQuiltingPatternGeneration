@@ -1,5 +1,11 @@
 package jackiequiltpatterndeterminaiton;
 
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +13,29 @@ import java.util.List;
  * Created by JacquelineLi on 6/13/17.
  */
 public class SvgPathCommand {
+    private static final File squiggleLibrary = new File("./src/resources/squiggles/");
+    private static List<List<SvgPathCommand>> squiggleList;
+
+    static {
+        squiggleList = new ArrayList<>(new ArrayList<>());
+        for (File tileFile : squiggleLibrary.listFiles()) {
+            SvgFileProcessor sguiggleFile = new SvgFileProcessor(tileFile);
+            try {
+                sguiggleFile.processSvg();
+                squiggleList.add(sguiggleFile.getCommandLists().get(0));
+            } catch (SAXException e) {
+                e.printStackTrace();
+            } catch (XPathExpressionException e) {
+                e.printStackTrace();
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("QguiggleList initialized:" + squiggleList.size());
+    }
+
     private Point destinationPoint;
     private Point controlPoint1;
     private Point controlPoint2;
@@ -60,11 +89,20 @@ public class SvgPathCommand {
         controlPoint1 = oldCommand.getControlPoint1().scaleAroundCenter(center, proportion);
         controlPoint2 = oldCommand.getControlPoint2().scaleAroundCenter(center, proportion);
     }
+
     public SvgPathCommand(Point controlPoint1, Point controlPoint2, Point destinationPoint, CommandType commandType) {
         this.destinationPoint = destinationPoint;
         this.controlPoint1 = controlPoint1;
         this.controlPoint2  = controlPoint2;
         this.commandType = commandType;
+    }
+
+    public static SvgPathCommand commandFromShiftAndRotate(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double angle) {
+        SvgPathCommand copy = new SvgPathCommand(oldCommand);
+        copy.setDestinationPoint(copy.getDestinationPoint().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart));
+        copy.setControlPoint1(copy.getControlPoint1().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart));
+        copy.setControlPoint2(copy.getControlPoint2().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart));
+        return copy;
     }
 
     /**
@@ -95,6 +133,24 @@ public class SvgPathCommand {
         }
 
         return returnCommands;
+    }
+
+    public static List<SvgPathCommand> sguiggalized(Point parentNodeData, Point data, CommandType type) {
+        double newDist = Point.getDistance(parentNodeData, data);
+        double angle = Point.getAngle(parentNodeData, data);
+        List<SvgPathCommand> squiggleCommands = squiggleList.get((int) (Math.random() * squiggleList.size()));
+        System.out.println("read squiggle size:" + squiggleCommands.size());
+        Point squiggleStart = squiggleCommands.get(0).getDestinationPoint(),
+                squiggleEnd = squiggleCommands.get(squiggleCommands.size() - 1).getDestinationPoint();
+        double squiggleDist = Point.getDistance(squiggleStart, squiggleEnd);
+        List<SvgPathCommand> returnList = new ArrayList<>();
+        for (SvgPathCommand command : squiggleCommands) {
+            returnList.add(SvgPathCommand.commandFromShiftAndRotate(command, squiggleStart, parentNodeData, angle));
+
+        }
+
+
+        return SvgPathCommand.commandsScaling(returnList, newDist / squiggleDist, parentNodeData);
     }
 
     public void setLineTo() {

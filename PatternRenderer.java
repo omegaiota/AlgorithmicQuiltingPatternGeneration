@@ -26,20 +26,11 @@ public class PatternRenderer {
         this.renderType = type;
     }
 
-
     public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, String patternName, List<SvgPathCommand> decorativeElementCommands, RenderType type) {
         this.skeletonPathName = skeletonPathName;
         this.skeletonPathCommands = skeletonPathCommands;
         this.patternName = patternName;
         this.decorativeElementCommands =  decorativeElementCommands;
-        this.renderType = type;
-    }
-
-
-    public PatternRenderer(String patternName, List<SvgPathCommand> decorativeElementCommands, TreeNode<Point> spanningTree, RenderType type) {
-        this.patternName = patternName;
-        this.decorativeElementCommands =  decorativeElementCommands;
-        this.spanningTree = spanningTree;
         this.renderType = type;
     }
 
@@ -51,6 +42,20 @@ public class PatternRenderer {
     public PatternRenderer(ArrayList<SvgPathCommand> commands, RenderType type) {
         this.skeletonPathCommands = commands;
         this.renderType = type;
+    }
+
+    public static void insertPatternToList(List<SvgPathCommand> patternCommands,
+                                           List<SvgPathCommand> combinedCommands,
+                                           Point insertionPoint, double rotationAngle) {
+        Point patternPoint = patternCommands.get(0).getDestinationPoint();
+        SvgPathCommand newCommand;
+        for (int j = 0; j < patternCommands.size(); j++) {
+            newCommand = new SvgPathCommand(patternCommands.get(j), patternPoint, insertionPoint, rotationAngle);
+            if (j == 0)
+                newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
+            combinedCommands.add(newCommand);
+        }
+
     }
 
     public List<SvgPathCommand> getRenderedCommands() {
@@ -157,7 +162,7 @@ public class PatternRenderer {
         renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
     }
 
-    public void fixedWidthFilling(double width) {
+    public void fixedWidthFilling(double width, double density) {
         System.out.println("Rendering with fixed width");
         renderedCommands.add(skeletonPathCommands.get(0));
         for (int i = 1; i < skeletonPathCommands.size() - 1; i++) {
@@ -180,7 +185,10 @@ public class PatternRenderer {
                 Point pointRight = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width * (-1));
                 renderedCommands.add(new SvgPathCommand(pointRight, SvgPathCommand.CommandType.LINE_TO));
                 if (renderType == RenderType.WITH_DECORATION) {
-                    insertPatternToList(decorativeElementCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
+                    double random = Math.random();
+                    /* random factor */
+                    if (Double.compare(random, density) < 1)
+                        insertPatternToList(decorativeElementCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
                 }
                 renderedCommands.add(new SvgPathCommand(pointLeft, SvgPathCommand.CommandType.LINE_TO));
             } else {
@@ -195,20 +203,6 @@ public class PatternRenderer {
         }
         renderedCommands.add(skeletonPathCommands.get(skeletonPathCommands.size() - 1));
         System.out.println("Outputing.....");
-    }
-
-    public void insertPatternToList(List<SvgPathCommand> patternCommands,
-                                    List<SvgPathCommand> combinedCommands,
-                                    Point insertionPoint, double rotationAngle) {
-        Point patternPoint = patternCommands.get(0).getDestinationPoint();
-        SvgPathCommand newCommand;
-        for (int j = 0; j < patternCommands.size(); j++) {
-                newCommand = new SvgPathCommand(patternCommands.get(j), patternPoint, insertionPoint, rotationAngle);
-                if (j == 0)
-                    newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
-            combinedCommands.add(newCommand);
-        }
-
     }
 
     public void repeatWithRotation(Integer repetition) {

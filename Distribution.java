@@ -8,18 +8,17 @@ import java.util.Random;
  * Created by JacquelineLi on 6/21/17.
  */
 public class Distribution {
+
+
     private SvgFileProcessor regionFileProcessed;
     private ArrayList<Point> pointList = new ArrayList<>();
-    private ArrayList<SvgPathCommand> commandList = new ArrayList<>();
+    private ArrayList<SvgPathCommand> distributionVisualizationList = new ArrayList<>();
     private ArrayList<PointRotation> pairList = new ArrayList<>();
     private RenderType type;
     private Region boundary;
-
-
     private Graph<Point> pointGraph;
     private double disLen = 0;
     private TreeNode<Point> spanningTree;
-
     public Distribution(RenderType type, Region boundary, double disLen, SvgFileProcessor regionFile) {
         this.type = type;
         this.boundary = boundary;
@@ -40,7 +39,7 @@ public class Distribution {
         midX /= boundary.getBoundary().size();
         midY /= boundary.getBoundary().size();
         Point start = new Point(midX, midY);
-        commandList.add(new SvgPathCommand(start, SvgPathCommand.CommandType.MOVE_TO));
+        distributionVisualizationList.add(new SvgPathCommand(start, SvgPathCommand.CommandType.MOVE_TO));
         System.out.println("starting point is inside boundary:" + boundary.insideRegion(start));
         switch (type) {
             case THREE_THREE_FOUR_THREE_FOUR:
@@ -49,6 +48,9 @@ public class Distribution {
             case GRID:
                 gridTessellation(start);
                 break;
+            case TRIANGLE:
+                triangleTessellation(start);
+                break;
             case RANDOM:
                 gridTessellation(start);
                 break;
@@ -56,6 +58,10 @@ public class Distribution {
 
         System.out.println("Distribution finished");
 
+    }
+
+    private void triangleTessellation(Point start) {
+        triangleToTriangle(start, 0, disLen);
     }
 
     public void threeFourTessellation(Point start) {
@@ -90,20 +96,20 @@ public class Distribution {
             bottomLeft = bottomLeft.rotateAroundCenter(bottomRight, angle);
             upperLeft = upperLeft.rotateAroundCenter(bottomRight, angle);
 
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(upperLeft, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(upperLeft, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
             triangleToSquare(upperRight, angle + Math.PI / 2, newDist);
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
             triangleToSquare(upperLeft, angle, newDist);
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
             triangleToSquare(bottomLeft, angle - Math.PI / 2, newDist);
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
         }
     }
@@ -117,13 +123,41 @@ public class Distribution {
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
 
-            commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
-//            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.typeLineTo));
-//            commandList.add(new SvgPathCommand(top, SvgPathCommand.typeLineTo));
-//            commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.typeLineTo));
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(top, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
 
             squareToTriangle(top, angle, newDist);
-            commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
+        }
+    }
+
+    private void triangleToTriangle(Point bottomLeft, double angle, double dist) {
+        if (boundary.insideRegion(bottomLeft) && regionFree(bottomLeft)) {
+            double newDist = dist;
+
+            pointList.add(bottomLeft);
+            pairList.add(new PointRotation(bottomLeft, angle));
+            Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
+            Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
+            Point upperLeft = top.minusPoint(new Point(dist, 0));
+            Point lowerLeft = new Point(bottomLeft.x - (dist / 2), bottomLeft.y + dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
+
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(top, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
+
+            triangleToTriangle(top, angle, newDist);
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
+            triangleToTriangle(bottomRight, angle, newDist);
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            triangleToTriangle(upperLeft, angle, newDist);
+            distributionVisualizationList.add(new SvgPathCommand(upperLeft, SvgPathCommand.CommandType.MOVE_TO));
+            triangleToTriangle(lowerLeft, angle, newDist);
+            distributionVisualizationList.add(new SvgPathCommand(lowerLeft, SvgPathCommand.CommandType.MOVE_TO));
+
         }
     }
 
@@ -147,27 +181,27 @@ public class Distribution {
             bottomLeft = bottomLeft.rotateAroundCenter(bottomRight, angle);
             upperLeft = upperLeft.rotateAroundCenter(bottomRight, angle);
 
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(upperLeft, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(upperLeft, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
             squareToSquare(upperRight, angle + Math.PI / 2, newDist);
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
             squareToSquare(upperLeft, angle, newDist);
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
             squareToSquare(bottomLeft, angle - Math.PI / 2, newDist);
-            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
         }
     }
 
     public void outputDistribution() {
-        commandList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
-        commandList.addAll(regionFileProcessed.getCommandLists().get(0));
-        SvgFileProcessor.outputSvgCommands(commandList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
+        distributionVisualizationList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
+        distributionVisualizationList.addAll(regionFileProcessed.getCommandLists().get(0));
+        SvgFileProcessor.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
     }
 
     public void toRegularGraph() {
@@ -198,30 +232,38 @@ public class Distribution {
             }
     }
 
-    public List<SvgPathCommand> toTraversal() {
+    public List<SvgPathCommand> toTraversal(List<SvgPathCommand> renderedDecoCommands) {
         toRegularGraph();
         toSpanningTree();
-        List<SvgPathCommand> commands = this.traverseTree();
+        List<SvgPathCommand> commands = this.traverseTree(renderedDecoCommands);
         return commands;
+    }
+
+    public List<SvgPathCommand> toSguiggleTraversal(List<SvgPathCommand> renderedDecoCommands) {
+        toRegularGraph();
+        toSpanningTree();
+        List<SvgPathCommand> commands = this.squiggleTraverseTree(renderedDecoCommands);
+        return commands;
+    }
+
+    private List<SvgPathCommand> squiggleTraverseTree(List<SvgPathCommand> renderedDecoCommands) {
+        TreeTraversal renderer = new TreeTraversal(spanningTree);
+        return renderer.traverseSquiggleTree(renderedDecoCommands);
     }
 
     public void toSpanningTree() {
         spanningTree = pointGraph.generateSpanningTree();
     }
 
-    public List<SvgPathCommand> traverseTree() {
+    public List<SvgPathCommand> traverseTree(List<SvgPathCommand> renderedDecoCommands) {
         TreeTraversal renderer = new TreeTraversal(spanningTree);
-        renderer.traverseTree();
+        renderer.traverseTree(renderedDecoCommands);
         List<SvgPathCommand> stitchPath = renderer.getRenderedCommands();
         return stitchPath;
     }
 
-    public Graph<Point> getPointGraph() {
-        return pointGraph;
-    }
-
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE
     }
 
 

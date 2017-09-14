@@ -12,6 +12,10 @@ public class Graph<T> {
     private int V = 0,E = 0;
     private double disLen = 0;
 
+    public Graph(double disLen) {
+        mVertices = new ArrayList<>();
+    }
+
     public TreeNode<T> generateSpanningTree() {
         boolean flag = true;
         HashSet<Vertex<T>> toInclude = new HashSet<>();
@@ -22,7 +26,7 @@ public class Graph<T> {
         toInclude.remove(mVertices.get(0));
 
         while (!toInclude.isEmpty() && flag) {
-            System.out.println("Remaining:" + toInclude.size());
+            //System.out.println("Remaining:" + toInclude.size());
          int minCost = 10000;
          Vertex<T> minVertex = null, parentVertex = null;
          for (Vertex<T> key : vertexTreeNodeHashMap.keySet()) {
@@ -48,11 +52,6 @@ public class Graph<T> {
          }
         }
         return root;
-    }
-
-
-    public Graph(double disLen) {
-        mVertices = new ArrayList<>();
     }
 
     public void addVertex(Vertex<T> vertex) {

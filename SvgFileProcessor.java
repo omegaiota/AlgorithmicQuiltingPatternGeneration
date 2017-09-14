@@ -36,11 +36,6 @@ public class SvgFileProcessor {
         this.fSvgFile = importFile;
     }
 
-    public static void printCommandList(ArrayList<SvgPathCommand> pathCommandList) {
-        for (int i = 0; i < pathCommandList.size(); i++) {
-            System.out.println("Command " + i + ":" + pathCommandList.get(i).toString());
-        }
-    }
 
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName) {
         try {
