@@ -18,15 +18,6 @@ public class Distribution {
 
     private Graph<Point> pointGraph;
     private double disLen = 0;
-
-    public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM
-    }
-
-    public TreeNode<Point> getSpanningTree() {
-        return spanningTree;
-    }
-
     private TreeNode<Point> spanningTree;
 
     public Distribution(RenderType type, Region boundary, double disLen, SvgFileProcessor regionFile) {
@@ -36,11 +27,15 @@ public class Distribution {
         this.regionFileProcessed = regionFile;
     }
 
+    public TreeNode<Point> getSpanningTree() {
+        return spanningTree;
+    }
+
     public void generate() {
         double midX = 0, midY = 0;
         for (Point vertex : boundary.getBoundary()) {
-            midX += vertex.getX();
-            midY += vertex.getY();
+            midX += vertex.x;
+            midY += vertex.y;
         }
         midX /= boundary.getBoundary().size();
         midY /= boundary.getBoundary().size();
@@ -88,12 +83,12 @@ public class Distribution {
             double newDist = dist;
             pointList.add(bottomRight);
             pairList.add(new PointRotation(bottomRight, angle));
-            Point upperLeft = new Point(bottomRight.getX() - dist, bottomRight.getY() - dist);
-            Point upperRight = new Point(bottomRight.getX(), upperLeft.getY());
-            Point bottomLeft = new Point(upperLeft.getX(), bottomRight.getY());
-            Point.rotateAroundCenter(upperRight, bottomRight, angle);
-            Point.rotateAroundCenter(bottomLeft, bottomRight, angle);
-            Point.rotateAroundCenter(upperLeft, bottomRight, angle);
+            Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
+            Point upperRight = new Point(bottomRight.x, upperLeft.y);
+            Point bottomLeft = new Point(upperLeft.x, bottomRight.y);
+            upperRight = upperRight.rotateAroundCenter(bottomRight, angle);
+            bottomLeft = bottomLeft.rotateAroundCenter(bottomRight, angle);
+            upperLeft = upperLeft.rotateAroundCenter(bottomRight, angle);
 
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
             commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
@@ -119,10 +114,8 @@ public class Distribution {
 
             pointList.add(bottomLeft);
             pairList.add(new PointRotation(bottomLeft, angle));
-            Point bottomRight = new Point(bottomLeft.getX() + dist, bottomLeft.getY());
-            Point top = new Point(bottomLeft.getX() + (dist / 2), bottomLeft.getY() - dist / 2 * (Math.sqrt(3)));
-            Point.rotateAroundCenter(bottomRight, bottomLeft, angle);
-            Point.rotateAroundCenter(top, bottomLeft, angle);
+            Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
+            Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
 
             commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
 //            commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.typeLineTo));
@@ -147,12 +140,12 @@ public class Distribution {
             }
             pointList.add(bottomRight);
             pairList.add(new PointRotation(bottomRight, angle));
-            Point upperLeft = new Point(bottomRight.getX() - dist, bottomRight.getY() - dist);
-            Point upperRight = new Point(bottomRight.getX(), upperLeft.getY());
-            Point bottomLeft = new Point(upperLeft.getX(), bottomRight.getY());
-            Point.rotateAroundCenter(upperRight, bottomRight, angle);
-            Point.rotateAroundCenter(bottomLeft, bottomRight, angle);
-            Point.rotateAroundCenter(upperLeft, bottomRight, angle);
+            Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
+            Point upperRight = new Point(bottomRight.x, upperLeft.y);
+            Point bottomLeft = new Point(upperLeft.x, bottomRight.y);
+            upperRight = upperRight.rotateAroundCenter(bottomRight, angle);
+            bottomLeft = bottomLeft.rotateAroundCenter(bottomRight, angle);
+            upperLeft = upperLeft.rotateAroundCenter(bottomRight, angle);
 
             commandList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
             commandList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
@@ -225,6 +218,10 @@ public class Distribution {
 
     public Graph<Point> getPointGraph() {
         return pointGraph;
+    }
+
+    public enum RenderType {
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM
     }
 
 

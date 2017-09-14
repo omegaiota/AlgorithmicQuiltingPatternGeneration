@@ -30,79 +30,10 @@ public class SvgFileProcessor {
     private double width = -1, height = -1, patternHeight = -1, widthRight = -1;
     private ArrayList<ArrayList<SvgPathCommand>> commandLists = new ArrayList<>();
 
-    public Point getMinPoint() {
-        return minPoint;
-    }
-
-    public Point getMaxPoint() {
-        return maxPoint;
-    }
-
-
-
     public SvgFileProcessor(File importFile) {
         this.fFilePath = Paths.get(importFile.getPath());
         this.fFileName = importFile.getName();
         this.fSvgFile = importFile;
-    }
-
-    public Region getBoundary() {
-        ArrayList<Point> destList = new ArrayList<>();
-        for ( SvgPathCommand command : commandLists.get(0)) {
-            destList.add(command.getDestinationPoint());
-        }
-        Region boundaryRegion = new Region(destList);
-        return  boundaryRegion;
-    }
-    public void processSvg() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
-        System.out.println("\n processing new svg:\n");
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(fSvgFile);
-
-        String xpathExpression = "//path/@d";
-        XPathFactory xpf = XPathFactory.newInstance();
-        XPath xpath = xpf.newXPath();
-        XPathExpression expression = xpath.compile(xpathExpression);
-        pathNodeList = (NodeList) expression.evaluate(document, XPathConstants.NODESET);
-
-        for (int i = 0; i < pathNodeList.getLength(); i++) {
-            ArrayList<SvgPathCommand> aCommandList = new ArrayList<>();
-            commandLists.add(aCommandList);
-            processPath(pathNodeList.item(i), aCommandList);
-        }
-        width = maxPoint.getX() - minPoint.getX();
-        height = maxPoint.getY() - minPoint.getY();
-        patternHeight = commandLists.get(0).get(0).getDestinationPoint().getY() - minPoint.getY();
-        //widthRight = maxPoint.getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
-        widthRight = getCommandLists().get(0).get(getCommandLists().get(0).size() - 1).getDestinationPoint().getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
-
-        System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
-                +  "width=" + width + ";\n height=" + height + "effective height" + getEffectiveHeight() +
-                "\npattern height:" + patternHeight + " first height:"
-                + commandLists.get(0).get(0).getDestinationPoint().getY());
-        System.out.println();
-    }
-
-    private void processPath(Node pathNode, ArrayList<SvgPathCommand> pathCommandList) {
-        String pathStr = pathNode.getNodeValue();
-        String withDelimiter = "(?=[cCmMlLzZ])";
-        String[] pathElemArray = pathStr.split(withDelimiter);
-        Point current = new Point(0.0, 0.0);
-        System.out.println("pathElemArrayLength is" + pathElemArray.length);
-        for (int i = 0; i < pathElemArray.length; i++) {
-
-            /** if the last command is close path, add a command that lineTo initial point*/
-            if ((i == pathElemArray.length - 1) && (pathElemArray[i].substring(0,1).equalsIgnoreCase("z"))) {
-                System.out.println("closing path");
-                SvgPathCommand initialComm = pathCommandList.get(0);
-                pathCommandList.add(new SvgPathCommand(initialComm.getControlPoint1(), initialComm.getControlPoint2(),
-                        initialComm.getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
-            } else
-                /** else parse the next command set*/
-                current = parseString(pathElemArray[i], pathCommandList, current);
-        }
-        //printCommandList(pathCommandList);
     }
 
     public static void printCommandList(ArrayList<SvgPathCommand> pathCommandList) {
@@ -111,79 +42,9 @@ public class SvgFileProcessor {
         }
     }
 
-    public Point parseString(String commandString, ArrayList<SvgPathCommand> pathCommandList, Point current) {
-        String[] arguments = commandString.split(" ");
-//        for (String arg: arguments) {
-//            System.out.println(arg);
-//
-//        }
-        char commandChar = arguments[0].toLowerCase().charAt(0);
-//        System.out.println("Command is:" + commandChar);
-        boolean useAbsCoordinate = Character.isUpperCase(arguments[0].charAt(0));
-//        System.out.println("is Upper case:" + useAbsCoordinate);
-
-        Point destPoint;
-        Point controlPoint1;
-        Point controlPoint2;
-
-        switch (commandChar) {
-            case 'm':
-                destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
-                updateBoundWithPoint(destPoint);
-                current = destPoint;
-                pathCommandList.add(new SvgPathCommand(destPoint, SvgPathCommand.CommandType.MOVE_TO));
-
-                for (int i = 2; i < arguments.length; i++) {
-                    destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
-                    updateBoundWithPoint(destPoint);
-                    current = destPoint;
-                    pathCommandList.add(new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
-
-                }
-                break;
-            case 'l':
-                destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
-                updateBoundWithPoint(destPoint);
-                current = destPoint;
-                pathCommandList.add(new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
-
-                for (int i = 2; i < arguments.length; i++) {
-                    destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
-                    updateBoundWithPoint(destPoint);
-                    current = destPoint;
-                    pathCommandList.add(new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
-                }
-                break;
-            case 'c':
-                for (int i = 1; i + 2 < arguments.length; i += 3) {
-                    assert (i + 2 < arguments.length);
-                    controlPoint1 = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
-                    controlPoint2 = useAbsCoordinate ? new Point(arguments[i + 1]) : new Point(current, arguments[i + 1]);
-                    destPoint = useAbsCoordinate ? new Point(arguments[i + 2]) : new Point(current, arguments[i + 2]);
-                    updateBoundWithPoint(destPoint);
-                    pathCommandList.add(new SvgPathCommand(controlPoint1, controlPoint2, destPoint,  SvgPathCommand.CommandType.CURVE_TO));
-                    current = destPoint;
-                }
-                break;
-        }
-
-        return current;
-    }
-
-    public void updateBoundWithPoint(Point current) {
-        if (current.getX() < minPoint.getX())
-            minPoint.setX(current.getX());
-        if (current.getY() < minPoint.getY())
-            minPoint.setY(current.getY());
-        if (current.getX() > maxPoint.getX())
-            maxPoint.setX(current.getX());
-        if (current.getY() > maxPoint.getY())
-            maxPoint.setY(current.getY());
-    }
-
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName) {
-        try{
-            PrintWriter writer = new PrintWriter( "./out/" + fileName + ".svg", "UTF-8");
+        try {
+            PrintWriter writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
             writer.println("<svg");
             writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
             writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");
@@ -236,12 +97,12 @@ public class SvgFileProcessor {
                 if (command.isMoveTo() || command.isLineTo()) {
                     count++;
                     if (command.isMoveTo())
-                        writer.println("N" + count + "G00" + "X" + command.getDestinationPoint().getX() + "Y" + command.getDestinationPoint().getY());
+                        writer.println("N" + count + "G00" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
                     else
-                        writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().getX() + "Y" + command.getDestinationPoint().getY());
+                        writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
                 } else if (command.isCurveTo()) {
                     count++;
-                    writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().getX() + "Y" + command.getDestinationPoint().getY());
+                    writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
                 }
             }
             count++;
@@ -256,6 +117,137 @@ public class SvgFileProcessor {
 
     }
 
+    public Point getMinPoint() {
+        return minPoint;
+    }
+
+    public Point getMaxPoint() {
+        return maxPoint;
+    }
+
+    public Region getBoundary() {
+        ArrayList<Point> destList = new ArrayList<>();
+        for ( SvgPathCommand command : commandLists.get(0)) {
+            destList.add(command.getDestinationPoint());
+        }
+        Region boundaryRegion = new Region(destList);
+        return  boundaryRegion;
+    }
+
+    public void processSvg() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+        System.out.println("\n processing new svg:\n");
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(fSvgFile);
+
+        String xpathExpression = "//path/@d";
+        XPathFactory xpf = XPathFactory.newInstance();
+        XPath xpath = xpf.newXPath();
+        XPathExpression expression = xpath.compile(xpathExpression);
+        pathNodeList = (NodeList) expression.evaluate(document, XPathConstants.NODESET);
+
+        for (int i = 0; i < pathNodeList.getLength(); i++) {
+            ArrayList<SvgPathCommand> aCommandList = new ArrayList<>();
+            commandLists.add(aCommandList);
+            processPath(pathNodeList.item(i), aCommandList);
+        }
+        width = maxPoint.x - minPoint.x;
+        height = maxPoint.y - minPoint.y;
+        patternHeight = commandLists.get(0).get(0).getDestinationPoint().y - minPoint.y;
+        //widthRight = maxPoint.getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
+        widthRight = getCommandLists().get(0).get(getCommandLists().get(0).size() - 1).getDestinationPoint().x - getCommandLists().get(0).get(0).getDestinationPoint().x;
+
+        System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
+                +  "width=" + width + ";\n height=" + height + "effective height" + getEffectiveHeight() +
+                "\npattern height:" + patternHeight + " first height:"
+                + commandLists.get(0).get(0).getDestinationPoint().y);
+        System.out.println();
+    }
+
+    private void processPath(Node pathNode, ArrayList<SvgPathCommand> pathCommandList) {
+        String pathStr = pathNode.getNodeValue();
+        String withDelimiter = "(?=[cCmMlLzZ])";
+        String[] pathElemArray = pathStr.split(withDelimiter);
+        Point current = new Point(0.0, 0.0);
+        System.out.println("pathElemArrayLength is" + pathElemArray.length);
+        for (int i = 0; i < pathElemArray.length; i++) {
+
+            /** if the last command is close path, add a command that lineTo initial point*/
+            if ((i == pathElemArray.length - 1) && (pathElemArray[i].substring(0,1).equalsIgnoreCase("z"))) {
+                System.out.println("closing path");
+                SvgPathCommand initialComm = pathCommandList.get(0);
+                pathCommandList.add(new SvgPathCommand(initialComm.getControlPoint1(), initialComm.getControlPoint2(),
+                        initialComm.getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
+            } else
+                /** else parse the next command set*/
+                current = parseString(pathElemArray[i], pathCommandList, current);
+        }
+        //printCommandList(pathCommandList);
+    }
+
+    public Point parseString(String commandString, ArrayList<SvgPathCommand> pathCommandList, Point current) {
+        String[] arguments = commandString.split(" ");
+        char commandChar = arguments[0].toLowerCase().charAt(0);
+        boolean useAbsCoordinate = Character.isUpperCase(arguments[0].charAt(0));
+
+        Point destPoint;
+        Point controlPoint1;
+        Point controlPoint2;
+
+        switch (commandChar) {
+            case 'm':
+                destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
+                updateBoundWithPoint(destPoint);
+                current = destPoint;
+                pathCommandList.add(new SvgPathCommand(destPoint, SvgPathCommand.CommandType.MOVE_TO));
+
+                for (int i = 2; i < arguments.length; i++) {
+                    destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
+                    updateBoundWithPoint(destPoint);
+                    current = destPoint;
+                    pathCommandList.add(new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
+
+                }
+                break;
+            case 'l':
+                destPoint = useAbsCoordinate ? new Point(arguments[1]) : new Point(current, arguments[1]);
+                updateBoundWithPoint(destPoint);
+                current = destPoint;
+                pathCommandList.add(new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
+
+                for (int i = 2; i < arguments.length; i++) {
+                    destPoint = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
+                    updateBoundWithPoint(destPoint);
+                    current = destPoint;
+                    pathCommandList.add(new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
+                }
+                break;
+            case 'c':
+                for (int i = 1; i + 2 < arguments.length; i += 3) {
+                    assert (i + 2 < arguments.length);
+                    controlPoint1 = useAbsCoordinate ? new Point(arguments[i]) : new Point(current, arguments[i]);
+                    controlPoint2 = useAbsCoordinate ? new Point(arguments[i + 1]) : new Point(current, arguments[i + 1]);
+                    destPoint = useAbsCoordinate ? new Point(arguments[i + 2]) : new Point(current, arguments[i + 2]);
+                    updateBoundWithPoint(destPoint);
+                    pathCommandList.add(new SvgPathCommand(controlPoint1, controlPoint2, destPoint,  SvgPathCommand.CommandType.CURVE_TO));
+                    current = destPoint;
+                }
+                break;
+        }
+
+        return current;
+    }
+
+    public void updateBoundWithPoint(Point current) {
+        if (current.x < minPoint.x)
+            minPoint = new Point(current.x, minPoint.y);
+        if (current.y < minPoint.y)
+            minPoint = new Point(minPoint.x, current.y);
+        if (current.x > maxPoint.x)
+            maxPoint = new Point(current.x, maxPoint.y);
+        if (current.y > maxPoint.y)
+            maxPoint = new Point(maxPoint.x, current.y);
+    }
 
     public ArrayList<ArrayList<SvgPathCommand>> getCommandLists() {
         return commandLists;
@@ -293,12 +285,12 @@ public class SvgFileProcessor {
                 Point D = commands.get(j).getDestinationPoint();
                 Point temp;
                 /* Standardize vector direction from leftToRight*/
-                if (A.getX() > B.getX()) {
+                if (A.x > B.x) {
                     temp = A;
                     A = B;
                     B = temp;
                 }
-                if (C.getX() > D.getX()) {
+                if (C.x > D.x) {
                     temp = C;
                     C = D;
                     D = temp;
@@ -308,22 +300,22 @@ public class SvgFileProcessor {
                 double xLeft = 0, xRight = 0;
                 if (xIsBetween(A, C, D) || xIsBetween(B, C, D) || xIsBetween(C, A, B) || xIsBetween(D, A, B)) {
                     Point leftAB, rightAB, leftCD, rightCD;
-                    if (A.getX() > C.getX()) {
-                        xLeft = A.getX();
+                    if (A.x > C.x) {
+                        xLeft = A.x;
                         leftAB = A;
                         leftCD = Point.interMediatePointWithX(C, D, xLeft);
                     } else {
-                        xLeft = C.getX();
+                        xLeft = C.x;
                         leftCD = C;
                         leftAB = Point.interMediatePointWithX(A, B, xLeft);
                     }
 
-                    if (B.getX() < D.getX()) {
-                        xRight = B.getX();
+                    if (B.x < D.x) {
+                        xRight = B.x;
                         rightAB = B;
                         rightCD = Point.interMediatePointWithX(C, D, xRight);
                     } else {
-                        xRight = D.getX();
+                        xRight = D.x;
                         rightAB = Point.interMediatePointWithX(A, B, xRight);
                         rightCD = D;
                     }
@@ -339,8 +331,8 @@ public class SvgFileProcessor {
 
     /** return true if the xPosition of A is between that of C and D **/
     private boolean xIsBetween(Point A, Point C, Point D) {
-        return ((A.getX() >= C.getX()) && A.getX() <= D.getX()) ||
-                ((A.getX() <= C.getX()) && A.getX() >= D.getX());
+        return ((A.x >= C.x) && A.x <= D.x) ||
+                ((A.x <= C.x) && A.x >= D.x);
 
     }
     @Override

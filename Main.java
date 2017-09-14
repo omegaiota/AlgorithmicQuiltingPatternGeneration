@@ -25,21 +25,22 @@ import java.util.List;
 public class Main extends Application {
     /* Constant */
     private static final int columnItemSpacing = 15, columnItemBundleSpacing = 3;
-
+    /* Labels */
+    final Label textFieldLabel = new Label(), patternRenderFieldLabel = new Label("Repetitions"),
+            skeletonGenFieldLabel = new Label("Rows"), regionLabel = new Label("Region"),
+            regionSelectionLabel = new Label("Select Region"), skeletonLabel = new Label("Skeleton Path"),
+            skeletonGnerationlabel = new Label("Skeleton Path Generation"), patternLabel = new Label("Pattern"),
+            patternSelectionLabel = new Label("Select Pattern"), skeletonRenderinglabel = new Label("Skeleton Path Rendering"),
+            patternRenderLabel = new Label("Pattern Rendering"), toolLabel = new Label("Tools"),
+            svgToPatLabel = new Label(".SVG to .PAT"), quiltingPatternGeneration = new Label("Quilting Pattern Generation");
+    /* Toggle Group */
+    final ToggleGroup patternSourceGroup = new ToggleGroup();
     /* Buttons */
     private final Button loadRegionButton = new Button("Load region ...");
     private final Button loadDecoElementButton = new Button("Load a pattern file ...");
     private final Button loadSvgFileButton = new Button("Load SVG file");
     private final Button generateButton = new Button("Generate");
-
-    /* TextField */
-    private TextField textField = new TextField(), patternRenderTextFiled = new TextField(), skeletonGenTextField = new TextField();
-
-    /* File processor, renderer */
-    private SvgFileProcessor skeletonPathFile, decoElementFile, regionFile, svgFile;
-    private SpinePatternMerger mergedPattern;
     PatternRenderer patternRenderer;
-
     /* Layout: VBox, HBox*/
     //Column
     VBox regionColumn = new VBox(columnItemSpacing), skeletonColumn = new VBox(columnItemSpacing),
@@ -60,27 +61,17 @@ public class Main extends Application {
     Font columnLabelFont = new Font("Luminari", 22), functionLabelFont = new Font("Avenir Light", 14),
             buttonFont = new Font("Avenir", 10), titleFont = new Font("Luminari", 40);
     Color labelColor = Color.ORANGE, columnLabelColor = Color.SILVER;
-
-    /* Labels */
-    final Label textFieldLabel = new Label(), patternRenderFieldLabel = new Label("Repetitions"),
-            skeletonGenFieldLabel = new Label("Rows"), regionLabel = new Label("Region"),
-            regionSelectionLabel = new Label("Select Region"), skeletonLabel = new Label("Skeleton Path"),
-            skeletonGnerationlabel = new Label("Skeleton Path Generation"), patternLabel = new Label("Pattern"),
-            patternSelectionLabel = new Label("Select Pattern"), skeletonRenderinglabel = new Label("Skeleton Path Rendering"),
-            patternRenderLabel = new Label("Pattern Rendering"), toolLabel = new Label("Tools"),
-            svgToPatLabel = new Label(".SVG to .PAT"), quiltingPatternGeneration = new Label("Quilting Pattern Generation");
-
-
-    /* Toggle Group */
-    final ToggleGroup patternSourceGroup = new ToggleGroup();
     ToggleButton patternFromFile = new ToggleButton("from file"), noPattern = new ToggleButton("none"),
             patternFromLibrary = new ToggleButton("from library");
-
     /* Folder */
     File tileLibrary = new File("./src/resources/patterns/tiles/"),
         alongPathLibrary = new File("./src/resources/patterns/alongPath/");
     List<String> tileList =  new ArrayList<>(), alongPathList = new ArrayList<>();
-
+    /* TextField */
+    private TextField textField = new TextField(), patternRenderTextFiled = new TextField(), skeletonGenTextField = new TextField();
+    /* File processor, renderer */
+    private SvgFileProcessor skeletonPathFile, decoElementFile, regionFile, svgFile;
+    private SpinePatternMerger mergedPattern;
 
     public static void main(String[] args) {
         launch(args);
@@ -256,8 +247,7 @@ public class Main extends Application {
                     decoFileName = decoElementFile.getfFileName();
                     break;
                 case "from library":
-                    decoFileName = "library";
-
+                    decoFileName = "lib" + patternLibraryComboBox.getValue().toString();
                     break;
             }
             /* Pattern rendering */
@@ -337,12 +327,12 @@ public class Main extends Application {
                     System.out.println("Skeleton Path: Hilbert Curve...");
 
                     HilbertCurveGenerator hilbertcurve = new HilbertCurveGenerator(regionFile.getMinPoint(),
-                            new Point(regionFile.getMaxPoint().getX(), 0),
-                            new Point(0, regionFile.getMaxPoint().getY()), Integer.valueOf(skeletonGenTextField.getText()));
+                            new Point(regionFile.getMaxPoint().x, 0),
+                            new Point(0, regionFile.getMaxPoint().y), Integer.valueOf(skeletonGenTextField.getText()));
                     skeletonName += "_hilbertCurve_" + Integer.valueOf(skeletonGenTextField.getText());
                     hilbertcurve.patternGeneration();
                     skeletonPathFile = hilbertcurve.outputPath();
-                    List<SvgPathCommand> fittedPath = boundary.fitCommandsToRegion(hilbertcurve.getCommandList());
+                    List<SvgPathCommand> fittedPath = boundary.fitCommandsToRegionTrimToBoundary(hilbertcurve.getCommandList());
                     skeletonPathCommands = fittedPath;
                     break;
 
@@ -431,7 +421,7 @@ public class Main extends Application {
                     mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                     /** Combine pattern */
                     mergedPattern.combinePattern();
-                     fittedPath = boundary.fitCommandsToRegion(mergedPattern.getCombinedCommands());
+                    fittedPath = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands());
                     SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
                     //SvgFileProcessor.outputSvgCommands(mergedPattern.getCombinedCommands(), );
                     break;
@@ -445,7 +435,9 @@ public class Main extends Application {
                     mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                     /** Combine pattern */
                     mergedPattern.tilePattern(patternHeight);
-                    fittedPath = boundary.fitCommandsToRegion(mergedPattern.getCombinedCommands());
+                    fittedPath = boundary.fitCommandsToRegionIntelligent(mergedPattern.getCombinedCommands());
+                    // fittedPath = boundary.fitCommandsToRegionDelete(mergedPattern.getCombinedCommands());
+                    //fittedPath.addAll(regionFile.getCommandLists().get(0));
                     SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
                     break;
 
@@ -523,7 +515,7 @@ public class Main extends Application {
                 System.out.println("case 2: none tree structure");
                 skeletonRenderComboBox.getItems().setAll("No Rendering", "Squiggles", "Pattern Along Path");
             } else if (newSelected.equals("Snake")) {
-                System.out.println("tiling");
+                System.out.println("Snake");
                 skeletonRenderComboBox.getItems().setAll("No Rendering", "Pattern Along Path", "Squiggles", "Pebble", "Tiling");
             }
 

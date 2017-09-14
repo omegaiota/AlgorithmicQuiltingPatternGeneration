@@ -10,10 +10,6 @@ import java.util.List;
 public class SkeletonPathGenerator {
     Region region;
     List<SvgPathCommand> skeletonPath = new ArrayList<>();
-    public enum GenerationMethodType {
-        SNAKE
-    }
-
     public SkeletonPathGenerator(Region region) {
         this.region = region;
     }
@@ -22,14 +18,14 @@ public class SkeletonPathGenerator {
         Double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE, minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE,
                 height = 0.0;
         for (Point point : region.getBoundary()) {
-            if (Double.compare(point.getX(), minX) <= 0)
-                minX = point.getX();
-            if (Double.compare(point.getX(), maxX) >= 0)
-                maxX = point.getX();
-            if (Double.compare(point.getY(), minY) <= 0)
-                minY = point.getY();
-            if (Double.compare(point.getY(), maxY) >= 0)
-                maxY = point.getY();
+            if (Double.compare(point.x, minX) <= 0)
+                minX = point.x;
+            if (Double.compare(point.x, maxX) >= 0)
+                maxX = point.x;
+            if (Double.compare(point.y, minY) <= 0)
+                minY = point.y;
+            if (Double.compare(point.y, maxY) >= 0)
+                maxY = point.y;
         }
 
         height = maxY - minY;
@@ -55,5 +51,9 @@ public class SkeletonPathGenerator {
 
     public File outputSnake(int rows) {
         return SvgFileProcessor.outputSvgCommands(skeletonPath, "snake-" + rows);
+    }
+
+    public enum GenerationMethodType {
+        SNAKE
     }
 }

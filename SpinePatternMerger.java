@@ -31,7 +31,8 @@ public class SpinePatternMerger {
         patternCommands = SvgPathCommand.commandsScaling(patternCommands, scalingProportion, patternCommands.get(0).getDestinationPoint());
 
         // pattern's first and last command should start at the same Y position
-        patternCommands.get(0).getDestinationPoint().setY(patternCommands.get(patternCommands.size() - 1).getDestinationPoint().getY());
+        Point destination = patternCommands.get(0).getDestinationPoint();
+        patternCommands.get(0).setDestinationPoint(new Point(destination.x, patternCommands.get(patternCommands.size() - 1).getDestinationPoint().y));
         tileAlong(patternFileProcessed.getWidthRight() * scalingProportion, rowHeight);
     }
 
@@ -46,13 +47,12 @@ public class SpinePatternMerger {
         for (int i = 1; i < spineCommands.size(); i++) {
             //  System.out.println("\ni:" + i + " " + spineCommands.get(i).toString());
             // On the same row
-            double xThis = spineCommands.get(i).getDestinationPoint().getX(),
-                    xPrev = spineCommands.get(i - 1).getDestinationPoint().getX();
+            double xThis = spineCommands.get(i).getDestinationPoint().x,
+                    xPrev = spineCommands.get(i - 1).getDestinationPoint().x;
             boolean leftToRight = Double.compare(xPrev, xThis) <= 0;
-            yPos = (leftToRight) ? spineCommands.get(i - 1).getDestinationPoint().getY() : (yPos + rowHeight);
-            yPos = spineCommands.get(i - 1).getDestinationPoint().getY();
+            yPos = spineCommands.get(i - 1).getDestinationPoint().y;
             double pathWidth = Math.abs(xPrev - xThis);
-            double xPos = (i == 1) ? xPrev : combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint().getX();
+            double xPos = (i == 1) ? xPrev : combinedCommands.get(combinedCommands.size() - 1).getDestinationPoint().x;
 
             int col = (int) Math.ceil(pathWidth / patternWidth); // # of tiles need to put in a single row
             // System.out.println("Column " + col);

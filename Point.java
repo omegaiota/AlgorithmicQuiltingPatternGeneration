@@ -7,7 +7,7 @@ import java.math.RoundingMode;
  * Created by JacquelineLi on 6/13/17.
  */
 public class Point {
-    private double x,y;
+    public final double x, y;
     /** generate a point with absolute coordinates*/
     public Point(double x, double y) {
         this.x = truncateDouble(x, 3);
@@ -15,8 +15,8 @@ public class Point {
     }
 
     public Point(Point other) {
-        this.x = other.getX();
-        this.y = other.getY();
+        this.x = other.x;
+        this.y = other.y;
     }
     public Point(String strWithDelimiter) {
         String[] coordinateStr = strWithDelimiter.split(",");
@@ -27,8 +27,8 @@ public class Point {
 
     /** constructs a point with relative coordinates*/
     public Point(Point current, double x, double y) {
-        this.x = truncateDouble(x + current.getX(), 3);
-        this.y = truncateDouble(y + current.getY(), 3);
+        this.x = truncateDouble(x + current.x, 3);
+        this.y = truncateDouble(y + current.y, 3);
     }
 
     /** constructs point (x,y) from string s = "x,y" **/
@@ -36,30 +36,16 @@ public class Point {
         String[] coordinateStr = strWithDelimiter.split(",");
         assert coordinateStr.length == 2;
 
-        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]) + current.getX(), 3);
-        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]) + current.getY(), 3);
+        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]) + current.x, 3);
+        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]) + current.y, 3);
     }
 
-    public double getX() {
-        return x;
-    }
-    public double getY() {
-        return y;
-    }
-    public void setX(double x) {
-        this.x = x;
-    }
-    public void setY(double y) {
-        this.y = y;
-    }
-
-    public boolean equals(Point compare) {
-        return  ((Math.abs(x - compare.getX()) < 0.000001) && (Math.abs(x - compare.getX()) < 0.000001));
-    }
-
-    @Override
-    public String toString() {
-        return "Point{" + "x=" + x + ", y=" + y + '}';
+    /**
+     * generate a NUL point
+     */
+    public Point() {
+        this.x = -12345;
+        this.y = -12345;
     }
 
     /** truncateDouble: truncates value so that it fits precision
@@ -72,17 +58,17 @@ public class Point {
     /** given two endpoints of a line, return the retPoint on the line such that dist(retPoint,startPoint) == dist */
     public static Point intermediatePointWithLen(Point start, Point end, double dist) {
         System.out.println(start.toString() + end.toString() + " :" + dist);
-        if (Math.abs(end.getX() - start.getX()) < 0.01)
-            return new Point(start.getX(), start.getY() + dist * (start.getY() < end.getY() ?  1 : -1));
+        if (Math.abs(end.x - start.x) < 0.01)
+            return new Point(start.x, start.y + dist * (start.y < end.y ?  1 : -1));
         if (dist == 0)
             return start;
-        double k = (end.getY() - start.getY()) / (end.getX() - start.getX());
-        double b = start.getY() - k * start.getX();
-        double x = start.getX(), y = start.getY();
+        double k = (end.y - start.y) / (end.x - start.x);
+        double b = start.y - k * start.x;
+        double x = start.x, y = start.y;
         double   A = k * k + 1,
                 BB = 2 * (b - y) * k - 2 * x,
                  C = Math.pow(b - y, 2) + x * x - dist * dist;
-        int sign = start.getX() < end.getX() ? 1 : -1;
+        int sign = start.x < end.x ? 1 : -1;
         double interX = (-1 * BB + sign * Math.sqrt(BB * BB - 4 * A * C))/ (2 * A);
         double interY = k * interX + b;
         System.out.println(interX + " " + interY);
@@ -94,7 +80,7 @@ public class Point {
         /* find the standard form of line (L1, L2)
             Ax + By + C = 0 */
         double A = 0,B = 0,C = 0, k = 0, b = 0, distanceToLine = 0;
-        if (Math.abs(L2.getX() - L1.getX()) < 0.01) {
+        if (Math.abs(L2.x - L1.x) < 0.01) {
             /*
             A = 1;
             B = 0;
@@ -104,8 +90,8 @@ public class Point {
         } else {
             /* y = kx + b
             * - kx + y - b = 0*/
-            k = (L2.getY() - L1.getY()) / (L2.getX() - L1.getX());
-            b = L1.getY() - k * L1.getX();
+            k = (L2.y - L1.y) / (L2.x - L1.x);
+            b = L1.y - k * L1.x;
             A = -1 * k;
             B = 1;
             C = -1 * b;
@@ -123,28 +109,24 @@ public class Point {
         System.out.println("Len: " + dist * propertion);
         return  intermediatePointWithLen(start, end, dist * propertion);
     }
+
     /** given two endpoints of a line, return true if the argument point is in the middle of the line */
     public static boolean onLine(Point start, Point end, Point testPoint) {
-        double minX = start.getX() < end.getX() ? start.getX() : end.getX();
-        double maxX = start.getX() + end.getX() - minX;
+        double minX = start.x < end.x ? start.x : end.x;
+        double maxX = start.x + end.x - minX;
 
-        double minY = start.getY() < end.getY() ? start.getY() : end.getY();
-        double maxY = start.getY() + end.getY() - minY;
+        double minY = start.y < end.y ? start.y : end.y;
+        double maxY = start.y + end.y - minY;
 
-        return (Double.compare(testPoint.getX(), maxX) <= 0) && (Double.compare(testPoint.getX(), minX) >= 0) &&
-                (Double.compare(testPoint.getY(), maxY) <= 0) && (Double.compare(testPoint.getY(), minY) >= 0);
+        return (Double.compare(testPoint.x, maxX) <= 0) && (Double.compare(testPoint.x, minX) >= 0) &&
+                (Double.compare(testPoint.y, maxY) <= 0) && (Double.compare(testPoint.y, minY) >= 0);
 
     }
 
-    /** generate a NUL point */
-    public Point() {
-        this.x = -12345;
-        this.y = -12345;
-    }
     /** return the angle between two points */
     public static double getAngle(Point start, Point end) {
-        double delta_y = end.getY() - start.getY();
-        double delta_x = end.getX() - start.getX();
+        double delta_y = end.y - start.y;
+        double delta_x = end.x - start.x;
         double angle = Math.atan2(delta_y, delta_x);
         while (angle < 0)
             angle += Math.PI * 2;
@@ -156,67 +138,24 @@ public class Point {
 
     /** return the distance between two points */
     public static double getDistance(Point start, Point end) {
-        double delta_x_sqr = Math.pow(end.getX() - start.getX(), 2);
-        double delta_y_sqr = Math.pow(end.getY() - start.getY(), 2);
+        double delta_x_sqr = Math.pow(end.x - start.x, 2);
+        double delta_y_sqr = Math.pow(end.y - start.y, 2);
         double distance = Math.sqrt(delta_x_sqr + delta_y_sqr);
         return truncateDouble(distance, 3);
     }
 
-    /** rotate a point with angle radian around an origin */
-    public static void rotateAroundOrigin(Point point, Double angle) {
-        double cosA = Math.cos(angle);
-        double sinA = Math.sin(angle);
-        double originalX = point.getX();
-        double originalY = point.getY();
-        point.setX(originalX * cosA - originalY * sinA);
-        point.setY(originalX * sinA + originalY * cosA);
-    }
-
-    /** rotate a point with angle radian around a central point */
-    public static void rotateAroundCenter(Point point, Point center, Double angle) {
-        Point temporary = new Point(point.getX() - center.getX(),point.getY() - center.getY());
-        Point.rotateAroundOrigin(temporary, angle);
-        point.setX(truncateDouble(temporary.getX() + center.getX(), 3));
-        point.setY(truncateDouble(temporary.getY() + center.getY(),3));
-    }
-
-    /** scale a point around origin */
-    public static void scaleAroundOrigin(Point point, Double proportion) {
-        point.setX(truncateDouble(point.getX() * proportion, 3));
-        point.setY(truncateDouble(point.getY() * proportion, 3));
-    }
-
-    public static void scaleAroundCenter(Point point, Point center, Double proportion) {
-        Point temporary = new Point(point.getX() - center.getX(),point.getY() - center.getY());
-        Point.scaleAroundOrigin(temporary, proportion);
-        point.setX(temporary.getX() + center.getX());
-        point.setY(temporary.getY() + center.getY());
-    }
-
-    public static void minusPoint(Point finalPoint, Point shiftPoint) {
-        finalPoint.setX(finalPoint.getX() - shiftPoint.getX());
-        finalPoint.setY(finalPoint.getY() - shiftPoint.getY());
-    }
-
-    public static void addPoint(Point finalPoint, Point shiftPoint) {
-        finalPoint.setX(finalPoint.getX() + shiftPoint.getX());
-        finalPoint.setY(finalPoint.getY() + shiftPoint.getY());
-    }
-
-    public static Point pointAdd(Point finalPoint, Point shiftPoint) {
-
-        return new Point(finalPoint.getX() + shiftPoint.getX(), finalPoint.getY() + shiftPoint.getY());
+    public static Point sumOfPoint(Point finalPoint, Point shiftPoint) {
+        return finalPoint.addPoint(shiftPoint);
     }
 
     public static Point vertOffset(Point dest, Point src, double offset) {
         Point srcRotated = new Point(src);
         if (offset > 0)
-            rotateAroundCenter(srcRotated, dest, Math.PI / 2);
+            srcRotated = srcRotated.rotateAroundCenter(dest, Math.PI / 2);
         else
-            rotateAroundCenter(srcRotated, dest, Math.PI/ 2 * 3);
+            srcRotated = srcRotated.rotateAroundCenter(dest, Math.PI/ 2 * 3);
         return intermediatePointWithLen(dest, srcRotated, Math.abs(offset));
     }
-
 
     /** perpendicularFoot: returns point P2 such that PP2 is perpendicular to L1L2
      *  requires: P is not on L1L2
@@ -225,15 +164,15 @@ public class Point {
         /* find the standard form of line (L1, L2)
             Ax + By + C = 0 */
         double A = 0,B = 0,C = 0, k = 0, b = 0, distanceToLine = 0;
-        if (Math.abs(L2.getX() - L1.getX()) < 0.01) {
+        if (Math.abs(L2.x - L1.x) < 0.01) {
             A = 1;
             B = 0;
-            C = -1 * (L2.getX());
+            C = -1 * (L2.x);
         } else {
             /* y = kx + b
             * - kx + y - b = 0*/
-            k = (L2.getY() - L1.getY()) / (L2.getX() - L1.getX());
-            b = L1.getY() - k * L1.getX();
+            k = (L2.y - L1.y) / (L2.x - L1.x);
+            b = L1.y - k * L1.x;
             A = -1 * k;
             B = 1;
             C = -1 * b;
@@ -241,8 +180,8 @@ public class Point {
         /* distance = |ax0+by0+c| / sqrt(a^2+b^2)*/
         /* closest point x=(b(bx0-ay0)-ac)/(a^2+b^2) y=(b(-bx0+ay0)-bc)/(a^2+b^2) */
         double divisor = A * A + B * B;
-        double X = (B * (B * P.getX() - A * P.getY()) - A * C) / divisor,
-                Y = (A * (-1 * B * P.getX() + A * P.getY()) - B * C) / divisor;
+        double X = (B * (B * P.x - A * P.y) - A * C) / divisor,
+                Y = (A * (-1 * B * P.x + A * P.y) - B * C) / divisor;
         return new Point(X, Y);
 
     }
@@ -251,12 +190,12 @@ public class Point {
      *  requires: AB, CD are not co-linear
      *  ensures: function returns the intersection point **/
     public static Point intersectionPoint(Point A, Point B, Point C, Point D) {
-       double x3_x4 = C.getX() - D.getX(),
-               y3_y4 = C.getY() - D.getY(),
-               x1_x2 = A.getX() - B.getX(),
-               y1_y2 = A.getY() - B.getY(),
-               x1y2_y1x2 = A.getX() * B.getY() - A.getY() * B.getX(),
-               x3y4_y3x4 = C.getX() * D.getY() - C.getY() * D.getX();
+        double x3_x4 = C.x - D.x,
+                y3_y4 = C.y - D.y,
+                x1_x2 = A.x - B.x,
+                y1_y2 = A.y - B.y,
+                x1y2_y1x2 = A.x * B.y - A.y * B.x,
+                x3y4_y3x4 = C.x * D.y - C.y * D.x;
        double x = (x1y2_y1x2 * x3_x4 - x1_x2 * x3y4_y3x4) / (x1_x2 * y3_y4 - y1_y2 * x3_x4),
                y = (x1y2_y1x2 * y3_y4 - y1_y2 * x3y4_y3x4) / (x1_x2 * y3_y4 - y1_y2 * x3_x4);
        return new Point(x, y);
@@ -274,6 +213,50 @@ public class Point {
      *  requires: none
      *  ensures: function returns true if A,B,C are listed in CCW order, false otherwise **/
     private static boolean CCW(Point A, Point B, Point C) {
-        return ((C.getY() - A.getY())*(B.getX() - A.getX()) > (B.getY() - A.getY()) * (C.getX() - A.getX()));
+        return ((C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x));
+    }
+
+    public boolean equals(Point compare) {
+        return ((Math.abs(x - compare.x) < 0.000001) && (Math.abs(x - compare.x) < 0.000001));
+    }
+
+    @Override
+    public String toString() {
+        return "Point{" + "x=" + x + ", y=" + y + '}';
+    }
+
+    /**
+     * rotate a point with angle radian around an origin
+     */
+    public Point rotateAroundOrigin(double angle) {
+        double cosA = Math.cos(angle);
+        double sinA = Math.sin(angle);
+        return new Point(x * cosA - y * sinA, x * sinA + y * cosA);
+    }
+
+    /**
+     * rotate a point with angle radian around a central point
+     */
+    public Point rotateAroundCenter(Point center, Double angle) {
+        return this.minusPoint(center).rotateAroundOrigin(angle).addPoint(center);
+    }
+
+    /**
+     * scale a point around origin
+     */
+    public Point scaleAroundOrigin(Double proportion) {
+        return new Point(x * proportion, y * proportion);
+    }
+
+    public Point scaleAroundCenter(Point center, Double proportion) {
+        return this.minusPoint(center).scaleAroundOrigin(proportion).addPoint(center);
+    }
+
+    public Point minusPoint(Point shiftPoint) {
+        return new Point(x - shiftPoint.x, y - shiftPoint.y);
+    }
+
+    public Point addPoint(Point shiftPoint) {
+        return new Point(x + shiftPoint.x, y + shiftPoint.y);
     }
 }

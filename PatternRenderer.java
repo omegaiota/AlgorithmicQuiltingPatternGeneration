@@ -16,26 +16,16 @@ public class PatternRenderer {
     private String patternName = "", skeletonPathName = "";
 
 
-    public enum RenderType {
-        NO_DECORATION, WITH_DECORATION, ROTATION, ECHO, LANDFILL
-    }
-    public List<SvgPathCommand> getRenderedCommands() {
-        return renderedCommands;
-    }
-
-
-
     public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, RenderType type) {
         this.skeletonPathName = skeletonPathName;
         this.skeletonPathCommands = skeletonPathCommands;
         this.renderType = type;
     }
-
-
     public PatternRenderer(List<SvgPathCommand> commands, RenderType type) {
         this.skeletonPathCommands = commands;
         this.renderType = type;
     }
+
 
     public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, String patternName, List<SvgPathCommand> decorativeElementCommands, RenderType type) {
         this.skeletonPathName = skeletonPathName;
@@ -44,6 +34,7 @@ public class PatternRenderer {
         this.decorativeElementCommands =  decorativeElementCommands;
         this.renderType = type;
     }
+
 
     public PatternRenderer(String patternName, List<SvgPathCommand> decorativeElementCommands, TreeNode<Point> spanningTree, RenderType type) {
         this.patternName = patternName;
@@ -61,6 +52,11 @@ public class PatternRenderer {
         this.skeletonPathCommands = commands;
         this.renderType = type;
     }
+
+    public List<SvgPathCommand> getRenderedCommands() {
+        return renderedCommands;
+    }
+
     public void landFill() {
         Double dist = Point.getDistance(spanningTree.getData(), spanningTree.getChildren().get(0).getData());
         for (TreeNode<Point> firstChildren : spanningTree.getChildren()) {
@@ -73,7 +69,7 @@ public class PatternRenderer {
         /* Order children tobe counterclockwise*/
         TreeTraversal.treeOrdering(spanningTree, null);
         //landFillTraverse(spanningTree, null, dist);
-        renderedCommands.add(new SvgPathCommand(new Point(spanningTree.getData().getX() + dist, spanningTree.getData().getY()), SvgPathCommand.CommandType.MOVE_TO));
+        renderedCommands.add(new SvgPathCommand(new Point(spanningTree.getData().x + dist, spanningTree.getData().y), SvgPathCommand.CommandType.MOVE_TO));
         HashMap<Point, Double> radiusList = new HashMap<>();
         landFillPebble(spanningTree, 0, dist, radiusList);
     }
@@ -91,11 +87,10 @@ public class PatternRenderer {
         }
 
         int gap = 30;
-        Point zeroAnglePoint = new Point(thisNode.getData().getX() + dist, thisNode.getData().getY());
+        Point zeroAnglePoint = new Point(thisNode.getData().x + dist, thisNode.getData().y);
         for (Integer i = angle; i < 360; i += gap) {
             TreeNode<Point> child;
-            Point thisPoint = new Point(zeroAnglePoint);
-            Point.rotateAroundCenter(thisPoint, thisNode.getData(), Math.toRadians(i));
+            Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(i));
             renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
             for (Integer j = i; j < i + gap; j++) {
                 if ((child = degreeTreeNodeMap.get(j)) != null) {
@@ -117,8 +112,7 @@ public class PatternRenderer {
                             newDist = distanceBetween ;
                     }
                     radiusList.put(child.getData(), newDist);
-                    thisPoint = new Point(zeroAnglePoint);
-                    Point.rotateAroundCenter(thisPoint, thisNode.getData(), Math.toRadians(j));
+                    thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
                     renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
                    landFillPebble(child, newAngle, newDist, radiusList);
                     renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
@@ -130,8 +124,8 @@ public class PatternRenderer {
 
         for (int i = 0 + (angle % gap); i < angle; i+= gap) {
             TreeNode<Point> child;
-            Point thisPoint = new Point(zeroAnglePoint);
-            Point.rotateAroundCenter(thisPoint, thisNode.getData(), Math.toRadians(i));
+            Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(i));
+            ;
             renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
             for (Integer j = i; j < i + gap; j++) {
                 if ((child = degreeTreeNodeMap.get(j)) != null) {
@@ -150,8 +144,7 @@ public class PatternRenderer {
                             newDist = distanceBetween * 0.8 ;
                     }
                     radiusList.put(child.getData(), newDist);
-                    thisPoint = new Point(zeroAnglePoint);
-                    Point.rotateAroundCenter(thisPoint, thisNode.getData(), Math.toRadians(j));
+                    thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
                     renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
                     landFillPebble(child, newAngle, newDist, radiusList);
                     renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
@@ -159,8 +152,8 @@ public class PatternRenderer {
             }
             renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
         }
-        Point thisPoint = new Point(zeroAnglePoint);
-        Point.rotateAroundCenter(thisPoint, thisNode.getData(), Math.toRadians(angle));
+        Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
+        ;
         renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
     }
 
@@ -172,7 +165,7 @@ public class PatternRenderer {
                     commandPrev = skeletonPathCommands.get(i - 1),
                     commandNext = skeletonPathCommands.get(i+1);
 
-            double angleNext = Point.getAngle( commandThis.getDestinationPoint(), commandNext.getDestinationPoint());
+            double angleNext = Point.getAngle(commandThis.getDestinationPoint(), commandNext.getDestinationPoint());
             double anglePrev = Point.getAngle(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint());
             double betweenAngle = angleNext - anglePrev;
             System.out.println( i + ":" + angleNext + " " + anglePrev + " " + betweenAngle);
@@ -192,8 +185,7 @@ public class PatternRenderer {
                 renderedCommands.add(new SvgPathCommand(pointLeft, SvgPathCommand.CommandType.LINE_TO));
             } else {
             /* endpoint of the angle divider */
-                Point divEnd = new Point(commandNext.getDestinationPoint());
-                Point.rotateAroundCenter(divEnd, commandThis.getDestinationPoint(), rotationAngle);
+                Point divEnd = new Point(commandNext.getDestinationPoint()).rotateAroundCenter(commandThis.getDestinationPoint(), rotationAngle);
                 Point divPoint = Point.intermediatePointWithLen(commandThis.getDestinationPoint(), divEnd, width);
                 //renderedCommands.add(skeletonPathCommands.get(i));
                 renderedCommands.add(new SvgPathCommand(divPoint, SvgPathCommand.CommandType.LINE_TO));
@@ -239,8 +231,8 @@ public class PatternRenderer {
     public File echoPattern(int number) {
         double midX = 0, midY = 0;
         for (SvgPathCommand command : skeletonPathCommands) {
-            midX += command.getDestinationPoint().getX();
-            midY += command.getDestinationPoint().getY();
+            midX += command.getDestinationPoint().x;
+            midY += command.getDestinationPoint().y;
         }
         midX /= skeletonPathCommands.size();
         midY /= skeletonPathCommands.size();
@@ -286,6 +278,7 @@ public class PatternRenderer {
         return outputEchoed(number);
 
     }
+
     private void outputLandFill() {
         SvgFileProcessor.outputSvgCommands(renderedCommands, "landFill");
     }
@@ -297,8 +290,13 @@ public class PatternRenderer {
     public File  outputRendered(double width) {
         return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-render-" + width);
     }
+
     public File  outputRotated(Integer angle) {
         return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue());
+    }
+
+    public enum RenderType {
+        NO_DECORATION, WITH_DECORATION, ROTATION, ECHO, LANDFILL
     }
 
 

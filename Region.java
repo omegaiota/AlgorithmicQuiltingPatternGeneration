@@ -22,19 +22,46 @@ public class Region {
         int j;
         boolean result = false;
         for (i = 0, j = boundary.size() - 1; i <  boundary.size(); j = i++) {
-            if (( boundary.get(i).getY() > testPoint.getY()) != ( boundary.get(j).getY() > testPoint.getY())
-                    && (testPoint.getX() < ( boundary.get(j).getX() - boundary.get(i).getX()) * (testPoint.getY() - boundary.get(i).getY())
-                    / ( boundary.get(j).getY() - boundary.get(i).getY()) + boundary.get(i).getX())) {
+            if ((boundary.get(i).y > testPoint.y) != (boundary.get(j).y > testPoint.y)
+                    && (testPoint.x < (boundary.get(j).x - boundary.get(i).x) * (testPoint.y - boundary.get(i).y)
+                    / (boundary.get(j).y - boundary.get(i).y) + boundary.get(i).x)) {
                 result = !result;
             }
         }
         return result;
     }
 
-    public List<SvgPathCommand> fitCommandsToRegion(List<SvgPathCommand> commandsOriginal) {
+    public List<SvgPathCommand> fitCommandsToRegionDelete(List<SvgPathCommand> commandsOriginal) {
         List<SvgPathCommand> commandsTrimed = new ArrayList<>();
         int start = 0;
         while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())) )
+            start++;
+        if (start >= commandsOriginal.size())
+            return commandsTrimed;
+        int end = commandsOriginal.size() - 1;
+        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint())))
+            end--;
+        int index = start;
+        int outsideStartIndex = -1;
+
+        while (index <= end) {
+            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
+                commandsTrimed.add(commandsOriginal.get(index));
+                index++;
+            }
+            /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
+            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
+                index++;
+            /* index is the index of the command that's first INSIDe of the region after the outside segment startin gat
+            * outside start index*/
+        }
+        return commandsTrimed;
+    }
+
+    public List<SvgPathCommand> fitCommandsToRegionTrimToBoundary(List<SvgPathCommand> commandsOriginal) {
+        List<SvgPathCommand> commandsTrimed = new ArrayList<>();
+        int start = 0;
+        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())))
             start++;
         if (start >= commandsOriginal.size())
             return commandsTrimed;
@@ -70,9 +97,7 @@ public class Region {
 
                 /* Move the tracer to the nearest point on boundary*/
                 Point intersectPointNext = intersectionPoint(commandsOriginal.get((index - 1) % commandsOriginal.size()).getDestinationPoint(),
-                                        commandsOriginal.get((index) % commandsOriginal.size()).getDestinationPoint());
-                Point perpendicularPoint = nearestBoundaryPoint(nextIn);
-                //commandsTrimed.add(new SvgPathCommand(perpendicularPoint, SvgPathCommand.CommandType.LINE_TO));
+                        commandsOriginal.get((index) % commandsOriginal.size()).getDestinationPoint());
                 commandsTrimed.add(new SvgPathCommand(intersectPointNext, SvgPathCommand.CommandType.LINE_TO));
             }
 
@@ -80,6 +105,118 @@ public class Region {
                 commandsTrimed.add(commandsOriginal.get(index));
                 index++;
             }
+            /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
+            outsideStartIndex = index;
+            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
+                index++;
+            /* index is the index of the command that's first INSIDe of the region after the outside segment startin gat
+            * outside start index*/
+        }
+        return commandsTrimed;
+    }
+
+    public List<SvgPathCommand> fitCommandsToRegionIntelligent(List<SvgPathCommand> commandsOriginal) {
+        List<SvgPathCommand> commandsTrimed = new ArrayList<>();
+        int start = 0;
+        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())))
+            start++;
+        if (start >= commandsOriginal.size())
+            return commandsTrimed;
+        int end = commandsOriginal.size() - 1;
+        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint())))
+            end--;
+
+        int index = start;
+        int outsideStartIndex = -1;
+        while (index <= end) {
+            if (outsideStartIndex != -1) {
+                Point lastIn = commandsOriginal.get(outsideStartIndex - 1).getDestinationPoint();
+                Point nextIn = commandsOriginal.get(index).getDestinationPoint();
+                List<SvgPathCommand> outsideCommandsPortion = new ArrayList<>();
+                for (int i = outsideStartIndex - 1; i < index; i++)
+                    outsideCommandsPortion.add(commandsOriginal.get(i));
+
+                /* try to search for the object's starting point */
+                int searchRange = 50;
+                int searchBeginIndex = outsideStartIndex - searchRange;
+                searchBeginIndex = (searchBeginIndex > 0) ? searchBeginIndex : 0;
+                int searchEndIndex = index + searchRange;
+
+                /*
+                // trim to ensure segment is continuously inside the region
+                for (int i = index; i < searchEndIndex; i++)
+                    if (!insideRegion(commandsOriginal.get(i).getDestinationPoint())) {
+                        searchEndIndex = i - 1;
+                        break;
+                    }
+
+                for (int i = searchBeginIndex; i > outsideStartIndex; i--)
+                    if (!insideRegion(commandsOriginal.get(i).getDestinationPoint())) {
+                        searchBeginIndex = i + 1;
+                        break;
+                    }
+
+                    */
+
+                searchEndIndex = (searchEndIndex < commandsOriginal.size()) ? searchEndIndex : commandsOriginal.size() - 1;
+                boolean foundObject = false;
+
+                /* searching prev 50 and after 50 commands to see if the shape can be found*/
+                for (int i = searchBeginIndex; i < outsideStartIndex; i++)
+                    for (int j = index; j < searchEndIndex; j++)
+                        if (!foundObject) {
+                            if ((Point.getDistance(commandsOriginal.get(i).getDestinationPoint(),
+                                    commandsOriginal.get(j).getDestinationPoint()) < 3.00)) {
+                                foundObject = true;
+                                if (insideRegion(commandsOriginal.get(i).getDestinationPoint())) {
+                                    // object start point is inside the region, shrink
+                                    List<SvgPathCommand> shrinkingPortion = new ArrayList<>();
+                                    for (int k = i; k <= j; k++)
+                                        shrinkingPortion.add(commandsOriginal.get(k));
+                                    boolean shrinkingDone = false;
+
+                                /* binary shrink*/
+                                    int shrinkIteration = 0;
+                                    while (!shrinkingDone && (shrinkIteration < 8)) {
+                                        shrinkIteration++;
+                                        shrinkingPortion = SvgPathCommand.commandsScaling(shrinkingPortion, 0.5, commandsOriginal.get(i).getDestinationPoint());
+                                        shrinkingDone = true;
+                                        for (int k = 0; k < shrinkingPortion.size(); k++) {
+                                            if (!insideRegion(shrinkingPortion.get(k).getDestinationPoint())) {
+                                                shrinkingDone = false;
+                                                break;
+                                            }
+                                        }
+
+                                    }
+                                    if (shrinkIteration < 8) {
+                                        for (int k = i; k < outsideStartIndex - 1; k++)
+                                            commandsTrimed.remove(commandsTrimed.size() - 1);
+                                        commandsTrimed.addAll(shrinkingPortion);
+
+                                    }
+                                    System.out.println("shrinking iteration:" + shrinkIteration);
+                                    index = j;
+                                } else {
+
+                                    System.out.println("remove object: " + (j - i));
+                                    // object start point is outside the region, remove
+                                    for (int k = i; k < outsideStartIndex - 1; k++)
+                                        commandsTrimed.remove(commandsTrimed.size() - 1);
+                                    index = j;
+                                }
+
+                            }
+
+                        }
+
+            }
+
+            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
+                commandsTrimed.add(commandsOriginal.get(index));
+                index++;
+            }
+
             /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
             outsideStartIndex = index;
             while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
