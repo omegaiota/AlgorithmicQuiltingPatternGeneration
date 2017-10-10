@@ -149,6 +149,8 @@ public class SvgPathCommand {
 
         }
 
+        returnList.get(0).setCommandType(CommandType.LINE_TO);
+
 
         return SvgPathCommand.commandsScaling(returnList, newDist / squiggleDist, parentNodeData);
     }

@@ -7,13 +7,13 @@ import java.util.List;
  * Created by JacquelineLi on 6/19/17.
  */
 public class Region {
-    private ArrayList<Point> boundary = new ArrayList<>();
+    private List<Point> boundary = new ArrayList<>();
 
-    public Region(ArrayList<Point> boundary) {
+    public Region(List<Point> boundary) {
         this.boundary = boundary;
     }
 
-    public ArrayList<Point> getBoundary() {
+    public List<Point> getBoundary() {
         return boundary;
     }
 

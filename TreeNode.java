@@ -39,11 +39,31 @@ public class TreeNode<T> {
     }
 
     public List<TreeNode<T>> getChildren() {
-//       naiveSorting();
        return children;
     }
 
+
     public void setChildren(List<TreeNode<T>> children) {
         this.children = children;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof TreeNode)) return false;
+
+        TreeNode<?> treeNode = (TreeNode<?>) o;
+
+        if (!data.equals(treeNode.data)) return false;
+        if (parent != null ? !parent.equals(treeNode.parent) : treeNode.parent != null) return false;
+        if (!neighbors.equals(treeNode.neighbors)) return false;
+        return children.equals(treeNode.children);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = data.hashCode();
+        result = 31 * result + (parent != null ? parent.hashCode() : 0);
+        return result;
     }
 }

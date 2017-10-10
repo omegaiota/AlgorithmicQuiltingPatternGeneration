@@ -311,6 +311,7 @@ public class Main extends Application {
             String skeletonName = regionFile.getfFileName();
             int rows = -1;
             int distributionDist = 0;
+            ArrayList<SvgPathCommand> temp = new ArrayList<>();
 
             switch (skeletonGenComboBox.getValue().toString()) {
                 case "Grid Tessellation":
@@ -336,6 +337,7 @@ public class Main extends Application {
                     skeletonPathCommands = distribute.toTraversal(renderedDecoCommands);
                     skeletonName += "_tessellation_33434_" + 20;
                     skeletonPathFile = SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName);
+                    temp.addAll(skeletonPathCommands);
                     skeletonSpanningTree = distribute.getSpanningTree();
                     break;
 
@@ -434,7 +436,11 @@ public class Main extends Application {
                             skeletonName += "_Pebble";
                             skeletonrenderer = new PatternRenderer(skeletonSpanningTree, PatternRenderer.RenderType.LANDFILL);
                             skeletonrenderer.landFill();
+
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
+
+                            temp.addAll(skeletonrenderer.getRenderedCommands());
+                            SvgFileProcessor.outputSvgCommands(temp, skeletonName + "_temp_" + decoFileName);
                         }
                         break;
                     case "Squiggles":

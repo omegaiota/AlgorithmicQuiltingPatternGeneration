@@ -2,6 +2,7 @@ package jackiequiltpatterndeterminaiton;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 /**
  * Created by JacquelineLi on 6/13/17.
@@ -112,14 +113,25 @@ public class Point {
 
     /** given two endpoints of a line, return true if the argument point is in the middle of the line */
     public static boolean onLine(Point start, Point end, Point testPoint) {
-        double minX = start.x < end.x ? start.x : end.x;
+        double minX = Double.compare(start.x, end.x) < 0 ? start.x : end.x;
         double maxX = start.x + end.x - minX;
 
-        double minY = start.y < end.y ? start.y : end.y;
+        double minY = Double.compare(start.y, end.y) < 0 ? start.y : end.y;
         double maxY = start.y + end.y - minY;
 
         return (Double.compare(testPoint.x, maxX) <= 0) && (Double.compare(testPoint.x, minX) >= 0) &&
                 (Double.compare(testPoint.y, maxY) <= 0) && (Double.compare(testPoint.y, minY) >= 0);
+
+    }
+
+    public static Point midPoint(List<Point> pointList) {
+        double thisX = 0.0, thisY = 0.0;
+        for (Point p : pointList) {
+            thisX += p.x;
+            thisY += p.y;
+        }
+
+        return new Point(thisX / pointList.size(), thisY / pointList.size());
 
     }
 
@@ -258,5 +270,27 @@ public class Point {
 
     public Point addPoint(Point shiftPoint) {
         return new Point(x + shiftPoint.x, y + shiftPoint.y);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Point)) return false;
+
+        Point point = (Point) o;
+
+        if (Double.compare(point.x, x) != 0) return false;
+        return Double.compare(point.y, y) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(x);
+        result = (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(y);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        return result;
     }
 }
