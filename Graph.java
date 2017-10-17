@@ -21,7 +21,7 @@ public class Graph {
      */
     public void pointPerturb() {
         for (Vertex<Point> p : mVertices) {
-            p.setData(jackiequiltpatterndeterminaiton.Point.randomNearby(p.getData(), disLen * 0.05));
+            p.setData(jackiequiltpatterndeterminaiton.Point.randomNearby(p.getData(), disLen * 0.02));
         }
     }
 

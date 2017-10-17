@@ -78,12 +78,53 @@ public class PatternRenderer {
         //landFillTraverse(spanningTree, null, dist);
         renderedCommands.add(new SvgPathCommand(new Point(spanningTree.getData().x + dist, spanningTree.getData().y), SvgPathCommand.CommandType.MOVE_TO));
         HashMap<Point, Double> radiusList = new HashMap<>();
-        pebbleRender(spanningTree, 0, dist, radiusList);
+        spanningTree.setRadii(dist);
+        pebbleRenderDetermineRadii(spanningTree, 0, dist, radiusList);
+        pebbleRenderDraw(spanningTree, 0);
     }
 
-    public void pebbleRender(TreeNode<Point> thisNode, int angle, double dist, final HashMap<Point, Double> radiusList) {
+    public void pebbleRenderDraw(TreeNode<Point> thisNode, int angle) {
         HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
-//        System.out.println("Dist:" + dist);
+        boolean[] degreeTable = new boolean[360];
+        Arrays.fill(degreeTable, false);
+        /* Record the direction of the children*/
+        for (TreeNode<Point> child : thisNode.getChildren()) {
+            int thisAngle = (int) Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
+            degreeTable[thisAngle] = true;
+            degreeTreeNodeMap.put(thisAngle, child);
+        }
+
+        int gap = 15;
+        Point zeroAnglePoint = new Point(thisNode.getData().x + thisNode.getRadii(), thisNode.getData().y);
+        for (Integer offset = 0; offset < 360; offset += gap) {
+            int currentAngle = (angle + offset) % 360;
+            TreeNode<Point> child;
+            Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
+            renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
+
+            for (Integer j = currentAngle; j < currentAngle + gap; j++) {
+                int searchAngle = j % 360;
+                if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
+                    int newAngle = (searchAngle + 180) % 360;
+                    // Find the minimum radii that won't cause conflict issue
+                    thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
+                    renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
+                    pebbleRenderDraw(child, newAngle);
+                    renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
+                }
+            }
+            renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
+
+
+        }
+
+        Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
+        renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
+
+    }
+
+    public void pebbleRenderDetermineRadii(TreeNode<Point> thisNode, int angle, double dist, final HashMap<Point, Double> radiusList) {
+        HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
         boolean[] degreeTable = new boolean[360];
         Arrays.fill(degreeTable, false);
         /* Record the direction of the children*/
@@ -99,7 +140,6 @@ public class PatternRenderer {
             int currentAngle = (angle + offset) % 360;
             TreeNode<Point> child;
             Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
-            renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
 
             for (Integer j = currentAngle; j < currentAngle + gap; j++) {
                 int searchAngle = j % 360;
@@ -137,7 +177,6 @@ public class PatternRenderer {
 
                     radiusList.put(child.getData(), newDist);
                     thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
-                    renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
 
 
                     if (shortLineSegment) {
@@ -152,22 +191,21 @@ public class PatternRenderer {
                         }
                         TreeNode<Point> midTreeNode = new TreeNode<>(middlePoint, new ArrayList<>());
                         midTreeNode.addChild(child);
-                        pebbleRender(midTreeNode, newAngle, newRadii, radiusList);
+                        thisNode.removeChild(child);
+                        thisNode.addChild(midTreeNode);
+                        midTreeNode.setRadii(newRadii);
+                        pebbleRenderDetermineRadii(midTreeNode, newAngle, newRadii, radiusList);
                     } else {
-                        pebbleRender(child, newAngle, newDist, radiusList);
+                        child.setRadii(newDist);
+                        pebbleRenderDetermineRadii(child, newAngle, newDist, radiusList);
                     }
-                    renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
 
                 }
             }
-            renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
-
-
         }
 
-        Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
-        renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
     }
+
 
     public void fixedWidthFilling(double width, double density) {
         System.out.println("Rendering with fixed width");

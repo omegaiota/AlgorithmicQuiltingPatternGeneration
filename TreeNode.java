@@ -11,6 +11,7 @@ public class TreeNode<T> {
    private TreeNode<T> parent;
    private List<Vertex<T>> neighbors;
    private List<TreeNode<T>> children;
+    private double radii; // bounding circle of the treenode
 
    public TreeNode(T data, List<Vertex<T>> neighbors) {
        this.data = data;
@@ -18,8 +19,26 @@ public class TreeNode<T> {
        this.neighbors = neighbors;
    }
 
+    public double getRadii() {
+        return radii;
+    }
+
+    public void setRadii(double radii) {
+        this.radii = radii;
+    }
+
     public void addChild(TreeNode<T> child) {
         this.children.add(child);
+    }
+
+    public void removeChild(TreeNode<T> child) {
+        for (TreeNode<T> myChild : children) {
+            if (myChild.equals(child)) {
+                children.remove(child);
+                break;
+            }
+
+        }
     }
 
     public T getData() {
