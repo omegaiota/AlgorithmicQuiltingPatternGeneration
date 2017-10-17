@@ -435,7 +435,7 @@ public class Main extends Application {
                         } else {
                             skeletonName += "_Pebble";
                             skeletonrenderer = new PatternRenderer(skeletonSpanningTree, PatternRenderer.RenderType.LANDFILL);
-                            skeletonrenderer.landFill();
+                            skeletonrenderer.pebbleFilling();
 
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
 

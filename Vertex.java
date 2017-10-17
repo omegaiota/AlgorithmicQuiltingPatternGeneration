@@ -11,7 +11,6 @@ public class Vertex<T> {
     private T data;
     private List<Vertex<T>> neighbors;
     private List<Integer> weight;
-
     public Vertex(T data) {
         this.data = data;
         this.neighbors = new ArrayList<>();
@@ -52,6 +51,10 @@ public class Vertex<T> {
 
     public T getData() {
         return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
     }
 
     public List<Integer> getWeight() {

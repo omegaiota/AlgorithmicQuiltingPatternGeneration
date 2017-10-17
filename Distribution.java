@@ -16,7 +16,7 @@ public class Distribution {
     private ArrayList<PointRotation> pairList = new ArrayList<>();
     private RenderType type;
     private Region boundary;
-    private Graph<Point> pointGraph;
+    private Graph pointGraph;
     private double disLen = 0;
     private TreeNode<Point> spanningTree;
     public Distribution(RenderType type, Region boundary, double disLen, SvgFileProcessor regionFile) {
@@ -56,7 +56,6 @@ public class Distribution {
                 break;
         }
 
-        System.out.println("Distribution finished");
 
     }
 
@@ -205,7 +204,7 @@ public class Distribution {
     }
 
     public void toRegularGraph() {
-        pointGraph = new Graph<>(disLen);
+        pointGraph = new Graph(disLen);
         for (Point point : pointList) {
             Vertex<Point> vertex = new Vertex<>(point);
             pointGraph.addVertex(vertex);
@@ -252,6 +251,7 @@ public class Distribution {
     }
 
     public void toSpanningTree() {
+
         spanningTree = pointGraph.generateSpanningTree();
     }
 

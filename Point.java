@@ -49,6 +49,18 @@ public class Point {
         this.y = -12345;
     }
 
+    /**
+     * return a point that's in the circle with radius around input point
+     *
+     * @param radius
+     * @return new point
+     */
+    public static Point randomNearby(Point origin, double radius) {
+        double r = Math.random() * radius;
+        double theta = Math.random() * Math.PI;
+        return origin.addPoint(new Point(r * Math.cos(theta), 3 * Math.sin(theta)));
+    }
+
     /** truncateDouble: truncates value so that it fits precision
      *  requires: none
      *  ensures: function rounts value to floor into at most precision digits*/

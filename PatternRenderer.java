@@ -64,7 +64,7 @@ public class PatternRenderer {
         return renderedCommands;
     }
 
-    public void landFill() {
+    public void pebbleFilling() {
         Double dist = Point.getDistance(spanningTree.getData(), spanningTree.getChildren().get(0).getData());
         for (TreeNode<Point> firstChildren : spanningTree.getChildren()) {
             if (Double.compare((Point.getDistance(spanningTree.getData(), firstChildren.getData())), dist) < 0)
@@ -141,15 +141,14 @@ public class PatternRenderer {
 
 
                     if (shortLineSegment) {
+                        // Strategy 1: insert a new pebble at allshort line segments
                         double distBtwChildParent = Point.getDistance(thisNode.getData(), child.getData());
                         assert (distBtwChildParent - dist - newDist) > 0;
                         double newRadii = (distBtwChildParent - dist - newDist) / 2.0;
-//                        double newRadii = (distBtwChildParent - dist) / 4.0;
                         Point middlePoint = Point.intermediatePointWithLen(thisNode.getData(), child.getData(), newRadii + dist);
                         if (!Point.onLine(thisNode.getData(), child.getData(), middlePoint)) {
                             System.out.println("");
                             assert newRadii + dist < distBtwChildParent;
-//                            assert false;
                         }
                         TreeNode<Point> midTreeNode = new TreeNode<>(middlePoint, new ArrayList<>());
                         midTreeNode.addChild(child);
@@ -282,7 +281,7 @@ public class PatternRenderer {
     }
 
     private void outputLandFill() {
-        SvgFileProcessor.outputSvgCommands(renderedCommands, "landFill");
+        SvgFileProcessor.outputSvgCommands(renderedCommands, "pebbleFilling");
     }
 
     public File outputEchoed(int number) {
