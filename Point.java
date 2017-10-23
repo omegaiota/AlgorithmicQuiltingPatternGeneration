@@ -70,7 +70,7 @@ public class Point {
 
     /** given two endpoints of a line, return the retPoint on the line such that dist(retPoint,startPoint) == dist */
     public static Point intermediatePointWithLen(Point start, Point end, double dist) {
-        System.out.println(start.toString() + end.toString() + " :" + dist);
+//        System.out.println(start.toString() + end.toString() + " :" + dist);
         if (Math.abs(end.x - start.x) < 0.01)
             return new Point(start.x, start.y + dist * (start.y < end.y ?  1 : -1));
         if (dist == 0)
@@ -84,7 +84,7 @@ public class Point {
         int sign = start.x < end.x ? 1 : -1;
         double interX = (-1 * BB + sign * Math.sqrt(BB * BB - 4 * A * C))/ (2 * A);
         double interY = k * interX + b;
-        System.out.println(interX + " " + interY);
+//        System.out.println(interX + " " + interY);
 
         return new Point(truncateDouble(interX, 3), truncateDouble(interY, 3));
     }
@@ -164,7 +164,7 @@ public class Point {
     public static double getDistance(Point start, Point end) {
         double delta_x_sqr = Math.pow(end.x - start.x, 2);
         double delta_y_sqr = Math.pow(end.y - start.y, 2);
-        double distance = Math.sqrt(delta_x_sqr + delta_y_sqr);
+        double distance = Math.sqrt(truncateDouble(delta_x_sqr, 3) + truncateDouble(delta_y_sqr, 3));
         return truncateDouble(distance, 3);
     }
 

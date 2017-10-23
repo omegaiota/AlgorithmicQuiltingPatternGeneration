@@ -58,7 +58,7 @@ public class TreeNode<T> {
     }
 
     public List<TreeNode<T>> getChildren() {
-       return children;
+        return new ArrayList<>(children);
     }
 
 

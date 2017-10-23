@@ -434,7 +434,7 @@ public class Main extends Application {
                             System.out.println("WARNING: spanning tree is NULL");
                         } else {
                             skeletonName += "_Pebble";
-                            skeletonrenderer = new PatternRenderer(skeletonSpanningTree, PatternRenderer.RenderType.LANDFILL);
+                            skeletonrenderer = new PebbleRenderer(skeletonSpanningTree);
                             skeletonrenderer.pebbleFilling();
 
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);

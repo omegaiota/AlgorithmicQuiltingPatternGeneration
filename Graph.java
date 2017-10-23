@@ -20,9 +20,9 @@ public class Graph {
      * Perturbation
      */
     public void pointPerturb() {
-        for (Vertex<Point> p : mVertices) {
-            p.setData(jackiequiltpatterndeterminaiton.Point.randomNearby(p.getData(), disLen * 0.02));
-        }
+//        for (Vertex<Point> p : mVertices) {
+//            p.setData(jackiequiltpatterndeterminaiton.Point.randomNearby(p.getData(), disLen * 0.8));
+//        }
     }
 
 

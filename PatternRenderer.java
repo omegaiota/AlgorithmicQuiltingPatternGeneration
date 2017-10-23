@@ -2,12 +2,9 @@ package jackiequiltpatterndeterminaiton;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
- * Created by JacquelineLi on 6/25/17.
  */
 public class PatternRenderer {
     private List<SvgPathCommand> skeletonPathCommands, decorativeElementCommands, renderedCommands = new ArrayList<>();
@@ -34,9 +31,8 @@ public class PatternRenderer {
         this.renderType = type;
     }
 
-    public PatternRenderer(TreeNode<Point> spanningTree, RenderType type) {
+    public PatternRenderer(TreeNode<Point> spanningTree) {
         this.spanningTree = spanningTree;
-        this.renderType = type;
     }
 
     public PatternRenderer(ArrayList<SvgPathCommand> commands, RenderType type) {
@@ -65,147 +61,8 @@ public class PatternRenderer {
     }
 
     public void pebbleFilling() {
-        Double dist = Point.getDistance(spanningTree.getData(), spanningTree.getChildren().get(0).getData());
-        for (TreeNode<Point> firstChildren : spanningTree.getChildren()) {
-            if (Double.compare((Point.getDistance(spanningTree.getData(), firstChildren.getData())), dist) < 0)
-                dist = Point.getDistance(spanningTree.getData(), firstChildren.getData());
-        }
-        dist = dist * 0.63;
-        System.out.println("Command distance is" + dist);
-
-        /* Order children tobe counterclockwise*/
-        TreeTraversal.treeOrdering(spanningTree, null);
-        //landFillTraverse(spanningTree, null, dist);
-        renderedCommands.add(new SvgPathCommand(new Point(spanningTree.getData().x + dist, spanningTree.getData().y), SvgPathCommand.CommandType.MOVE_TO));
-        HashMap<Point, Double> radiusList = new HashMap<>();
-        spanningTree.setRadii(dist);
-        pebbleRenderDetermineRadii(spanningTree, 0, dist, radiusList);
-        pebbleRenderDraw(spanningTree, 0);
-    }
-
-    public void pebbleRenderDraw(TreeNode<Point> thisNode, int angle) {
-        HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
-        boolean[] degreeTable = new boolean[360];
-        Arrays.fill(degreeTable, false);
-        /* Record the direction of the children*/
-        for (TreeNode<Point> child : thisNode.getChildren()) {
-            int thisAngle = (int) Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
-            degreeTable[thisAngle] = true;
-            degreeTreeNodeMap.put(thisAngle, child);
-        }
-
-        int gap = 15;
-        Point zeroAnglePoint = new Point(thisNode.getData().x + thisNode.getRadii(), thisNode.getData().y);
-        for (Integer offset = 0; offset < 360; offset += gap) {
-            int currentAngle = (angle + offset) % 360;
-            TreeNode<Point> child;
-            Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
-            renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
-
-            for (Integer j = currentAngle; j < currentAngle + gap; j++) {
-                int searchAngle = j % 360;
-                if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
-                    int newAngle = (searchAngle + 180) % 360;
-                    // Find the minimum radii that won't cause conflict issue
-                    thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
-                    renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
-                    pebbleRenderDraw(child, newAngle);
-                    renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
-                }
-            }
-            renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
-
-
-        }
-
-        Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
-        renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
 
     }
-
-    public void pebbleRenderDetermineRadii(TreeNode<Point> thisNode, int angle, double dist, final HashMap<Point, Double> radiusList) {
-        HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
-        boolean[] degreeTable = new boolean[360];
-        Arrays.fill(degreeTable, false);
-        /* Record the direction of the children*/
-        for (TreeNode<Point> child : thisNode.getChildren()) {
-            int thisAngle = (int) Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
-            degreeTable[thisAngle] = true;
-            degreeTreeNodeMap.put(thisAngle, child);
-        }
-
-        int gap = 15;
-        Point zeroAnglePoint = new Point(thisNode.getData().x + dist, thisNode.getData().y);
-        for (Integer offset = 0; offset < 360; offset += gap) {
-            int currentAngle = (angle + offset) % 360;
-            TreeNode<Point> child;
-            Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
-
-            for (Integer j = currentAngle; j < currentAngle + gap; j++) {
-                int searchAngle = j % 360;
-                if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
-                    int newAngle = (searchAngle + 180) % 360;
-                    double newDist = Point.getDistance(thisNode.getData(), child.getData()) - dist;
-                    // Find the minimum radii that won't cause conflict issue
-                    List<Point> childrenPoint = new ArrayList<>();
-                    for (TreeNode<Point> firstChildren : child.getChildren()) {
-                        double distanceBetween = Point.getDistance(child.getData(), firstChildren.getData());
-                        if (Double.compare(distanceBetween, 0.002) > 0 && Double.compare(distanceBetween, newDist) < 0)
-                            newDist = distanceBetween ;
-                        childrenPoint.add(firstChildren.getData());
-                    }
-
-                    double radiiBeforeAdjust = newDist;
-                    boolean shortLineSegment = false;
-
-                    //loop through pebbles that have drawn already to adjust radii
-                    childrenPoint.add(child.getData());
-                    final TreeNode<Point> thisChild = child;
-                    ArrayList<Point> pointsDetermined = new ArrayList<>(radiusList.keySet());
-                    pointsDetermined.sort((p1, p2) -> (
-                            new Double(Point.getDistance(thisChild.getData(), p1) - radiusList.get(p1)).compareTo((Point.getDistance(thisChild.getData(), p2) - radiusList.get(p2))
-                            )));
-                    if (pointsDetermined.size() != 0) {
-                        double distanceBetween = Point.getDistance(child.getData(), pointsDetermined.get(0)) - radiusList.get(pointsDetermined.get(0));
-                        if ((distanceBetween > 0) && Double.compare(distanceBetween, newDist) < 0) {
-                            newDist = distanceBetween ;
-                            assert newDist > 0;
-                            shortLineSegment = true;
-
-                        }
-                    }
-
-                    radiusList.put(child.getData(), newDist);
-                    thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
-
-
-                    if (shortLineSegment) {
-                        // Strategy 1: insert a new pebble at allshort line segments
-                        double distBtwChildParent = Point.getDistance(thisNode.getData(), child.getData());
-                        assert (distBtwChildParent - dist - newDist) > 0;
-                        double newRadii = (distBtwChildParent - dist - newDist) / 2.0;
-                        Point middlePoint = Point.intermediatePointWithLen(thisNode.getData(), child.getData(), newRadii + dist);
-                        if (!Point.onLine(thisNode.getData(), child.getData(), middlePoint)) {
-                            System.out.println("");
-                            assert newRadii + dist < distBtwChildParent;
-                        }
-                        TreeNode<Point> midTreeNode = new TreeNode<>(middlePoint, new ArrayList<>());
-                        midTreeNode.addChild(child);
-                        thisNode.removeChild(child);
-                        thisNode.addChild(midTreeNode);
-                        midTreeNode.setRadii(newRadii);
-                        pebbleRenderDetermineRadii(midTreeNode, newAngle, newRadii, radiusList);
-                    } else {
-                        child.setRadii(newDist);
-                        pebbleRenderDetermineRadii(child, newAngle, newDist, radiusList);
-                    }
-
-                }
-            }
-        }
-
-    }
-
 
     public void fixedWidthFilling(double width, double density) {
         System.out.println("Rendering with fixed width");
@@ -318,16 +175,9 @@ public class PatternRenderer {
 
     }
 
-    private void outputLandFill() {
-        SvgFileProcessor.outputSvgCommands(renderedCommands, "pebbleFilling");
-    }
 
     public File outputEchoed(int number) {
         return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number);
-    }
-
-    public File  outputRendered(double width) {
-        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-render-" + width);
     }
 
     public File  outputRotated(Integer angle) {
