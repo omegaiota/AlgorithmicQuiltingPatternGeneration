@@ -110,6 +110,8 @@ public class Main extends Application {
         skeletonGenComboBox.getItems().addAll("Grid Tessellation", "3.3.4.3.4 Tessellation",
                 "Hilbert Curve", "Echo", "Medial Axis", "Snake");
 
+        skeletonGenComboBox.getItems().addAll(SkeletonPathGenerationMethods.values());
+
         skeletonGeneration.getChildren().addAll(skeletonGnerationlabel, skeletonGenComboBox);
 
         /* Skeleton Path Rendering */
@@ -314,6 +316,7 @@ public class Main extends Application {
             ArrayList<SvgPathCommand> temp = new ArrayList<>();
 
             switch (skeletonGenComboBox.getValue().toString()) {
+//                case SkeletonPathGenerationMethods.GRID_TESSELLATION:
                 case "Grid Tessellation":
                     distributionDist = Integer.valueOf(skeletonGenTextField.getText());
                     System.out.println("Skeleton Path: Grid Tessellation");
@@ -696,6 +699,10 @@ public class Main extends Application {
                 patternPropertyInput.getChildren().setAll(patternRenderFieldLabel, patternRenderTextFiled);
             }
         });
+    }
+
+    public enum SkeletonPathGenerationMethods {
+        GRID_TESSELLATION, THREE_3_4_3_4_TESSELLATION, HILBERT_CURVE, ECHO, MEDIAL_AXIS, SNAKE;
     }
 
 
