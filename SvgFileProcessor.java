@@ -261,6 +261,10 @@ public class SvgFileProcessor {
         return height;
     }
 
+    public Point getCentroid() {
+        return new Point((getMaxPoint().x + getMinPoint().x) * 0.5, (getMaxPoint().y + getMinPoint().y) * 0.5);
+    }
+
     public double getPatternHeight() {
         return patternHeight;
     }

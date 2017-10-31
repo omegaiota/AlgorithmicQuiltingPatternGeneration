@@ -42,13 +42,13 @@ public class PatternRenderer {
 
     public static void insertPatternToList(List<SvgPathCommand> patternCommands,
                                            List<SvgPathCommand> combinedCommands,
-                                           Point insertionPoint, double rotationAngle) {
+                                           Point insertionPoint, double rotationAngleInRadian) {
         if (patternCommands.size() == 0)
             return;
         Point patternPoint = patternCommands.get(0).getDestinationPoint();
         SvgPathCommand newCommand;
         for (int j = 0; j < patternCommands.size(); j++) {
-            newCommand = new SvgPathCommand(patternCommands.get(j), patternPoint, insertionPoint, rotationAngle);
+            newCommand = new SvgPathCommand(patternCommands.get(j), patternPoint, insertionPoint, rotationAngleInRadian);
             if (j == 0)
                 newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
             combinedCommands.add(newCommand);

@@ -12,13 +12,21 @@ public class TreeNode<T> {
    private List<Vertex<T>> neighbors;
    private List<TreeNode<T>> children;
     private CircleBound boundingCircle;
-    private double boundingWidth, boundingHeight;
+    private RectangleBound boundingRectangle;
 
    public TreeNode(T data, List<Vertex<T>> neighbors) {
        this.data = data;
        this.children = new ArrayList<>();
        this.neighbors = neighbors;
    }
+
+    public RectangleBound getBoundingRectangle() {
+        return boundingRectangle;
+    }
+
+    public void setBoundingRectangle(RectangleBound boundingRectangle) {
+        this.boundingRectangle = boundingRectangle;
+    }
 
     public CircleBound getBoundingCircle() {
         return boundingCircle;
@@ -28,21 +36,6 @@ public class TreeNode<T> {
         this.boundingCircle = boundingCircle;
     }
 
-    public double getBoundingWidth() {
-        return boundingWidth;
-    }
-
-    public void setBoundingWidth(double boundingWidth) {
-        this.boundingWidth = boundingWidth;
-    }
-
-    public double getBoundingHeight() {
-        return boundingHeight;
-    }
-
-    public void setBoundingHeight(double boundingHeight) {
-        this.boundingHeight = boundingHeight;
-    }
 
 
     public void addChild(TreeNode<T> child) {

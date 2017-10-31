@@ -67,11 +67,11 @@ public class SvgPathCommand {
     }
 
     /** generate a path command from an old command whose center point is shifted and rotated*/
-    public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double angle) {
+    public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double radian) {
         this.commandType = oldCommand.getCommandType();
-        destinationPoint = oldCommand.getDestinationPoint().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart);
-        controlPoint1 = oldCommand.getControlPoint1().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart);
-        controlPoint2 = oldCommand.getControlPoint2().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart);
+        destinationPoint = oldCommand.getDestinationPoint().minusPoint(originalStart).rotateAroundOrigin(radian).addPoint(finalStart);
+        controlPoint1 = oldCommand.getControlPoint1().minusPoint(originalStart).rotateAroundOrigin(radian).addPoint(finalStart);
+        controlPoint2 = oldCommand.getControlPoint2().minusPoint(originalStart).rotateAroundOrigin(radian).addPoint(finalStart);
     }
 
     /** generate a path command from an old command who is rotated around the center point for angle*/

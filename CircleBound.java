@@ -4,8 +4,8 @@ package jackiequiltpatterndeterminaiton;
  *
  */
 public final class CircleBound {
-    double radii;
-    Point center;
+    private double radii;
+    private Point center;
 
     public CircleBound(double radii, Point center) {
         this.radii = radii;
