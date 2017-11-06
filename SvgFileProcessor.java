@@ -112,6 +112,24 @@ public class SvgFileProcessor {
 
     }
 
+    public static Point getCentroidOnList(List<SvgPathCommand> commands) {
+        Point maxPoint = commands.get(0).getDestinationPoint(), minPoint = maxPoint;
+        for (SvgPathCommand c : commands) {
+            Point d = c.getDestinationPoint();
+            if (d.x < minPoint.x)
+                minPoint = new Point(d.x, minPoint.y);
+            if (d.y < minPoint.y)
+                minPoint = new Point(minPoint.x, d.y);
+            if (d.x > maxPoint.x)
+                maxPoint = new Point(d.x, maxPoint.y);
+            if (d.y > maxPoint.y)
+                maxPoint = new Point(maxPoint.x, d.y);
+        }
+
+        return new Point((maxPoint.x + minPoint.x) * 0.5, (maxPoint.y + minPoint.y) * 0.5);
+
+    }
+
     public Point getMinPoint() {
         return minPoint;
     }
@@ -252,13 +270,21 @@ public class SvgFileProcessor {
         return fFileName;
     }
 
-
     public double getWidth() {
         return width;
     }
 
     public double getHeight() {
         return height;
+    }
+
+    public double getMaximumExtentFromStartPoint() {
+        double maxDist = 0;
+        for (int i = 0; i < commandLists.get(0).size(); i++)
+            for (int j = i + 1; j < commandLists.get(0).size(); j++) {
+                maxDist = Double.max(maxDist, Point.getDistance(commandLists.get(0).get(j).getDestinationPoint(), commandLists.get(0).get(i).getDestinationPoint()));
+            }
+        return maxDist * 1.1;
     }
 
     public Point getCentroid() {

@@ -1,7 +1,5 @@
 package jackiequiltpatterndeterminaiton;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 
 /**
@@ -65,7 +63,8 @@ public class Point {
      *  requires: none
      *  ensures: function rounts value to floor into at most precision digits*/
     public static double truncateDouble(double value, int precision) {
-        return BigDecimal.valueOf(value).setScale(precision, RoundingMode.FLOOR).doubleValue();
+        return Math.round(value * Math.pow(10, precision)) / Math.pow(10, precision);
+//        return BigDecimal.valueOf(value).setScale(precision, RoundingMode.FLOOR).doubleValue();
     }
 
     /** given two endpoints of a line, return the retPoint on the line such that dist(retPoint,startPoint) == dist */
