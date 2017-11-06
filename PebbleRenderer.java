@@ -235,19 +235,52 @@ public class PebbleRenderer extends PatternRenderer {
 
         int gap = 15;
         Point zeroAnglePoint = new Point(thisNode.getData().x + thisNode.getBoundingCircle().getRadii(), thisNode.getData().y);
+        Point startDrawingPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), (double) angle);
         // Insert a kissing primitive instead of a pebble
-        if (decoCommands.size() != 0) {
-            PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands,
-                    thisNode.getBoundingCircle().getRadii() * 2 /
-                            Math.sqrt(decoElemFile.getHeight() * decoElemFile.getHeight() + decoElemFile.getWidth() * decoElemFile.getWidth()),
-                    decoCommands.get(0).getDestinationPoint()), renderedCommands, renderedCommands.get(renderedCommands.size() - 1).getDestinationPoint(), Math.toRadians(angle));
-        }
+        List<SvgPathCommand> scaledCommands = new ArrayList<>();
+//        if (decoCommands.size() != 0) {
+//            PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands,
+//                    thisNode.getBoundingCircle().getRadii() * 2 /
+//                            Math.sqrt(decoElemFile.getHeight() * decoElemFile.getHeight() + decoElemFile.getWidth() * decoElemFile.getWidth()),
+//                    decoCommands.get(0).getDestinationPoint()),
+//                    scaledCommands, startDrawingPoint, Math.toRadians(angle));
+//
+//            renderedCommands.add(scaledCommands.get(0));
+//            for (int i = 1; i < scaledCommands.size(); i++) {
+//                TreeNode<Point> child;
+//                Point lastCommandPoint = scaledCommands.get(i - 1).getDestinationPoint(),
+//                        thisCommandPoint = scaledCommands.get(i).getDestinationPoint();
+//                int commandToThisPointAngle = ((int) Math.toDegrees(Point.getAngle(startDrawingPoint, thisCommandPoint))) % 360;
+//                int commandToLastPointAngle = ((int) Math.toDegrees(Point.getAngle(startDrawingPoint, lastCommandPoint))) % 360;
+//                for (int j = commandToLastPointAngle; j < commandToThisPointAngle; j++) {
+//                    if ((child = degreeTreeNodeMap.get(j)) != null) {
+//                        // calculate cut point
+//                        double alphaInRadian = Math.toRadians(j - commandToLastPointAngle),
+//                                thetaInRadian = Point.getAngle(lastCommandPoint, thisCommandPoint)
+//                                        - Point.getAngle(lastCommandPoint, startDrawingPoint),
+//                                betaInRadian = Math.PI - alphaInRadian - thetaInRadian;
+//                        double movedLength = alphaInRadian / betaInRadian * Point.getDistance(lastCommandPoint, startDrawingPoint);
+//                        Point cutPoint = Point.intermediatePointWithLen(lastCommandPoint, thisCommandPoint, movedLength);
+//                        renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
+//                        int newAngle = (j + 180) % 360;
+//                        pebbleRenderDraw(child, newAngle);
+//                    }
+//                }
+//                renderedCommands.add(scaledCommands.get(i));
+//
+//
+//            }
+//        }
+//        renderedCommands.addAll(scaledCommands);
+
+
+        /** Pebbles **/
+
         for (Integer offset = 0; offset < 360; offset += gap) {
             int currentAngle = (angle + offset) % 360;
             TreeNode<Point> child;
             Point cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
-
-//            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
+            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
 
             for (Integer j = currentAngle; j < currentAngle + gap; j++) {
                 int searchAngle = j % 360;
@@ -255,15 +288,9 @@ public class PebbleRenderer extends PatternRenderer {
                     int newAngle = (searchAngle + 180) % 360;
                     cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(j));
                     renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
-
                     pebbleRenderDraw(child, newAngle);
-                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
-
                 }
             }
-//            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
-
-
         }
         Point thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));

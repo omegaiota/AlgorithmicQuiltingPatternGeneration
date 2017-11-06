@@ -261,7 +261,7 @@ public class Point {
     /**
      * rotate a point with angle radian around a central point
      */
-    public Point rotateAroundCenter(Point center, Double angle) {
+    public Point rotateAroundCenter(Point center, double angle) {
         return this.minusPoint(center).rotateAroundOrigin(angle).addPoint(center);
     }
 
