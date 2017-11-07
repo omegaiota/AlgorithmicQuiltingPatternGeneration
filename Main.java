@@ -5,7 +5,12 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -22,11 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.ECHO;
 import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.GRID_TESSELLATION;
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.HILBERT_CURVE;
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.MEDIAL_AXIS;
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.SNAKE;
 import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.THREE_3_4_3_4_TESSELLATION;
 
 public class Main extends Application {
@@ -319,26 +320,21 @@ public class Main extends Application {
             skeletonName += skeletonGenComboBox.getValue().toString();
             switch ((SkeletonPathGenerationMethods) skeletonGenComboBox.getValue()) {
                 case GRID_TESSELLATION:
-                    distributionDist = Integer.valueOf(skeletonGenTextField.getText());
-                    System.out.println("Skeleton Path: Grid Tessellation");
-                    distribute = new Distribution(Distribution.RenderType.TRIANGLE,
-                            boundary, distributionDist, regionFile);
-
-                    distribute.generate();
-                    distribute.outputDistribution();
-                    skeletonPathCommands = distribute.toTraversal(renderedDecoCommands);
-                    skeletonSpanningTree = distribute.getSpanningTree();
-                    break;
-
                 case THREE_3_4_3_4_TESSELLATION:
                     distributionDist = Integer.valueOf(skeletonGenTextField.getText());
-                    System.out.println("Skeleton Path: 3.3.4.3.4 Tessellation");
-                    distribute = new Distribution(Distribution.RenderType.THREE_THREE_FOUR_THREE_FOUR,
-                            boundary, distributionDist, regionFile);
+                    System.out.println("Skeleton Path: Grid Tessellation");
+                    if (skeletonGenComboBox.getValue() == GRID_TESSELLATION) {
+                        distribute = new Distribution(Distribution.RenderType.TRIANGLE,
+                                boundary, distributionDist, regionFile);
+                    } else {
+                        distribute = new Distribution(Distribution.RenderType.THREE_THREE_FOUR_THREE_FOUR,
+                                boundary, distributionDist, regionFile);
+                    }
+
+
                     distribute.generate();
                     distribute.outputDistribution();
                     skeletonPathCommands = distribute.toTraversal(renderedDecoCommands);
-                    temp.addAll(skeletonPathCommands);
                     skeletonSpanningTree = distribute.getSpanningTree();
                     break;
 
@@ -601,31 +597,50 @@ public class Main extends Application {
             SkeletonPathGenerationMethods newSelected = (SkeletonPathGenerationMethods) skeletonGenComboBox.getValue();
             System.out.println("Skeleton generation method changed: " + newSelected);
             skeletonRenderComboBox.setValue("No Rendering");
-            if (newSelected.equals(THREE_3_4_3_4_TESSELLATION) || newSelected.equals(GRID_TESSELLATION)) {
-                System.out.println("case 1: tree structure");
-                patternLibraryComboBox.getItems().setAll(endpointList);
-                skeletonRenderComboBox.getItems().setAll("No Rendering", "Fixed-width Filling", "Squiggles", "Pebble");
-            } else if (newSelected.equals(ECHO) || newSelected.equals(MEDIAL_AXIS) || newSelected.equals(HILBERT_CURVE)) {
-                System.out.println("case 2: none tree structure");
-                skeletonRenderComboBox.getItems().setAll("No Rendering", "Squiggles", "Pattern Along Path");
-            } else if (newSelected.equals(SNAKE)) {
-                System.out.println("Snake");
-                skeletonRenderComboBox.getItems().setAll("No Rendering", "Pattern Along Path", "Squiggles", "Pebble", "Tiling");
+            switch (newSelected) {
+                case THREE_3_4_3_4_TESSELLATION:
+                case GRID_TESSELLATION:
+                    System.out.println("case 1: tree structure");
+                    patternLibraryComboBox.getItems().setAll(endpointList);
+                    skeletonRenderComboBox.getItems().setAll("No Rendering", "Fixed-width Filling", "Squiggles", "Pebble");
+                    break;
+                case ECHO:
+                case MEDIAL_AXIS:
+                case HILBERT_CURVE:
+                    System.out.println("case 2: none tree structure");
+                    skeletonRenderComboBox.getItems().setAll("No Rendering", "Squiggles", "Pattern Along Path");
+                    break;
+                case SNAKE:
+                    System.out.println("Snake");
+                    skeletonRenderComboBox.getItems().setAll("No Rendering", "Pattern Along Path", "Squiggles", "Pebble", "Tiling");
+                    break;
             }
-
-            if (newSelected.equals(ECHO) || newSelected.equals(HILBERT_CURVE) || newSelected.equals(SNAKE)
-                    || newSelected.equals(THREE_3_4_3_4_TESSELLATION) || newSelected.equals(GRID_TESSELLATION)) {
-                if (newSelected.equals(ECHO))
-                    skeletonGenFieldLabel.setText("Repetitions:");
-                if (newSelected.equals(HILBERT_CURVE))
-                    skeletonGenFieldLabel.setText("Level:");
-                if (newSelected.equals(SNAKE))
-                    skeletonGenFieldLabel.setText("Rows:");
-                if (newSelected.equals(THREE_3_4_3_4_TESSELLATION) || newSelected.equals(GRID_TESSELLATION))
-                    skeletonGenFieldLabel.setText("Distribution Distance:");
-                skeletonGenPropertyInput.getChildren().setAll(skeletonGenFieldLabel, skeletonGenTextField);
-            }  else {
-                skeletonGenPropertyInput.getChildren().removeAll(skeletonGenFieldLabel, skeletonGenTextField);
+            switch (newSelected) {
+                case ECHO:
+                case HILBERT_CURVE:
+                case SNAKE:
+                case THREE_3_4_3_4_TESSELLATION:
+                case GRID_TESSELLATION:
+                    switch (newSelected) {
+                        case ECHO:
+                            skeletonGenFieldLabel.setText("Repetitions:");
+                            break;
+                        case HILBERT_CURVE:
+                            skeletonGenFieldLabel.setText("Level:");
+                            break;
+                        case SNAKE:
+                            skeletonGenFieldLabel.setText("Rows:");
+                            break;
+                        case THREE_3_4_3_4_TESSELLATION:
+                        case GRID_TESSELLATION:
+                            skeletonGenFieldLabel.setText("Distribution Distance:");
+                            break;
+                    }
+                    skeletonGenPropertyInput.getChildren().setAll(skeletonGenFieldLabel, skeletonGenTextField);
+                    break;
+                default:
+                    skeletonGenPropertyInput.getChildren().removeAll(skeletonGenFieldLabel, skeletonGenTextField);
+                    break;
             }
 
             if (newSelected.equals(THREE_3_4_3_4_TESSELLATION) || newSelected.equals(GRID_TESSELLATION)) {
