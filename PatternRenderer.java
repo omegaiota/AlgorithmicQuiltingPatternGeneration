@@ -185,7 +185,7 @@ public class PatternRenderer {
     }
 
     public enum RenderType {
-        NO_DECORATION, WITH_DECORATION, ROTATION, ECHO, LANDFILL
+        NO_DECORATION, WITH_DECORATION, ROTATION, ECHO
     }
 
 

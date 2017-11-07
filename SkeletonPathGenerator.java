@@ -1,6 +1,5 @@
 package jackiequiltpatterndeterminaiton;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,13 +46,5 @@ public class SkeletonPathGenerator {
 
     public List<SvgPathCommand> getSkeletonPath() {
         return skeletonPath;
-    }
-
-    public File outputSnake(int rows) {
-        return SvgFileProcessor.outputSvgCommands(skeletonPath, "snake-" + rows);
-    }
-
-    public enum GenerationMethodType {
-        SNAKE
     }
 }

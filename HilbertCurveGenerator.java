@@ -45,9 +45,4 @@ public class HilbertCurveGenerator {
 
         }
     }
-
-
-    public ArrayList<SvgPathCommand> getCommandList() {
-        return commandList;
-    }
 }
