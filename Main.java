@@ -400,28 +400,22 @@ public class Main extends Application {
                 switch ((SkeletonRenderType) skeletonRenderComboBox.getValue()) {
                     case FIXED_WIDTH_FILL:
                         double width = distributionDist / 5;
-                        if (skeletonPathCommands.size() != 0) {
-                            switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
-                                case "none":
-                                    skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
-                                    skeletonrenderer.fixedWidthFilling(width, Double.valueOf(skeletonRenderTextField.getText()));
-                                    break;
-                                default:
+                        switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
+                            case "none":
+                                skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
+                                skeletonrenderer.fixedWidthFilling(width, Double.valueOf(skeletonRenderTextField.getText()));
+                                break;
+                            default:
                                     /* scale deco to full*/
-                                    renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                            (distributionDist - width) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
-                                            renderedDecoCommands.get(0).getDestinationPoint());
-                                    skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
-                                            renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
-                                    skeletonrenderer.fixedWidthFilling(width, Double.valueOf(skeletonRenderTextField.getText()));
-                                    break;
-                            }
-                            if (skeletonrenderer != null)
-                                SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
-                        } else {
-                            System.out.println("ERROR: skeleton path commands");
+                                renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
+                                        (distributionDist - width) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                        renderedDecoCommands.get(0).getDestinationPoint());
+                                skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
+                                        renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
+                                skeletonrenderer.fixedWidthFilling(width, Double.valueOf(skeletonRenderTextField.getText()));
+                                break;
                         }
-
+                        SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
                         break;
                     case PEBBLE:
                         if (skeletonSpanningTree == null) {
@@ -463,8 +457,7 @@ public class Main extends Application {
                                     skeletonrenderer.fixedWidthFilling(0, Double.valueOf(skeletonRenderTextField.getText()));
                                     break;
                             }
-                            if (skeletonrenderer != null)
-                                SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
+                            SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
                         } else {
                             System.out.println("ERROR: skeleton path commands");
                         }
@@ -477,20 +470,15 @@ public class Main extends Application {
                             switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
                                 case "none":
                                     skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
-                                    skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
                                     break;
                                 case "from file":
-                                    skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
-                                            renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
-                                    skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
                                 case "from library":
                                     skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                             renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
-                                    skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
                                     break;
                             }
-                            if (skeletonrenderer != null)
-                                SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
+                            skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
+                            SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
                         } else {
                             System.out.println("ERROR: skeleton path commands");
                         }
@@ -504,7 +492,6 @@ public class Main extends Application {
                         mergedPattern.combinePattern();
                         fittedPath = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands());
                         SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
-                        //SvgFileProcessor.outputSvgCommands(mergedPattern.getCombinedCommands(), );
                         break;
                     case NONE:
                         SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName + "_" + decoFileName);
@@ -657,7 +644,7 @@ public class Main extends Application {
             }
 
             if (newSelected.equals(TILING)) {
-                    patternLibraryComboBox.getItems().setAll(tileList);
+                patternLibraryComboBox.getItems().setAll(tileList);
             }
         });
 
