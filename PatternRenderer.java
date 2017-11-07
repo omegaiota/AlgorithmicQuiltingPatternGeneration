@@ -124,7 +124,7 @@ public class PatternRenderer {
         outputRotated(repetition);
     }
 
-    public File echoPattern(int number) {
+    public List<SvgPathCommand> echoPattern(int number) {
         double midX = 0, midY = 0;
         for (SvgPathCommand command : skeletonPathCommands) {
             midX += command.getDestinationPoint().x;
@@ -171,7 +171,7 @@ public class PatternRenderer {
         renderedCommands.add( new SvgPathCommand(center, SvgPathCommand.CommandType.LINE_TO));
 
 
-        return outputEchoed(number);
+        return renderedCommands;
 
     }
 

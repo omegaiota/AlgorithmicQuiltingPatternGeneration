@@ -251,7 +251,7 @@ public class PebbleRenderer extends PatternRenderer {
                             decoElemFile.getMaximumExtentFromStartPoint(),
                     decoCommands.get(0).getDestinationPoint()),
                     scaledCommands, startDrawingPoint, Math.toRadians(angle));
-//            renderedCommands.addAll(scaledCommands);
+            renderedCommands.addAll(scaledCommands);
 //            primitiveCentroid = SvgFileProcessor.getCentroidOnList(scaledCommands);
             printMapping(scaledCommands, primitiveCentroid);
         }
@@ -264,8 +264,8 @@ public class PebbleRenderer extends PatternRenderer {
             TreeNode<Point> child;
             Point cutPoint;
             if (scaledCommands.size() != 0) {
-                cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
-//                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
+//                cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
+                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
             } else {
                 cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
             }
@@ -277,7 +277,8 @@ public class PebbleRenderer extends PatternRenderer {
                 int searchAngle = j % 360;
                 int newAngle = (searchAngle + 180) % 360;
                 if (scaledCommands.size() != 0) {
-                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
+//                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
+                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 } else {
                     cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 }
@@ -292,7 +293,8 @@ public class PebbleRenderer extends PatternRenderer {
         }
         Point thisPoint;
         if (scaledCommands.size() != 0) {
-            thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
+//            thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
+            thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         } else {
             thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         }
@@ -382,8 +384,8 @@ public class PebbleRenderer extends PatternRenderer {
                     thisCommandPoint = decoElment.get(i).getDestinationPoint();
             double commandToThisPointAngle = (Math.toDegrees(Point.getAngle(center, thisCommandPoint))) % 360;
             double commandToLastPointAngle = (Math.toDegrees(Point.getAngle(center, lastCommandPoint))) % 360;
-            System.out.printf("command %d has angle: %s\n", i - 1, commandToLastPointAngle);
-            System.out.printf("command %d has angle: %s\n\n", i, commandToThisPointAngle);
+//            System.out.printf("command %d has angle: %s\n", i - 1, commandToLastPointAngle);
+//            System.out.printf("command %d has angle: %s\n\n", i, commandToThisPointAngle);
         }
     }
 
@@ -393,18 +395,20 @@ public class PebbleRenderer extends PatternRenderer {
         }
 
         int decreasingCounter = 0;
-        for (int i = 0; i < 4; i++) {
+        // sample to see which direction do commands go
+        for (int i = 0; i < decoElment.size(); i++) {
             Point firstCommandPoint = decoElment.get(i % decoElment.size()).getDestinationPoint(),
                     secondCommandPoint = decoElment.get((i + 1) % decoElment.size()).getDestinationPoint();
             double firstAngle = (Math.toDegrees(Point.getAngle(center, firstCommandPoint))) % 360;
             double secondAngle = (Math.toDegrees(Point.getAngle(center, secondCommandPoint))) % 360;
-
-            if (secondAngle < firstAngle)
+            if (firstAngle > secondAngle)
+                decreasingCounter++;
+            else if (firstAngle < 5 && secondAngle > 355)
                 decreasingCounter++;
         }
-        boolean decreasingOrder = decreasingCounter >= 2;
+        boolean decreasingOrder = decreasingCounter > (decoElment.size() / 2);
 
-        for (int i = 0; i < decoElment.size(); i++) {
+        for (int i = 1; i < decoElment.size(); i++) {
             Point lastCommandPoint = decoElment.get(((i - 1) + decoElment.size()) % decoElment.size()).getDestinationPoint(),
                     thisCommandPoint = decoElment.get(i).getDestinationPoint();
             double commandToThisPointAngle = (Math.toDegrees(Point.getAngle(center, thisCommandPoint))) % 360;
@@ -414,7 +418,7 @@ public class PebbleRenderer extends PatternRenderer {
             if (decreasingOrder) {
                 if (degree <= commandToLastPointAngle && degree >= commandToThisPointAngle)
                     isBetween = true;
-                else if (commandToThisPointAngle > commandToLastPointAngle) {
+                else if ((Math.abs(commandToLastPointAngle - commandToThisPointAngle) > 200) && commandToThisPointAngle > commandToLastPointAngle) {
                     if ((degree <= commandToLastPointAngle && degree >= 0)
                             || (degree >= commandToThisPointAngle && degree <= 360))
                         isBetween = true;
@@ -423,7 +427,7 @@ public class PebbleRenderer extends PatternRenderer {
             } else {
                 if (degree <= commandToThisPointAngle && degree >= commandToLastPointAngle)
                     isBetween = true;
-                else if (commandToThisPointAngle < commandToLastPointAngle) {
+                else if ((Math.abs(commandToLastPointAngle - commandToThisPointAngle) > 200) && commandToThisPointAngle < commandToLastPointAngle) {
                     if ((degree <= commandToThisPointAngle && degree >= 0)
                             || (degree >= commandToLastPointAngle && degree <= 360))
                         isBetween = true;
@@ -436,13 +440,11 @@ public class PebbleRenderer extends PatternRenderer {
                         betaInRadian = Math.PI - alphaInRadian - thetaInRadian;
                 double movedLength = alphaInRadian / betaInRadian * Point.getDistance(lastCommandPoint, center);
                 Point cutPoint = Point.intermediatePointWithLen(lastCommandPoint, thisCommandPoint, movedLength);
-                System.out.printf("degree: %d commandSelected:%d\n", degree, i - 1);
-
+//                System.out.printf("degree: %d commandSelected:%d\n", degree, i - 1);
                 if (Math.abs(commandToLastPointAngle - degree) < Math.abs(commandToThisPointAngle - degree))
                     return lastCommandPoint;
                 else
                     return thisCommandPoint;
-//                    return cutPoint;
             }
 
         }

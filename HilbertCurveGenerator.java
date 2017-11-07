@@ -1,7 +1,7 @@
 package jackiequiltpatterndeterminaiton;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by JacquelineLi on 6/18/17.
@@ -19,8 +19,9 @@ public class HilbertCurveGenerator {
         this.unitY = unitY;
     }
 
-    public void patternGeneration() {
+    public List<SvgPathCommand> patternGeneration() {
         generator(bottomLeft, unitX, unitY, level);
+        return commandList;
     }
 
     private  void generator(Point bottomLeftCorner, Point unitX, Point unitY, int level) {
@@ -43,10 +44,6 @@ public class HilbertCurveGenerator {
                     new Point(-1 * newUnitX.x, -1 * newUnitX.y), level - 1);
 
         }
-    }
-
-    public File outputPath() {
-        return SvgFileProcessor.outputSvgCommands(commandList, "hilbertCurve-level" + level + "-w" + unitX.x + "-h" + unitY.y);
     }
 
 
