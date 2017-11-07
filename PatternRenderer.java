@@ -64,7 +64,7 @@ public class PatternRenderer {
 
     }
 
-    public void fixedWidthFilling(double width, double density) {
+    public List<SvgPathCommand> fixedWidthFilling(double width, double density) {
         System.out.println("Rendering with fixed width");
         renderedCommands.add(skeletonPathCommands.get(0));
         for (int i = 1; i < skeletonPathCommands.size() - 1; i++) {
@@ -104,7 +104,7 @@ public class PatternRenderer {
 
         }
         renderedCommands.add(skeletonPathCommands.get(skeletonPathCommands.size() - 1));
-        System.out.println("Outputing.....");
+        return renderedCommands;
     }
 
     public void repeatWithRotation(Integer repetition) {

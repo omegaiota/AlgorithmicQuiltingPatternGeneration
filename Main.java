@@ -463,26 +463,21 @@ public class Main extends Application {
                         }
                         break;
                 }
-            } else
+            } else {
+                List<SvgPathCommand> renderedCommands = skeletonPathCommands;
                 switch ((SkeletonRenderType) skeletonRenderComboBox.getValue()) {
                     case FIXED_WIDTH_FILL:
-                        if (skeletonPathCommands.size() != 0) {
-                            switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
-                                case "none":
-                                    skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
-                                    break;
-                                case "from file":
-                                case "from library":
-                                    skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
-                                            renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
-                                    break;
-                            }
-                            skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
-                            SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
-                        } else {
-                            System.out.println("ERROR: skeleton path commands");
+                        switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
+                            case "none":
+                                skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
+                                break;
+                            case "from file":
+                            case "from library":
+                                skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
+                                        renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
+                                break;
                         }
-
+                        renderedCommands = skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
                         break;
                     case SQUIGGLE:
                         break;
@@ -490,22 +485,19 @@ public class Main extends Application {
                         mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                         /** Combine pattern */
                         mergedPattern.combinePattern();
-                        fittedPath = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands());
-                        SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
-                        break;
-                    case NONE:
-                        SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName + "_" + decoFileName);
+                        renderedCommands = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands());
                         break;
                     case TILING:
                         double patternHeight = skeletonPathFileProcessor.getHeight() / rows;
                         mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                         /** Combine pattern */
                         mergedPattern.tilePattern(patternHeight);
-                        fittedPath = boundary.fitCommandsToRegionIntelligent(mergedPattern.getCombinedCommands());
-                        SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
+                        renderedCommands = boundary.fitCommandsToRegionIntelligent(mergedPattern.getCombinedCommands());
                         break;
-
                 }
+                SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonName + "_" + decoFileName);
+            }
+
         });
     }
 
