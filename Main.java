@@ -27,8 +27,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.GRID_TESSELLATION;
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathGenerationMethods.THREE_3_4_3_4_TESSELLATION;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonPathType.GRID_TESSELLATION;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonPathType.THREE_3_4_3_4_TESSELLATION;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.ALONG_PATH;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.FIXED_WIDTH_FILL;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.NONE;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.PEBBLE;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.SQUIGGLE;
+import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.TILING;
 
 public class Main extends Application {
     /* Constant */
@@ -96,7 +102,7 @@ public class Main extends Application {
 
     private void setDefaultValue() {
         skeletonGenComboBox.setValue(GRID_TESSELLATION);
-        skeletonRenderComboBox.setValue("No Rendering");
+        skeletonRenderComboBox.setValue(NONE);
         patternRenderComboBox.setValue("No Rendering");
         noPattern.setSelected(true);
     }
@@ -112,12 +118,12 @@ public class Main extends Application {
 
         //Skeleton
         /* Skeleton Path Generation */
-        skeletonGenComboBox.getItems().addAll(SkeletonPathGenerationMethods.values());
+        skeletonGenComboBox.getItems().addAll(SkeletonPathType.values());
 
         skeletonGeneration.getChildren().addAll(skeletonGnerationlabel, skeletonGenComboBox);
 
         /* Skeleton Path Rendering */
-        skeletonRenderComboBox.getItems().addAll("No Rendering", "Fixed-width Filling", "Squiggles", "Pebble", "Tiling");
+        skeletonRenderComboBox.getItems().addAll(SkeletonRenderType.values());
         skeletonRendering.getChildren().addAll(skeletonRenderinglabel, skeletonRenderComboBox);
 
         skeletonColumn.getChildren().addAll(skeletonLabel, skeletonGeneration, skeletonGenPropertyInput, skeletonRendering, skeletonRenderPropertyInput);
@@ -318,7 +324,7 @@ public class Main extends Application {
             ArrayList<SvgPathCommand> temp = new ArrayList<>();
 
             skeletonName += skeletonGenComboBox.getValue().toString();
-            switch ((SkeletonPathGenerationMethods) skeletonGenComboBox.getValue()) {
+            switch ((SkeletonPathType) skeletonGenComboBox.getValue()) {
                 case GRID_TESSELLATION:
                 case THREE_3_4_3_4_TESSELLATION:
                     distributionDist = Integer.valueOf(skeletonGenTextField.getText());
@@ -330,8 +336,6 @@ public class Main extends Application {
                         distribute = new Distribution(Distribution.RenderType.THREE_THREE_FOUR_THREE_FOUR,
                                 boundary, distributionDist, regionFile);
                     }
-
-
                     distribute.generate();
                     distribute.outputDistribution();
                     skeletonPathCommands = distribute.toTraversal(renderedDecoCommands);
@@ -390,13 +394,13 @@ public class Main extends Application {
             List<SvgPathCommand> fittedPath;
 
             /* Tree Structure based rendering */
+            skeletonName += skeletonRenderComboBox.getValue().toString();
             if (skeletonGenComboBox.getValue().equals(THREE_3_4_3_4_TESSELLATION) ||
                     skeletonGenComboBox.getValue().equals(GRID_TESSELLATION)) {
-                switch (skeletonRenderComboBox.getValue().toString()) {
-                    case "Fixed-width Filling":
+                switch ((SkeletonRenderType) skeletonRenderComboBox.getValue()) {
+                    case FIXED_WIDTH_FILL:
                         double width = distributionDist / 5;
                         if (skeletonPathCommands.size() != 0) {
-                            skeletonName += "_fixedWidth" + width;
                             switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
                                 case "none":
                                     skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
@@ -419,24 +423,20 @@ public class Main extends Application {
                         }
 
                         break;
-                    case "Pebble":
+                    case PEBBLE:
                         if (skeletonSpanningTree == null) {
                             System.out.println("WARNING: spanning tree is NULL");
                         } else {
-                            skeletonName += "_Pebble";
-
                             skeletonrenderer = new PebbleRenderer(skeletonSpanningTree, renderedDecoCommands, decoElementFile);
                             skeletonrenderer.pebbleFilling();
 //                            ((PebbleRenderer) skeletonrenderer).rectanglePacking();
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
-
                             temp.addAll(skeletonrenderer.getRenderedCommands());
                             SvgFileProcessor.outputSvgCommands(temp, skeletonName + "_temp_" + decoFileName);
                         }
                         break;
-                    case "Squiggles":
+                    case SQUIGGLE:
                         System.out.println("Skeleton Path: Squiggle Tree");
-                        skeletonName += "_squiggles";
                         renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
                                 (distributionDist) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
                                 renderedDecoCommands.get(0).getDestinationPoint());
@@ -444,11 +444,10 @@ public class Main extends Application {
                             skeletonPathCommands = distribute.toSguiggleTraversal(renderedDecoCommands);
                         SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName + "_" + decoFileName);
                         break;
-                    case "No Rendering":
+                    case NONE:
                         System.out.println("Skeleton Path: No Rendering ");
                         if (skeletonPathCommands.size() != 0) {
                             System.out.println("Skeleton Size" + skeletonPathCommands.size());
-                            skeletonName += "_no_render";
                             switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
                                 case "none":
                                     skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
@@ -472,10 +471,9 @@ public class Main extends Application {
                         break;
                 }
             } else
-                switch (skeletonRenderComboBox.getValue().toString()) {
-                    case "Fixed-width Filling":
+                switch ((SkeletonRenderType) skeletonRenderComboBox.getValue()) {
+                    case FIXED_WIDTH_FILL:
                         if (skeletonPathCommands.size() != 0) {
-                            skeletonName += "_fixedWidth" + 5;
                             switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
                                 case "none":
                                     skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
@@ -498,11 +496,9 @@ public class Main extends Application {
                         }
 
                         break;
-                    case "Squiggles":
-                        skeletonName += "_squiggles";
+                    case SQUIGGLE:
                         break;
-                    case "Pattern Along Path":
-                        skeletonName += "pattern_along_path";
+                    case ALONG_PATH:
                         mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                         /** Combine pattern */
                         mergedPattern.combinePattern();
@@ -510,12 +506,10 @@ public class Main extends Application {
                         SvgFileProcessor.outputSvgCommands(fittedPath, skeletonName + "_" + decoFileName);
                         //SvgFileProcessor.outputSvgCommands(mergedPattern.getCombinedCommands(), );
                         break;
-                    case "No Rendering":
-                        skeletonName += "_no_render";
+                    case NONE:
                         SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName + "_" + decoFileName);
                         break;
-                    case "Tiling":
-                        skeletonName += "_tiling";
+                    case TILING:
                         double patternHeight = skeletonPathFileProcessor.getHeight() / rows;
                         mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                         /** Combine pattern */
@@ -577,7 +571,7 @@ public class Main extends Application {
                     if (skeletonGenComboBox.getValue().equals(THREE_3_4_3_4_TESSELLATION) ||
                             skeletonGenComboBox.getValue().equals(GRID_TESSELLATION)) {
                         patternLibraryComboBox.getItems().setAll(endpointList);
-                    } else if (skeletonRenderComboBox.getValue().toString().equals("Tiling"))
+                    } else if (skeletonRenderComboBox.getValue().equals(TILING))
                         patternLibraryComboBox.getItems().setAll(tileList);
                     else
                         patternLibraryComboBox.getItems().setAll(alongPathList);
@@ -594,25 +588,27 @@ public class Main extends Application {
         /* Skeleton Generation Listener */
         skeletonGenComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             System.out.println(patternLibraryComboBox.getItems().toString());
-            SkeletonPathGenerationMethods newSelected = (SkeletonPathGenerationMethods) skeletonGenComboBox.getValue();
+            SkeletonPathType newSelected = (SkeletonPathType) skeletonGenComboBox.getValue();
             System.out.println("Skeleton generation method changed: " + newSelected);
-            skeletonRenderComboBox.setValue("No Rendering");
+            skeletonRenderComboBox.setValue(NONE);
             switch (newSelected) {
                 case THREE_3_4_3_4_TESSELLATION:
                 case GRID_TESSELLATION:
                     System.out.println("case 1: tree structure");
                     patternLibraryComboBox.getItems().setAll(endpointList);
-                    skeletonRenderComboBox.getItems().setAll("No Rendering", "Fixed-width Filling", "Squiggles", "Pebble");
+                    skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, SQUIGGLE, PEBBLE);
                     break;
                 case ECHO:
                 case MEDIAL_AXIS:
                 case HILBERT_CURVE:
                     System.out.println("case 2: none tree structure");
-                    skeletonRenderComboBox.getItems().setAll("No Rendering", "Squiggles", "Pattern Along Path");
+                    skeletonRenderComboBox.getItems().setAll(NONE, SQUIGGLE, ALONG_PATH);
+
                     break;
                 case SNAKE:
                     System.out.println("Snake");
-                    skeletonRenderComboBox.getItems().setAll("No Rendering", "Pattern Along Path", "Squiggles", "Pebble", "Tiling");
+                    skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH, SQUIGGLE, TILING);
+
                     break;
             }
             switch (newSelected) {
@@ -652,16 +648,15 @@ public class Main extends Application {
 
         /* Skeleton Rendering Listener */
         skeletonRenderComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            String newSelected = skeletonRenderComboBox.getValue().toString();
+            SkeletonRenderType newSelected = (SkeletonRenderType) skeletonRenderComboBox.getValue();
             System.out.println("Skeleton rendering method changed: " + newSelected);
-            if (newSelected.equals("Pebble")) {
-                System.out.println("Pebble");
+            if (newSelected.equals(PEBBLE)) {
                 patternSourceGroup.selectToggle(noPattern);
             } else {
                 patternSourceGroup.selectToggle(patternFromFile);
             }
 
-            if (newSelected.equals("Tiling")) {
+            if (newSelected.equals(TILING)) {
                     patternLibraryComboBox.getItems().setAll(tileList);
             }
         });
@@ -671,7 +666,7 @@ public class Main extends Application {
             System.out.println(patternLibraryComboBox.getItems().toString());
             String newPatternFile = patternLibraryComboBox.getValue().toString();
             File library = alongPathLibrary;
-            if (skeletonRenderComboBox.getValue().toString().equals("Tiling"))
+            if (skeletonRenderComboBox.getValue().equals(TILING))
                 library = tileLibrary;
             if (skeletonGenComboBox.getValue().equals(THREE_3_4_3_4_TESSELLATION) ||
                     skeletonGenComboBox.getValue().equals(GRID_TESSELLATION))
@@ -706,8 +701,16 @@ public class Main extends Application {
         });
     }
 
-    public enum SkeletonPathGenerationMethods {
-        GRID_TESSELLATION, THREE_3_4_3_4_TESSELLATION, HILBERT_CURVE, ECHO, MEDIAL_AXIS, SNAKE;
+    public enum SkeletonPathType {
+        GRID_TESSELLATION, THREE_3_4_3_4_TESSELLATION, HILBERT_CURVE, ECHO, MEDIAL_AXIS, SNAKE
+    }
+
+    public enum SkeletonRenderType {
+        NONE, FIXED_WIDTH_FILL, SQUIGGLE, PEBBLE, TILING, ALONG_PATH
+    }
+
+    public enum FileSourceType {
+        FILE, LIBRARY, NONE;
     }
 
 
