@@ -6,11 +6,12 @@ import java.util.List;
  * Created by JacquelineLi on 6/13/17.
  */
 public class Point {
+    public static final int PRECISION = 4;
     public final double x, y;
     /** generate a point with absolute coordinates*/
     public Point(double x, double y) {
-        this.x = truncateDouble(x, 3);
-        this.y = truncateDouble(y, 3);
+        this.x = truncateDouble(x, PRECISION);
+        this.y = truncateDouble(y, PRECISION);
     }
 
     public Point(Point other) {
@@ -20,14 +21,14 @@ public class Point {
     public Point(String strWithDelimiter) {
         String[] coordinateStr = strWithDelimiter.split(",");
         assert coordinateStr.length == 2;
-        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]), 3);
-        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]), 3);
+        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]), PRECISION);
+        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]), PRECISION);
     }
 
     /** constructs a point with relative coordinates*/
     public Point(Point current, double x, double y) {
-        this.x = truncateDouble(x + current.x, 3);
-        this.y = truncateDouble(y + current.y, 3);
+        this.x = truncateDouble(x + current.x, PRECISION);
+        this.y = truncateDouble(y + current.y, PRECISION);
     }
 
     /** constructs point (x,y) from string s = "x,y" **/
@@ -35,8 +36,8 @@ public class Point {
         String[] coordinateStr = strWithDelimiter.split(",");
         assert coordinateStr.length == 2;
 
-        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]) + current.x, 3);
-        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]) + current.y, 3);
+        this.x = truncateDouble(Double.parseDouble(coordinateStr[0]) + current.x, PRECISION);
+        this.y = truncateDouble(Double.parseDouble(coordinateStr[1]) + current.y, PRECISION);
     }
 
     /**
@@ -85,7 +86,7 @@ public class Point {
         double interY = k * interX + b;
 //        System.out.println(interX + " " + interY);
 
-        return new Point(truncateDouble(interX, 3), truncateDouble(interY, 3));
+        return new Point(truncateDouble(interX, PRECISION), truncateDouble(interY, PRECISION));
     }
 
     public static Point interMediatePointWithX(Point L1, Point L2, double x) {
@@ -146,7 +147,9 @@ public class Point {
 
     }
 
-    /** return the angle between two points */
+    /**
+     * return the angle between two points in radians
+     */
     public static double getAngle(Point start, Point end) {
         double delta_y = end.y - start.y;
         double delta_x = end.x - start.x;
@@ -163,8 +166,8 @@ public class Point {
     public static double getDistance(Point start, Point end) {
         double delta_x_sqr = Math.pow(end.x - start.x, 2);
         double delta_y_sqr = Math.pow(end.y - start.y, 2);
-        double distance = Math.sqrt(truncateDouble(delta_x_sqr, 3) + truncateDouble(delta_y_sqr, 3));
-        return truncateDouble(distance, 3);
+        double distance = Math.sqrt(truncateDouble(delta_x_sqr, PRECISION) + truncateDouble(delta_y_sqr, PRECISION));
+        return truncateDouble(distance, PRECISION);
     }
 
     public static Point sumOfPoint(Point finalPoint, Point shiftPoint) {
@@ -237,6 +240,19 @@ public class Point {
      *  ensures: function returns true if A,B,C are listed in CCW order, false otherwise **/
     private static boolean CCW(Point A, Point B, Point C) {
         return ((C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x));
+    }
+
+    public Point subtract(Point p) {
+        return new Point(x - p.x, y - p.y);
+    }
+
+    public double distance(Point p) {
+        return Math.hypot(x - p.x, y - p.y);
+    }
+
+    // Signed area / determinant thing
+    public double cross(Point p) {
+        return x * p.y - y * p.x;
     }
 
     public boolean equals(Point compare) {

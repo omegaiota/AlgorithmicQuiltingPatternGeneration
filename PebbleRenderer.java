@@ -1,9 +1,13 @@
 package jackiequiltpatterndeterminaiton;
 
+import javafx.util.Pair;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Pebble
@@ -12,6 +16,8 @@ public class PebbleRenderer extends PatternRenderer {
     private List<SvgPathCommand> renderedCommands = new ArrayList<>(),
             decoCommands;
     private SvgFileProcessor decoElemFile = null;
+    private CircleBound decoCommandsBound = null;
+    private List<Point> touchPoints = null;
     private TreeNode<Point> treeRoot;
 
     public PebbleRenderer(TreeNode<Point> treeRoot, List<SvgPathCommand> decoCommands, SvgFileProcessor decoElemFile) {
@@ -19,14 +25,40 @@ public class PebbleRenderer extends PatternRenderer {
         this.treeRoot = treeRoot;
         this.decoCommands = decoCommands;
         this.decoElemFile = decoElemFile;
+        if (decoElemFile != null) {
+            Pair<CircleBound, List<Point>> decoElemBound = decoElemFile.getBoundingCircle();
+            decoCommandsBound = decoElemBound.getKey();
+            touchPoints = decoElemBound.getValue();
+            this.decoCommands = decoElemFile.getCommandList();
+        }
     }
 
     public List<SvgPathCommand> getRenderedCommands() {
         return renderedCommands;
     }
 
+    /**
+     * Second strategy of primitive packing. It processs the primitive first to first the number of points that are touching the boundary circle, and change the
+     * tree structure based on that
+     */
     @Override
     public void pebbleFilling() {
+        if (true || decoElemFile == null) {
+            // render a pebble, which would be handled in normal pebbleFilling
+            pebbleFilling2();
+        } else {
+            assert decoCommandsBound != null && touchPoints != null;
+            List<Double> touchPointAngle = new ArrayList<>();
+            for (Point p : touchPoints) {
+                touchPointAngle.add(Point.getAngle(decoCommandsBound.getCenter(), p));
+            }
+
+            // Create a new tree where each
+        }
+
+    }
+
+    public void pebbleFilling2() {
         double dist = Point.getDistance(treeRoot.getData(), treeRoot.getChildren().get(0).getData());
         for (TreeNode<Point> firstChildren : treeRoot.getChildren()) {
             if (Double.compare((Point.getDistance(treeRoot.getData(), firstChildren.getData())), dist) < 0)
@@ -45,22 +77,11 @@ public class PebbleRenderer extends PatternRenderer {
 
         // first determination loop, make sure each pebble touches one pebble
         pebbleRenderDetermineRadii(treeRoot, dist, determinedBounds);
-//        pebbleRenderDraw(treeRoot, 0);
-//        SvgFileProcessor.outputSvgCommands(renderedCommands, "beforeAdjustion");
-//        renderedCommands.clear();
-//        renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
 
         // second determination loop, make sure each pebble touches two pebbles
         pebbleAdjustTreenode(treeRoot, dist, determinedBounds);
-//        pebbleRenderDraw(treeRoot, 0);
-//        SvgFileProcessor.outputSvgCommands(renderedCommands, "afterfirstadjust");
-//        renderedCommands.clear();
-//        renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
 
-        //
-//        System.out.println("First iteration of 3 touch");
         pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
-//        System.out.println("Second iteration of 3 touch");
 
         pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
 
@@ -80,13 +101,18 @@ public class PebbleRenderer extends PatternRenderer {
 
         //landFillTraverse(treeRoot, null, dist);
 //        renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
-        List<RectangleBound> determinedBounds = new ArrayList<>();
+        Set<RectangleBound> determinedBounds = new HashSet<>();
         treeRoot.setBoundingRectangle(new RectangleBound(treeRoot.getData(), dist * 0.66, dist * 0.66));
-
         // first determination loop, make sure each pebble touches one pebble
-        rectangleRenderDetermineBound(treeRoot, dist, determinedBounds);
+        rectangleRandomDistributeSquare(treeRoot, dist, determinedBounds);
+        rectangleRenderDetermineBound(treeRoot, dist, determinedBounds, true);
+        rectangleRenderDetermineBound(treeRoot, dist, determinedBounds, false);
+//        rectangleAdjustRectangle(treeRoot, dist, determinedBounds);
+        determinedBounds.clear();
+//        rectanglePerturbSquare(treeRoot, dist, determinedBounds);
         rectangleRenderDraw(treeRoot, 0);
     }
+
 
 
     /* We push inflate treenodes that touch two pebbles in the direciton of bisectors
@@ -127,7 +153,7 @@ public class PebbleRenderer extends PatternRenderer {
                     rotationAngle = 2 * Math.PI - rotationAngle;//second iteration, opposite direction of bisector
                 //first iteration, one direction
                 for (int i = 0; i < ITERATION; i++) {
-                    shiftLen = dist / ITERATION * i;
+                    shiftLen = dist * 0.5 / ITERATION * i;
                     Point newPointAngle = new Point(pebble1.x, pebble1.y).rotateAroundCenter(thisCenter, rotationAngle);
                     Point newPoint = Point.intermediatePointWithLen(thisCenter, newPointAngle, shiftLen);
                     double newRadii1 = Point.getDistance(newPoint, pebble1) - r1;
@@ -150,7 +176,7 @@ public class PebbleRenderer extends PatternRenderer {
 
                     if (valid) {
                         if (newRadii > best) {
-                            best = newRadii;
+                            best = Double.min(newRadii, dist);
                             bestPoint = newPoint;
                         }
                     } else {
@@ -189,7 +215,7 @@ public class PebbleRenderer extends PatternRenderer {
             boolean isValid;
             for (int i = 0; i < ITERATION; i++) {
                 isValid = true;
-                shiftLen = dist / 100 * i;
+                shiftLen = dist / ITERATION * i * 0.5;
                 Point newCenter = Point.intermediatePointWithLen(thisNode.getParent().getData(), thisNode.getData(), thisParentDist + shiftLen);
                 tempRadii = thisRadii + shiftLen;
                 for (CircleBound b : determinedBounds) {
@@ -203,7 +229,7 @@ public class PebbleRenderer extends PatternRenderer {
 
                 if (isValid) {
                     if (tempRadii > bestRadii) {
-                        bestRadii = tempRadii;
+                        bestRadii = Double.min(tempRadii, dist);
                         bestCenter = newCenter;
                     }
 
@@ -246,9 +272,8 @@ public class PebbleRenderer extends PatternRenderer {
         List<SvgPathCommand> scaledCommands = new ArrayList<>();
 
         if (decoCommands.size() != 0) {
-            PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands,
-                    thisNode.getBoundingCircle().getRadii() * 2 /
-                            decoElemFile.getMaximumExtentFromStartPoint(),
+            double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
+            PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     decoCommands.get(0).getDestinationPoint()),
                     scaledCommands, startDrawingPoint, Math.toRadians(angle));
             renderedCommands.addAll(scaledCommands);
@@ -264,8 +289,8 @@ public class PebbleRenderer extends PatternRenderer {
             TreeNode<Point> child;
             Point cutPoint;
             if (scaledCommands.size() != 0) {
-//                cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
-                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
+                cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
+//                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
             } else {
                 cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
             }
@@ -277,8 +302,8 @@ public class PebbleRenderer extends PatternRenderer {
                 int searchAngle = j % 360;
                 int newAngle = (searchAngle + 180) % 360;
                 if (scaledCommands.size() != 0) {
-//                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
-                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
+                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
+//                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 } else {
                     cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 }
@@ -293,8 +318,8 @@ public class PebbleRenderer extends PatternRenderer {
         }
         Point thisPoint;
         if (scaledCommands.size() != 0) {
-//            thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
-            thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
+            thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
+//            thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         } else {
             thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         }
@@ -310,6 +335,8 @@ public class PebbleRenderer extends PatternRenderer {
         HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
         boolean[] degreeTable = new boolean[360];
         Arrays.fill(degreeTable, false);
+        boolean isValidRectangle = (thisNode.getBoundingRectangle().getWidth() > 1.0) && (thisNode.getBoundingRectangle().getHeight() > 1.0);
+        isValidRectangle = true;
         /* Record the direction of the children*/
         for (TreeNode<Point> child : thisNode.getChildren()) {
             int thisAngle = (int) Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
@@ -326,56 +353,58 @@ public class PebbleRenderer extends PatternRenderer {
         for (int offset = 0; offset < 360; offset += gap) {
             int currentAngle = ((int) angle + offset) % 360;
             cutPoint = pointOnRectangleWithDegreeToCenter(thisNode.getBoundingRectangle(), currentAngle);
-            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
-//            SvgFileProcessor.outputSvgCommands(renderedCommands, "this");
-
+            if (isValidRectangle)
+                renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
             for (int j = currentAngle; j < currentAngle + gap; j++) {
                 int searchAngle = j % 360;
-                if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
-                    int newAngle = (searchAngle + 180) % 360;
-                    cutPoint = pointOnRectangleWithDegreeToCenter(thisNode.getBoundingRectangle(), searchAngle);
-                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
-//                    SvgFileProcessor.outputSvgCommands(renderedCommands, "this");
-                    rectangleRenderDraw(child, newAngle);
-                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
+                int newAngle = (searchAngle + 180) % 360;
+                cutPoint = pointOnRectangleWithDegreeToCenter(thisNode.getBoundingRectangle(), searchAngle);
+                if ((child = degreeTreeNodeMap.get(searchAngle)) != null || (searchAngle % 90 < 3)) {
+                    if (isValidRectangle)
+                        renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
+                    if (child != null) {
+                        rectangleRenderDraw(child, newAngle);
+                        renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
+                    }
                 }
+
             }
-            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
-//            SvgFileProcessor.outputSvgCommands(renderedCommands, "this");
+            if (isValidRectangle)
+                renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO));
 
         }
-        renderedCommands.add(new SvgPathCommand(pointOnRectangleWithDegreeToCenter(thisNode.getBoundingRectangle(), angle), SvgPathCommand.CommandType.LINE_TO));
-//        SvgFileProcessor.outputSvgCommands(renderedCommands, "this");
+        if (isValidRectangle)
+            renderedCommands.add(new SvgPathCommand(pointOnRectangleWithDegreeToCenter(thisNode.getBoundingRectangle(), angle), SvgPathCommand.CommandType.LINE_TO));
 
     }
 
     private Point pointOnRectangleWithDegreeToCenter(RectangleBound bound, double degree) {
+        if (bound.getWidth() < 1.0 || bound.getHeight() < 1.0) {
+            System.out.printf("width: %.2f height:%.2f\n", bound.getWidth(), bound.getHeight());
+        }
         if (!(degree >= 0 && degree < 360)) {
             assert (false);
 
         }
         double radian = Math.toRadians(degree);
-        double firstQuadrantAngleInRadian = Math.atan(bound.getHalfHeight() / bound.getHalfWidth());
+        double firstQuadrantAngleInRadian = Math.atan2(bound.getHalfHeight(), bound.getHalfWidth());
         assert (Math.toDegrees(firstQuadrantAngleInRadian) <= 90);
         if (degree < Math.toDegrees(firstQuadrantAngleInRadian))
             return new Point(bound.getCenter().x + bound.getHalfWidth(), bound.getCenter().y + Math.tan(radian) * bound.getHalfWidth());
-        if (degree >= Math.toDegrees(firstQuadrantAngleInRadian) && degree <= 90) {
+        if (degree <= 90) {
             return new Point(bound.getCenter().x + Math.tan(Math.PI * 0.5 - firstQuadrantAngleInRadian) * bound.getHalfHeight(), bound.getCenter().y + bound.getHalfHeight());
         }
 
         if (degree > 90 && degree <= 180) {
-            double complementary = 90 - (degree - 90);
-            Point flipX = pointOnRectangleWithDegreeToCenter(bound, complementary);
-            return new Point(bound.getCenter().x - (flipX.x - bound.getCenter().x), flipX.y);
+            Point flipX = pointOnRectangleWithDegreeToCenter(bound, 180 - degree);
+            return new Point(2 * bound.getCenter().x - flipX.x, flipX.y);
         }
 
 
         double supplementary = 360 - degree;
         assert (supplementary < 180);
         Point opposite = pointOnRectangleWithDegreeToCenter(bound, supplementary);
-        double yOffset = opposite.y - bound.getCenter().y;
-//        assert (yOffset > 0);
-        return new Point(opposite.x, bound.getCenter().y - yOffset);
+        return new Point(opposite.x, 2 * bound.getCenter().y - opposite.y);
     }
 
     private void printMapping(List<SvgPathCommand> decoElment, Point center) {
@@ -504,73 +533,153 @@ public class PebbleRenderer extends PatternRenderer {
 
     }
 
-    public void rectangleRenderDetermineBound(TreeNode<Point> thisNode, double dist, final List<RectangleBound> determinedBounds) {
+    public void rectangleRenderDetermineBound(TreeNode<Point> thisNode, double dist, final Set<RectangleBound> determinedBounds, boolean ignoreDetermined) {
         determinedBounds.add(thisNode.getBoundingRectangle());
         RectangleBound parentBound = thisNode.getBoundingRectangle();
-//        System.out.printf("childSize:%d\n", thisNode.getChildren().size());
         for (TreeNode<Point> child : thisNode.getChildren()) {
-            RectangleBound childBound = new RectangleBound(child.getData(), dist, dist);
-            thisNode.getBoundingRectangle().modifyToTightestBound(childBound);
-            boolean shortLineSegment = false;
 
-            //loop through rectangles that have drawn already to adjust radii
-            for (RectangleBound b : determinedBounds) {
-                b.modifyToTightestBound(childBound);
+            RectangleBound childBound = child.getBoundingRectangle();
+            if (childBound == null) {
+                childBound = new RectangleBound(child.getData(), dist * 0.66, dist * 0.66);
+                child.setBoundingRectangle(childBound);
             }
+            if (ignoreDetermined && childBound != null && determinedBounds.contains(childBound)) {
+                rectangleRenderDetermineBound(child, dist, determinedBounds, ignoreDetermined);
+            } else {
+                thisNode.getBoundingRectangle().modifyToTightestBound(childBound);
+                boolean shortLineSegment = false;
 
-            double childParentXDist = Math.abs(parentBound.getCenter().x - childBound.getCenter().x),
-                    childParentYDist = Math.abs(parentBound.getCenter().y - childBound.getCenter().y),
-                    halfWidthSum = Math.abs(parentBound.getHalfWidth() + childBound.getHalfWidth()),
-                    halfHeightSum = Math.abs(parentBound.getHalfHeight() + childBound.getHalfHeight());
-            double gapX = childParentXDist - halfWidthSum, gapY = childParentYDist - halfHeightSum;
-            gapX = (gapX < 0) ? 0 : gapX;
-            gapY = (gapY < 0) ? 0 : gapY;
-
-            boolean xDetached = Double.compare(gapX, 0.01) > 0,
-                    yDetached = Double.compare(gapY, 0.01) > 0;
-            if (xDetached || yDetached) {
-                shortLineSegment = true;
-            }
-
-            if (shortLineSegment) {
-                //insert a new rectangle
-                double newWidth = childParentXDist - halfWidthSum - 0.0001,
-                        newHeight = childParentYDist - halfHeightSum - 0.0001;
-
-                double newX = Double.min(parentBound.getCenter().x + parentBound.getHalfWidth(),
-                        childBound.getCenter().x + childBound.getHalfWidth()) + newWidth * 0.5;
-                double newY = Double.min(parentBound.getCenter().y + parentBound.getHalfHeight(),
-                        childBound.getCenter().y + childBound.getHalfHeight()) + newHeight * 0.5;
-                if (yDetached) {
-                    newX = (childBound.getCenter().x + parentBound.getCenter().x) * 0.5;
-                    newWidth = Double.min(parentBound.getWidth(), childBound.getWidth()) * 0.5;
-                } else {
-//                    System.out.println("x detached");
-                    newY = (childBound.getCenter().y + parentBound.getCenter().y) * 0.5;
-                    newHeight = Double.min(parentBound.getHeight(), childBound.getHeight()) * 0.5;
-//                    System.out.printf("newWidth:%.2f newHeight:%.2f\n newX:%.2f newY:%.2f\n\n",newWidth, newHeight, newX, newY);
-
+                //loop through rectangles that have drawn already to adjust radii
+                for (RectangleBound b : determinedBounds) {
+                    if (b != childBound)
+                        b.modifyToTightestBound(childBound);
                 }
 
-                Point newCenter = new Point(newX, newY);
-                TreeNode<Point> midTreeNode = new TreeNode<>(newCenter, new ArrayList<>());
-                midTreeNode.setBoundingRectangle(new RectangleBound(newCenter, newWidth, newHeight));
-                determinedBounds.add(midTreeNode.getBoundingRectangle());
+                double childParentXDist = Math.abs(parentBound.getCenter().x - childBound.getCenter().x),
+                        childParentYDist = Math.abs(parentBound.getCenter().y - childBound.getCenter().y),
+                        halfWidthSum = Math.abs(parentBound.getHalfWidth() + childBound.getHalfWidth()),
+                        halfHeightSum = Math.abs(parentBound.getHalfHeight() + childBound.getHalfHeight());
+                double gapX = childParentXDist - halfWidthSum, gapY = childParentYDist - halfHeightSum;
+                gapX = (gapX < 0.0) ? 0 : gapX;
+                gapY = (gapY < 0.0) ? 0 : gapY;
 
-                midTreeNode.setParent(thisNode);
-                midTreeNode.addChild(child);
-                thisNode.removeChild(child);
-                thisNode.addChild(midTreeNode);
+                boolean xDetached = Double.compare(gapX, 0.001) > 0,
+                        yDetached = Double.compare(gapY, 0.01) > 0;
 
-                child.setBoundingRectangle(childBound);
-                rectangleRenderDetermineBound(child, dist, determinedBounds);
-            } else {
-                child.setBoundingRectangle(childBound);
-                rectangleRenderDetermineBound(child, dist, determinedBounds);
+                childParentXDist = Math.abs(parentBound.getCenter().x - childBound.getCenter().x);
+                childParentYDist = Math.abs(parentBound.getCenter().y - childBound.getCenter().y);
+                halfWidthSum = Math.abs(parentBound.getHalfWidth() + childBound.getHalfWidth());
+                halfHeightSum = Math.abs(parentBound.getHalfHeight() + childBound.getHalfHeight());
+                gapX = childParentXDist - halfWidthSum;
+                gapY = childParentYDist - halfHeightSum;
+                gapX = (gapX < 0) ? 0 : gapX;
+                gapY = (gapY < 0) ? 0 : gapY;
+
+                xDetached = Double.compare(gapX, 0.01) > 0;
+                yDetached = Double.compare(gapY, 0.01) > 0;
+                if (xDetached || yDetached) {
+                    shortLineSegment = true;
+                }
+
+                if (shortLineSegment) {
+                    //insert a new rectangle
+                    double newWidth = childParentXDist - halfWidthSum - 0.0001,
+                            newHeight = childParentYDist - halfHeightSum - 0.0001;
+
+
+                    double newX = Double.min(parentBound.getCenter().x + parentBound.getHalfWidth(),
+                            childBound.getCenter().x + childBound.getHalfWidth()) + newWidth * 0.5;
+                    double newY = Double.min(parentBound.getCenter().y + parentBound.getHalfHeight(),
+                            childBound.getCenter().y + childBound.getHalfHeight()) + newHeight * 0.5;
+                    if (yDetached) {
+                        newX = (childBound.getCenter().x + parentBound.getCenter().x) * 0.5;
+                        newWidth = Double.min(parentBound.getWidth(), childBound.getWidth()) * 0.5;
+                    } else {
+//                    System.out.println("x detached");
+                        newY = (childBound.getCenter().y + parentBound.getCenter().y) * 0.5;
+                        newHeight = Double.min(parentBound.getHeight(), childBound.getHeight()) * 0.5;
+//                    System.out.printf("newWidth:%.2f newHeight:%.2f\n newX:%.2f newY:%.2f\n\n",newWidth, newHeight, newX, newY);
+
+                    }
+
+                    Point newCenter = new Point(newX, newY);
+                    TreeNode<Point> midTreeNode = new TreeNode<>(newCenter, new ArrayList<>());
+                    midTreeNode.setBoundingRectangle(new RectangleBound(newCenter, newWidth, newHeight));
+                    determinedBounds.add(midTreeNode.getBoundingRectangle());
+
+                    midTreeNode.setParent(thisNode);
+                    midTreeNode.addChild(child);
+                    thisNode.removeChild(child);
+                    thisNode.addChild(midTreeNode);
+
+                    child.setBoundingRectangle(childBound);
+                    rectangleRenderDetermineBound(child, dist, determinedBounds, ignoreDetermined);
+                } else {
+                    child.setBoundingRectangle(childBound);
+                    rectangleRenderDetermineBound(child, dist, determinedBounds, ignoreDetermined);
+                }
             }
+
 
         }
 
+    }
+
+    public void rectangleRandomDistributeSquare(TreeNode<Point> thisNode, double dist, final Set<RectangleBound> determinedBounds) {
+        double rand1 = Math.random();
+        RectangleBound newBound = new RectangleBound(thisNode.getData(), dist, dist);
+        if (rand1 < 0.5) {
+            if (Math.random() < 0.5) {
+                newBound.setWidth(dist * Math.max(0.3, Math.random() * 2));
+            } else {
+                newBound.setHeight(dist * Math.max(0.3, Math.random() * 2));
+            }
+            for (RectangleBound b : determinedBounds) {
+                b.modifyToTightestBound(newBound);
+            }
+            determinedBounds.add(newBound);
+            thisNode.setBoundingRectangle(newBound);
+
+        }
+        for (TreeNode<Point> child : thisNode.getChildren()) {
+            rectangleRandomDistributeSquare(child, dist, determinedBounds);
+        }
+    }
+
+    public void rectangleAdjustRectangle(TreeNode<Point> thisNode, double dist, final Set<RectangleBound> determinedBounds) {
+        if (thisNode.getChildren().size() == 0) {
+            // leafnode, adjust position
+            double shiftLen;
+            int ITERATION = 100;
+            double thisParentDist = Point.getDistance(thisNode.getParent().getData(), thisNode.getData());
+            RectangleBound thisBound = thisNode.getBoundingRectangle();
+            RectangleBound bestBound = thisBound;
+            boolean isValid;
+            for (int i = 0; i < ITERATION; i++) {
+                isValid = true;
+                shiftLen = dist / 100 * i;
+                Point newCenter = Point.intermediatePointWithLen(thisNode.getParent().getData(), thisNode.getData(), thisParentDist + shiftLen);
+                RectangleBound tentativeBound = new RectangleBound(newCenter, dist, dist);
+                for (RectangleBound b : determinedBounds) {
+                    boolean isSelfTest = thisNode.getData() == b.getCenter();
+                    boolean isParentTest = thisNode.getParent().getData() == b.getCenter();
+                    if ((!isSelfTest)) {
+                        b.modifyToTightestBound(tentativeBound);
+                    }
+
+                    if (tentativeBound.getHeight() * tentativeBound.getWidth() > bestBound.getWidth() * bestBound.getHeight())
+                        bestBound = tentativeBound;
+                }
+
+            }
+            determinedBounds.remove(thisBound);
+            thisNode.setData(bestBound.getCenter());
+            thisNode.setBoundingRectangle(bestBound);
+            determinedBounds.add(bestBound);
+        }
+        for (TreeNode<Point> child : thisNode.getChildren()) {
+            rectangleAdjustRectangle(child, dist, determinedBounds);
+        }
     }
 
 }

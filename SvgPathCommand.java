@@ -22,7 +22,7 @@ public class SvgPathCommand {
             SvgFileProcessor sguiggleFile = new SvgFileProcessor(tileFile);
             try {
                 sguiggleFile.processSvg();
-                squiggleList.add(sguiggleFile.getCommandLists().get(0));
+                squiggleList.add(sguiggleFile.getCommandList());
             } catch (SAXException e) {
                 e.printStackTrace();
             } catch (XPathExpressionException e) {

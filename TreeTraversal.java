@@ -47,16 +47,17 @@ public class TreeTraversal {
         renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
         treeOrdering(tree, null);
         preOrderTraversal(tree, null);
-        squiggleCommands = new ArrayList<>();
-        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
+//        squiggleCommands = new ArrayList<>();
+//        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
         return renderedCommands;
     }
 
     public List<SvgPathCommand> traverseSquiggleTree(List<SvgPathCommand> renderedDecoCommands) {
-        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
-        treeOrdering(tree, null);
-        squiggleCommands = new ArrayList<>();
-        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
+//        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
+//        treeOrdering(tree, null);
+//        squiggleCommands = new ArrayList<>();
+//        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
+
         return squiggleCommands;
     }
 
@@ -106,7 +107,7 @@ public class TreeTraversal {
         } else {
             for (TreeNode<Point> child : childArray) {
                 System.out.println(squiggleCommands.size() + "  5");
-                sguigglePreorderTraversal(child, treeNode, renderedDecoCommands);
+//                sguigglePreorderTraversal(child, treeNode, renderedDecoCommands);
                 squiggleCommands.addAll(sguiggalizedReverse);
                 System.out.println(squiggleCommands.size() + "  6");
                 //   SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-2-" + (counter2++) );

@@ -132,20 +132,17 @@ public class RectangleBound {
 
     // return the tightest bound for an argument bound using this bound as a constraint
     public void modifyToTightestBound(RectangleBound initialBound) {
-//        assert (!isInsideBox(initialBound.getCenter()));        // a determined bounding box should never contain any other tree nodes
         Point testCenter = initialBound.getCenter();
-        while (touches(initialBound)) {
-            double tentativeWidth = (Math.abs(center.x - initialBound.getCenter().x) - width * 0.5) * 2 - 0.0001,
-                    tentativeHeight = (Math.abs(center.y - initialBound.getCenter().y) - height * 0.5) * 2 - 0.0001;
+        if (touches(initialBound)) {
+            double tentativeWidth = (Math.abs(center.x - initialBound.getCenter().x) - width * 0.5) * 2 - 0.0000001,
+                    tentativeHeight = (Math.abs(center.y - initialBound.getCenter().y) - height * 0.5) * 2 - 0.0000001;
             tentativeHeight = Math.abs(tentativeHeight);
             tentativeWidth = Math.abs(tentativeWidth);
-
             if ((testCenter.y < getUp() || testCenter.y > getDown()) && isBetween(testCenter.x, getLeft(), getRight())) {
                 initialBound.setHeight(tentativeHeight);
             } else if ((testCenter.x > getRight() || testCenter.x < getLeft()) && isBetween(testCenter.y, getUp(), getDown())) {
                 initialBound.setWidth(tentativeWidth);
             } else {
-
                 if (tentativeWidth * initialBound.getHeight() > tentativeHeight * initialBound.getWidth()) {
                     initialBound.setWidth(tentativeWidth);
                 } else {
@@ -153,10 +150,36 @@ public class RectangleBound {
                 }
             }
 
-
+            if (tentativeWidth < 0.01 || tentativeHeight < 0.01)
+                return;
         }
 
-
+//        if (touches(initialBound)) {
+//            double tentativeWidth = 0.1, tentativeHeight = 0.1;
+////            double distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5, distY = Math.abs(center.y - initialBound.getCenter().y) - height *0.5;
+//            double distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5 - tentativeWidth * 0.5, distY = Math.abs(center.y - initialBound.getCenter().y) - height *0.5 - tentativeHeight * 0.5;
+////            while ((tentativeWidth * 2) / 2 < distX) {
+////                tentativeWidth *= 2;
+////            }
+////            while (tentativeHeight * 2 / 2 < distY) {
+////                tentativeHeight *= 2;
+////            }
+//
+//            while (distX > 0.05) {
+//                tentativeWidth += distX * 0.25;
+//                distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5 - tentativeWidth * 0.5;
+//            }
+//
+//            while (distY > 0.05) {
+//                tentativeHeight += distY * 0.25;
+//                distY = Math.abs(center.y - initialBound.getCenter().y) - height * 0.5 - tentativeHeight * 0.5;
+//            }
+//
+//
+//            initialBound.setWidth(tentativeWidth);
+//            initialBound.setHeight(tentativeHeight);
+//
+//    }
     }
 
 

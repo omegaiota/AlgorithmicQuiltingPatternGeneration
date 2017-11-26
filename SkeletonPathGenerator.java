@@ -33,7 +33,6 @@ public class SkeletonPathGenerator {
                 // Line from left to right
                 skeletonPath.add(new SvgPathCommand(new Point(minX, maxY - height * ((double)i) / rows), SvgPathCommand.CommandType.LINE_TO));
                 skeletonPath.add(new SvgPathCommand(new Point(maxX, maxY - height * ((double)i) / rows), SvgPathCommand.CommandType.LINE_TO));
-
             } else {
                 // Line from right to left
                 skeletonPath.add(new SvgPathCommand(new Point(maxX, maxY - height * ((double)i) / rows), SvgPathCommand.CommandType.LINE_TO));

@@ -18,7 +18,7 @@ public class SpinePatternMerger {
 
     public SpinePatternMerger(String spineName, List<SvgPathCommand> spineCommands, SvgFileProcessor patternFile, boolean rotation) {
         this.spineCommands = spineCommands;
-        this.patternCommands = patternFile.getCommandLists().get(0);
+        this.patternCommands = patternFile.getCommandList();
         this.spineName = spineName;
         this.patternName = patternFile.getfFileName();
         this.patternFileProcessed = patternFile;

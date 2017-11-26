@@ -1,5 +1,6 @@
 package jackiequiltpatterndeterminaiton;
 
+import javafx.util.Pair;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -28,7 +30,7 @@ public class SvgFileProcessor {
     private NodeList pathNodeList;
     private Point minPoint = new Point(10000, 10000), maxPoint = new Point(-10000, -10000);
     private double width = -1, height = -1, patternHeight = -1, widthRight = -1;
-    private ArrayList<ArrayList<SvgPathCommand>> commandLists = new ArrayList<>();
+    private List<SvgPathCommand> commandLists = new ArrayList<>();
 
     public SvgFileProcessor(File importFile) {
         this.fFilePath = Paths.get(importFile.getPath());
@@ -109,6 +111,30 @@ public class SvgFileProcessor {
             // do something
         }
 
+        try {
+            PrintWriter writer = new PrintWriter("./out/pat" + fileName + ".gcode", "UTF-8");
+            int count = 0;
+            for (SvgPathCommand command : outputCommandList) {
+
+                if (command.isMoveTo() || command.isLineTo()) {
+                    count++;
+                    if (command.isMoveTo())
+                        writer.println("N" + count + " G00 " + "X" + command.getDestinationPoint().x + " Y" + command.getDestinationPoint().y);
+                    else
+                        writer.println("N" + count + " G01 " + "X" + command.getDestinationPoint().x + " Y" + command.getDestinationPoint().y);
+                } else if (command.isCurveTo()) {
+                    count++;
+                    writer.println("N" + count + " G01 " + "X" + command.getDestinationPoint().x + " Y" + command.getDestinationPoint().y);
+                }
+            }
+            count++;
+            writer.println("N" + count + " M02");
+            writer.close();
+
+
+        } catch (IOException e) {
+            // do something
+        }
 
     }
 
@@ -140,7 +166,7 @@ public class SvgFileProcessor {
 
     public Region getBoundary() {
         ArrayList<Point> destList = new ArrayList<>();
-        for ( SvgPathCommand command : commandLists.get(0)) {
+        for (SvgPathCommand command : commandLists) {
             destList.add(command.getDestinationPoint());
         }
         Region boundaryRegion = new Region(destList);
@@ -160,20 +186,21 @@ public class SvgFileProcessor {
         pathNodeList = (NodeList) expression.evaluate(document, XPathConstants.NODESET);
 
         for (int i = 0; i < pathNodeList.getLength(); i++) {
+            assert pathNodeList.getLength() == 1;
             ArrayList<SvgPathCommand> aCommandList = new ArrayList<>();
-            commandLists.add(aCommandList);
+            commandLists = aCommandList;
             processPath(pathNodeList.item(i), aCommandList);
         }
         width = maxPoint.x - minPoint.x;
         height = maxPoint.y - minPoint.y;
-        patternHeight = commandLists.get(0).get(0).getDestinationPoint().y - minPoint.y;
-        //widthRight = maxPoint.getX() - getCommandLists().get(0).get(0).getDestinationPoint().getX();
-        widthRight = getCommandLists().get(0).get(getCommandLists().get(0).size() - 1).getDestinationPoint().x - getCommandLists().get(0).get(0).getDestinationPoint().x;
+        patternHeight = commandLists.get(0).getDestinationPoint().y - minPoint.y;
+        //widthRight = maxPoint.getX() - getCommandList().get(0).get(0).getDestinationPoint().getX();
+        widthRight = getCommandList().get(getCommandList().size() - 1).getDestinationPoint().x - getCommandList().get(0).getDestinationPoint().x;
 
         System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
                 +  "width=" + width + ";\n height=" + height + "effective height" + getEffectiveHeight() +
                 "\npattern height:" + patternHeight + " first height:"
-                + commandLists.get(0).get(0).getDestinationPoint().y);
+                + commandLists.get(0).getDestinationPoint().y);
         System.out.println();
     }
 
@@ -262,7 +289,7 @@ public class SvgFileProcessor {
             maxPoint = new Point(maxPoint.x, current.y);
     }
 
-    public ArrayList<ArrayList<SvgPathCommand>> getCommandLists() {
+    public List<SvgPathCommand> getCommandList() {
         return commandLists;
     }
 
@@ -280,9 +307,9 @@ public class SvgFileProcessor {
 
     public double getMaximumExtentFromStartPoint() {
         double maxDist = 0;
-        for (int i = 0; i < commandLists.get(0).size(); i++)
-            for (int j = i + 1; j < commandLists.get(0).size(); j++) {
-                maxDist = Double.max(maxDist, Point.getDistance(commandLists.get(0).get(j).getDestinationPoint(), commandLists.get(0).get(i).getDestinationPoint()));
+        for (int i = 0; i < commandLists.size(); i++)
+            for (int j = i + 1; j < commandLists.size(); j++) {
+                maxDist = Double.max(maxDist, Point.getDistance(commandLists.get(j).getDestinationPoint(), commandLists.get(i).getDestinationPoint()));
             }
         return maxDist * 1.1;
     }
@@ -300,7 +327,7 @@ public class SvgFileProcessor {
     }
 
     public double getEffectiveHeight() {
-        List<SvgPathCommand> commands = getCommandLists().get(0);
+        List<SvgPathCommand> commands = getCommandList();
         double effectiveHeight = 0;
         for (int i = 1; i < commands.size(); i++)
             for (int j = i + 1; j < commands.size(); j++) {
@@ -365,6 +392,30 @@ public class SvgFileProcessor {
         return "SvgFileProcessor{" +
                 "commandLists=" + commandLists.iterator().toString() +
                 '}';
+    }
+
+    public Pair<CircleBound, List<Point>> getBoundingCircle() {
+        List<Point> pointList = getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList());
+        CircleBound bound = SmallestEnclosingCircle.makeCircle(pointList);
+        List<Point> touchList = pointList.stream().filter(e -> Math.abs(Point.getDistance(bound.getCenter(), e) - bound.getRadii()) < 0.01).collect(Collectors.toList());
+        if (touchList.size() != 0) {
+            for (int i = 0; i < pointList.size(); i++) {
+                if (pointList.get(i) == touchList.get(0)) {
+                    List<SvgPathCommand> newCommandList = new ArrayList<>();
+                    for (int j = 0; j < commandLists.size(); j++) {
+                        newCommandList.add(commandLists.get((j + i) % pointList.size()));
+                        newCommandList.get(j).setCommandType(SvgPathCommand.CommandType.LINE_TO);
+
+                    }
+                    newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
+                    commandLists.clear();
+                    PatternRenderer.insertPatternToList(newCommandList, commandLists, newCommandList.get(0).getDestinationPoint(), -1 * Point.getAngle(bound.getCenter(), pointList.get(i)));
+
+                    return new Pair<>(bound, touchList);
+                }
+            }
+        }
+        return new Pair<>(bound, touchList);
     }
 
 

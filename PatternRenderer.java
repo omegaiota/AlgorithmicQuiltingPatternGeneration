@@ -76,7 +76,7 @@ public class PatternRenderer {
             double anglePrev = Point.getAngle(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint());
             double betweenAngle = angleNext - anglePrev;
             System.out.println( i + ":" + angleNext + " " + anglePrev + " " + betweenAngle);
-            double rotationAngle = -1 * betweenAngle / 2;
+            double rotationAngle = -1.0 * betweenAngle / 2.0;
             if (betweenAngle > 0)
                 rotationAngle += Math.PI;
 
@@ -89,7 +89,7 @@ public class PatternRenderer {
                 if (renderType == RenderType.WITH_DECORATION) {
                     double random = Math.random();
                     /* random factor */
-                    if (Double.compare(random, density) < 1)
+                    if (Double.compare(random, density) < 1.0)
                         insertPatternToList(decorativeElementCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
                 }
                 renderedCommands.add(new SvgPathCommand(pointLeft, SvgPathCommand.CommandType.LINE_TO));

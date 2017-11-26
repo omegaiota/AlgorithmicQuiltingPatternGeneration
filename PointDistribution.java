@@ -7,23 +7,44 @@ import java.util.Random;
 /**
  * Created by JacquelineLi on 6/21/17.
  */
-public class Distribution {
-
-
+public final class PointDistribution {
+    private Distribution strategy = new Grid();
     private SvgFileProcessor regionFileProcessed;
     private ArrayList<Point> pointList = new ArrayList<>();
     private ArrayList<SvgPathCommand> distributionVisualizationList = new ArrayList<>();
-    private ArrayList<PointRotation> pairList = new ArrayList<>();
     private RenderType type;
     private Region boundary;
     private Graph pointGraph;
     private double disLen = 0;
     private TreeNode<Point> spanningTree;
-    public Distribution(RenderType type, Region boundary, double disLen, SvgFileProcessor regionFile) {
+
+    public PointDistribution(RenderType type, Region boundary, double disLen, SvgFileProcessor regionFile) {
         this.type = type;
         this.boundary = boundary;
         this.disLen = disLen;
         this.regionFileProcessed = regionFile;
+        switch (type) {
+            case GRID:
+            case RANDOM:
+                strategy = new Grid();
+                break;
+            case TRIANGLE:
+                strategy = new Triangle();
+                break;
+            case THREE_THREE_FOUR_THREE_FOUR:
+            default:
+                strategy = new TTFTF();
+                break;
+
+        }
+    }
+
+    public PointDistribution(List<Double> restrictions, Region boundary, double disLen, SvgFileProcessor regionFile) {
+        this.type = RenderType.ANGLE_RESTRICTED;
+        this.boundary = boundary;
+        this.disLen = disLen;
+        this.regionFileProcessed = regionFile;
+        strategy = new AngleRestriction(restrictions);
     }
 
     public TreeNode<Point> getSpanningTree() {
@@ -41,34 +62,9 @@ public class Distribution {
         Point start = new Point(midX, midY);
         distributionVisualizationList.add(new SvgPathCommand(start, SvgPathCommand.CommandType.MOVE_TO));
         System.out.println("starting point is inside boundary:" + boundary.insideRegion(start));
-        switch (type) {
-            case THREE_THREE_FOUR_THREE_FOUR:
-                threeFourTessellation(start);
-                break;
-            case GRID:
-                gridTessellation(start);
-                break;
-            case TRIANGLE:
-                triangleTessellation(start);
-                break;
-            case RANDOM:
-                gridTessellation(start);
-                break;
-        }
+        strategy.generate(start);
 
 
-    }
-
-    private void triangleTessellation(Point start) {
-        triangleToTriangle(start, 0, disLen);
-    }
-
-    public void threeFourTessellation(Point start) {
-        squareToTriangle(start, 0, disLen);
-    }
-
-    public void gridTessellation(Point start) {
-        squareToSquare(start, 0, disLen);
     }
 
     private boolean regionFree(Point testPoint) {
@@ -83,11 +79,17 @@ public class Distribution {
         return flag;
     }
 
+    private void angleRestricted(Point current, List<Double> restriction, double dist) {
+        if (boundary.insideRegion(current) && regionFree(current)) {
+            pointList.add(current);
+
+        }
+    }
+
     private void squareToTriangle(Point bottomRight, double angle, double dist) {
         if (boundary.insideRegion(bottomRight) && regionFree(bottomRight)) {
             double newDist = dist;
             pointList.add(bottomRight);
-            pairList.add(new PointRotation(bottomRight, angle));
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
             Point upperRight = new Point(bottomRight.x, upperLeft.y);
             Point bottomLeft = new Point(upperLeft.x, bottomRight.y);
@@ -118,7 +120,6 @@ public class Distribution {
             double newDist = dist;
 
             pointList.add(bottomLeft);
-            pairList.add(new PointRotation(bottomLeft, angle));
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
 
@@ -137,7 +138,6 @@ public class Distribution {
             double newDist = dist;
 
             pointList.add(bottomLeft);
-            pairList.add(new PointRotation(bottomLeft, angle));
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
             Point upperLeft = top.minusPoint(new Point(dist, 0));
@@ -172,7 +172,6 @@ public class Distribution {
                 newDist *= randNum;
             }
             pointList.add(bottomRight);
-            pairList.add(new PointRotation(bottomRight, angle));
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
             Point upperRight = new Point(bottomRight.x, upperLeft.y);
             Point bottomLeft = new Point(upperLeft.x, bottomRight.y);
@@ -199,7 +198,7 @@ public class Distribution {
 
     public void outputDistribution() {
         distributionVisualizationList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
-        distributionVisualizationList.addAll(regionFileProcessed.getCommandLists().get(0));
+        distributionVisualizationList.addAll(regionFileProcessed.getCommandList());
         SvgFileProcessor.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
     }
 
@@ -263,7 +262,46 @@ public class Distribution {
     }
 
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED
+    }
+
+    interface Distribution {
+        void generate(Point start);
+
+    }
+
+    final class TTFTF implements Distribution {
+        @Override
+        public void generate(Point start) {
+            squareToTriangle(start, 0, disLen);
+        }
+    }
+
+    final class Grid implements Distribution {
+        @Override
+        public void generate(Point start) {
+            squareToSquare(start, 0, disLen);
+        }
+    }
+
+    public final class Triangle implements Distribution {
+        @Override
+        public void generate(Point start) {
+            triangleToTriangle(start, 0, disLen);
+        }
+    }
+
+    public final class AngleRestriction implements Distribution {
+        List<Double> angles;
+
+        public AngleRestriction(List<Double> angles) {
+            this.angles = angles;
+        }
+
+        @Override
+        public void generate(Point start) {
+
+        }
     }
 
 
