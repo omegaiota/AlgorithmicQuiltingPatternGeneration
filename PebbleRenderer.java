@@ -170,7 +170,6 @@ public class PebbleRenderer extends PatternRenderer {
                         for (CircleBound b : determinedBounds) {
                             Point pCenter = b.getCenter();
                             if ((pCenter != thisCenter) && (pCenter != pebble1) && (pCenter != pebble2)) {
-                                //TODO: change call to circle bound
                                 if (b.touches(new CircleBound(newRadii, newPoint))) {
                                     valid = false;
                                     break;
@@ -180,7 +179,7 @@ public class PebbleRenderer extends PatternRenderer {
                     }
 
                     if (valid) {
-                        if (newRadii > best) {
+                        if (newRadii > best && newRadii < treeRoot.getBoundingCircle().getRadii()) {
                             best = Double.min(newRadii, Point.getDistance(thisNode.getData(), pebble1));
                             bestPoint = newPoint;
                         }
