@@ -72,18 +72,24 @@ public class PebbleRenderer extends PatternRenderer {
 
         //landFillTraverse(treeRoot, null, dist);
         renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
-        List<CircleBound> determinedBounds = new ArrayList<>();
+        Set<CircleBound> determinedBounds = new HashSet<>();
         treeRoot.setBoundingCircle(new CircleBound(dist, treeRoot.getData()));
 
         // first determination loop, make sure each pebble touches one pebble
-        pebbleRenderDetermineRadii(treeRoot, dist, determinedBounds);
+        pebbleRenderDetermineRadii(treeRoot, determinedBounds);
 
+        pebbleReplaceShortSegment(treeRoot, determinedBounds);
         // second determination loop, make sure each pebble touches two pebbles
         pebbleAdjustTreenode(treeRoot, dist, determinedBounds);
+        pebbleRenderDraw(treeRoot, 0);
+        SvgFileProcessor.outputSvgCommands(renderedCommands, "before second adjust");
+        renderedCommands.clear();
+        renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
 
-        pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
-
-        pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
+//
+        pebbleSecondAdjustTreenode(treeRoot, determinedBounds);
+//
+//        pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
 
         pebbleRenderDraw(treeRoot, 0);
     }
@@ -114,10 +120,9 @@ public class PebbleRenderer extends PatternRenderer {
     }
 
 
-
     /* We push inflate treenodes that touch two pebbles in the direciton of bisectors
 */
-    public void pebbleSecondAdjustTreenode(TreeNode<Point> thisNode, double dist, final List<CircleBound> determinedBounds) {
+    public void pebbleSecondAdjustTreenode(TreeNode<Point> thisNode, final Set<CircleBound> determinedBounds) {
         Point thisCenter = thisNode.getData();
         double r = thisNode.getBoundingCircle().getRadii();
         Point pebble1 = null, pebble2 = null, bestPoint = null;
@@ -153,14 +158,14 @@ public class PebbleRenderer extends PatternRenderer {
                     rotationAngle = 2 * Math.PI - rotationAngle;//second iteration, opposite direction of bisector
                 //first iteration, one direction
                 for (int i = 0; i < ITERATION; i++) {
-                    shiftLen = dist * 0.5 / ITERATION * i;
+                    shiftLen = Point.getDistance(thisNode.getData(), pebble1) * 0.5 / ITERATION * i;
                     Point newPointAngle = new Point(pebble1.x, pebble1.y).rotateAroundCenter(thisCenter, rotationAngle);
                     Point newPoint = Point.intermediatePointWithLen(thisCenter, newPointAngle, shiftLen);
                     double newRadii1 = Point.getDistance(newPoint, pebble1) - r1;
                     double newRadii2 = Point.getDistance(newPoint, pebble2) - r2;
                     double newRadii = Math.min(newRadii1, newRadii2);
 
-                    boolean valid = (newRadii > 0) && (Math.abs(newRadii1 - newRadii2) < 0.05);
+                    boolean valid = (newRadii > 0) && (Math.abs(newRadii1 - newRadii2) < 0.02);
                     if (valid) {
                         for (CircleBound b : determinedBounds) {
                             Point pCenter = b.getCenter();
@@ -176,7 +181,7 @@ public class PebbleRenderer extends PatternRenderer {
 
                     if (valid) {
                         if (newRadii > best) {
-                            best = Double.min(newRadii, dist);
+                            best = Double.min(newRadii, Point.getDistance(thisNode.getData(), pebble1));
                             bestPoint = newPoint;
                         }
                     } else {
@@ -195,14 +200,14 @@ public class PebbleRenderer extends PatternRenderer {
         }
 
         for (TreeNode<Point> child : thisNode.getChildren()) {
-            pebbleSecondAdjustTreenode(child, dist, determinedBounds);
+            pebbleSecondAdjustTreenode(child, determinedBounds);
         }
     }
 
     /* Since all internal nodes touch at least its parent and one of its children, we only adjust positions of treenodes. We
     push each treenode towards the direction of parent-self line until it touches a treeenode.
     */
-    public void pebbleAdjustTreenode(TreeNode<Point> thisNode, double dist, final List<CircleBound> determinedBounds) {
+    public void pebbleAdjustTreenode(TreeNode<Point> thisNode, double dist, final Set<CircleBound> determinedBounds) {
         if (thisNode.getChildren().size() == 0) {
             // leafnode, adjust position
             double shiftLen;
@@ -481,42 +486,19 @@ public class PebbleRenderer extends PatternRenderer {
 
     }
 
-
-    public void pebbleRenderDetermineRadii(TreeNode<Point> thisNode, double dist, final List<CircleBound> determinedBounds) {
+    public void pebbleReplaceShortSegment(TreeNode<Point> thisNode, final Set<CircleBound> determinedBounds) {
         determinedBounds.add(thisNode.getBoundingCircle());
         //determine bounding circle for each child
         for (TreeNode<Point> child : thisNode.getChildren()) {
-            double adjustedRadii = Point.getDistance(thisNode.getData(), child.getData()) - dist;
-            boolean shortLineSegment = false;
+            double childParentDist = Point.getDistance(thisNode.getData(), child.getData());
 
-            //loop through pebbles that have drawn already to adjust radii
-            final TreeNode<Point> thisChild = child;
-            ArrayList<CircleBound> sortedBoundByDist = new ArrayList<>(determinedBounds);
-            sortedBoundByDist.sort((b1, b2) -> (
-                    new Double(Point.getDistance(thisChild.getData(), b1.getCenter()) - b1.getRadii()).compareTo(
-                            Point.getDistance(thisChild.getData(), b2.getCenter()) - b2.getRadii())
-            ));
-
-            int adjustmentSize = (sortedBoundByDist.size() > 5) ? 5 : sortedBoundByDist.size();
-            for (int i = 0; i < adjustmentSize; i++) {
-                double distanceBetween = Point.getDistance(child.getData(), sortedBoundByDist.get(i).getCenter()) - sortedBoundByDist.get(i).getRadii();
-
-                if ((distanceBetween > 0) && Double.compare(distanceBetween, adjustedRadii) < 0 && (Double.compare(adjustedRadii - distanceBetween, 0.01) > 0)) {
-                    adjustedRadii = distanceBetween;
-                    assert adjustedRadii > 0;
-                    shortLineSegment = true;
-
-                }
-            }
-
-            if (shortLineSegment) {
+            if (childParentDist - child.getBoundingCircle().getRadii() - thisNode.getBoundingCircle().getRadii() > 0.1) {
                 // Strategy 1: insert a new pebble at all short line segments
                 double distBtwChildParent = Point.getDistance(thisNode.getData(), child.getData());
-                assert (distBtwChildParent - dist - adjustedRadii) > 0;
-                double newRadii = (distBtwChildParent - dist - adjustedRadii) / 2.0;
-                Point middlePoint = Point.intermediatePointWithLen(thisNode.getData(), child.getData(), newRadii + dist);
-                if (!Point.onLine(thisNode.getData(), child.getData(), middlePoint)) {
-                    assert newRadii + dist < distBtwChildParent;
+                double newRadii = (distBtwChildParent - thisNode.getBoundingCircle().getRadii() - thisNode.getBoundingCircle().getRadii()) / 2.0;
+                Point middlePoint = Point.intermediatePointWithLen(thisNode.getData(), child.getData(), newRadii + thisNode.getBoundingCircle().getRadii());
+                for (CircleBound b : determinedBounds) {
+                    newRadii = Double.min(newRadii, Point.getDistance(b.getCenter(), middlePoint) - b.getRadii());
                 }
                 TreeNode<Point> midTreeNode = new TreeNode<>(middlePoint, new ArrayList<>());
                 midTreeNode.setParent(thisNode);
@@ -524,11 +506,43 @@ public class PebbleRenderer extends PatternRenderer {
                 thisNode.removeChild(child);
                 thisNode.addChild(midTreeNode);
                 midTreeNode.setBoundingCircle(new CircleBound(newRadii, midTreeNode.getData()));
-                pebbleRenderDetermineRadii(midTreeNode, newRadii, determinedBounds);
-            } else {
-                child.setBoundingCircle(new CircleBound(adjustedRadii, child.getData()));
-                pebbleRenderDetermineRadii(child, adjustedRadii, determinedBounds);
+                determinedBounds.add(midTreeNode.getBoundingCircle());
             }
+
+            pebbleReplaceShortSegment(child, determinedBounds);
+
+        }
+
+    }
+
+    public void pebbleRenderDetermineRadii(TreeNode<Point> thisNode, final Set<CircleBound> determinedBounds) {
+        determinedBounds.add(thisNode.getBoundingCircle());
+        //determine bounding circle for each child
+        for (TreeNode<Point> child : thisNode.getChildren()) {
+            double childParentDist = Point.getDistance(thisNode.getData(), child.getData());
+            double adjustedRadii = childParentDist - thisNode.getBoundingCircle().getRadii();
+
+            //loop through pebbles that have drawn already to adjust radii
+            final TreeNode<Point> thisChild = child;
+            ArrayList<CircleBound> sortedBoundByDist = new ArrayList<>(determinedBounds);
+            sortedBoundByDist.sort((b1, b2) -> (
+                    (int) ((Point.getDistance(thisChild.getData(), b1.getCenter()) - b1.getRadii()) -
+                            (Point.getDistance(thisChild.getData(), b2.getCenter()) - b2.getRadii()))
+            ));
+
+            int adjustmentSize = (sortedBoundByDist.size() > 20) ? 20 : sortedBoundByDist.size();
+            for (int i = 0; i < adjustmentSize; i++) {
+                double distanceBetween = Point.getDistance(child.getData(), sortedBoundByDist.get(i).getCenter()) - sortedBoundByDist.get(i).getRadii();
+                adjustedRadii = Double.min(distanceBetween, adjustedRadii);
+                if ((distanceBetween > 0) && Double.compare(distanceBetween, adjustedRadii) < 0 && (Double.compare(adjustedRadii - distanceBetween, 0.01) > 0)) {
+                    adjustedRadii = distanceBetween;
+                    assert adjustedRadii > 0;
+
+                }
+            }
+
+            child.setBoundingCircle(new CircleBound(adjustedRadii, child.getData()));
+            pebbleRenderDetermineRadii(child, determinedBounds);
         }
 
     }
@@ -646,40 +660,5 @@ public class PebbleRenderer extends PatternRenderer {
         }
     }
 
-    public void rectangleAdjustRectangle(TreeNode<Point> thisNode, double dist, final Set<RectangleBound> determinedBounds) {
-        if (thisNode.getChildren().size() == 0) {
-            // leafnode, adjust position
-            double shiftLen;
-            int ITERATION = 100;
-            double thisParentDist = Point.getDistance(thisNode.getParent().getData(), thisNode.getData());
-            RectangleBound thisBound = thisNode.getBoundingRectangle();
-            RectangleBound bestBound = thisBound;
-            boolean isValid;
-            for (int i = 0; i < ITERATION; i++) {
-                isValid = true;
-                shiftLen = dist / 100 * i;
-                Point newCenter = Point.intermediatePointWithLen(thisNode.getParent().getData(), thisNode.getData(), thisParentDist + shiftLen);
-                RectangleBound tentativeBound = new RectangleBound(newCenter, dist, dist);
-                for (RectangleBound b : determinedBounds) {
-                    boolean isSelfTest = thisNode.getData() == b.getCenter();
-                    boolean isParentTest = thisNode.getParent().getData() == b.getCenter();
-                    if ((!isSelfTest)) {
-                        b.modifyToTightestBound(tentativeBound);
-                    }
-
-                    if (tentativeBound.getHeight() * tentativeBound.getWidth() > bestBound.getWidth() * bestBound.getHeight())
-                        bestBound = tentativeBound;
-                }
-
-            }
-            determinedBounds.remove(thisBound);
-            thisNode.setData(bestBound.getCenter());
-            thisNode.setBoundingRectangle(bestBound);
-            determinedBounds.add(bestBound);
-        }
-        for (TreeNode<Point> child : thisNode.getChildren()) {
-            rectangleAdjustRectangle(child, dist, determinedBounds);
-        }
-    }
 
 }

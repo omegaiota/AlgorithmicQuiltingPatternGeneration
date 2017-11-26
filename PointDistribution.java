@@ -23,6 +23,7 @@ public final class PointDistribution {
         this.boundary = boundary;
         this.disLen = disLen;
         this.regionFileProcessed = regionFile;
+        this.pointGraph = new Graph(disLen);
         switch (type) {
             case GRID:
             case RANDOM:
@@ -67,28 +68,33 @@ public final class PointDistribution {
 
     }
 
-    private boolean regionFree(Point testPoint) {
-        boolean flag = true;
-        for (Point point : pointList) {
-            double distance = Point.getDistance(testPoint, point);
-            if (Double.compare(Math.abs(distance), disLen * (type == RenderType.RANDOM ? 0.7 : 0.9)) < 0) {
-                flag = false;
-                break;
+    private List<Vertex<Point>> regionFree(Point testPoint) {
+        List<Vertex<Point>> closePoints = new ArrayList<>();
+        for (Vertex<Point> v : pointGraph.getVertices()) {
+            double distance = Point.getDistance(testPoint, v.getData());
+            if (Double.compare(Math.abs(distance), 0.005) < 0) {
+                closePoints.add(v);
             }
         }
-        return flag;
+        return closePoints;
     }
 
-    private void angleRestricted(Point current, List<Double> restriction, double dist) {
-        if (boundary.insideRegion(current) && regionFree(current)) {
+    private void angleRestricted(Vertex<Point> parrent, Point current, List<Double> restriction, double dist, double currentAngle) {
+        if (boundary.insideRegion(current) && regionFree(current).size() == 0) {
             pointList.add(current);
 
         }
     }
 
-    private void squareToTriangle(Point bottomRight, double angle, double dist) {
-        if (boundary.insideRegion(bottomRight) && regionFree(bottomRight)) {
+    private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
+        List<Vertex<Point>> closePoints = regionFree(bottomRight);
+        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0)) {
             double newDist = dist;
+            Vertex<Point> newV = new Vertex<>(bottomRight);
+            pointGraph.addVertex(newV);
+            if (parent != null)
+                newV.connect(parent);
+
             pointList.add(bottomRight);
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
             Point upperRight = new Point(bottomRight.x, upperLeft.y);
@@ -103,22 +109,28 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
-            triangleToSquare(upperRight, angle + Math.PI / 2, newDist);
+            triangleToSquare(newV, upperRight, angle + Math.PI / 2, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            triangleToSquare(upperLeft, angle, newDist);
-            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+//            triangleToSquare(newV,upperLeft, angle, newDist);
+//            distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            triangleToSquare(bottomLeft, angle - Math.PI / 2, newDist);
+            triangleToSquare(newV, bottomLeft, angle - Math.PI / 2, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
-
+        } else {
+            for (Vertex<Point> p : closePoints)
+                p.connect(parent);
         }
     }
 
-    private void triangleToSquare(Point bottomLeft, double angle, double dist) {
-        if (boundary.insideRegion(bottomLeft) && regionFree(bottomLeft)) {
+    private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist) {
+        List<Vertex<Point>> closePoints = regionFree(bottomLeft);
+        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
             double newDist = dist;
-
+            Vertex<Point> newV = new Vertex<>(bottomLeft);
+            pointGraph.addVertex(newV);
+            if (parent != null)
+                newV.connect(parent);
             pointList.add(bottomLeft);
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
@@ -128,15 +140,22 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(top, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
 
-            squareToTriangle(top, angle, newDist);
+            squareToTriangle(newV, top, angle, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
+        } else {
+//            for (Vertex<Point> p : closePoints)
+//                p.connect(parent);
         }
     }
 
-    private void triangleToTriangle(Point bottomLeft, double angle, double dist) {
-        if (boundary.insideRegion(bottomLeft) && regionFree(bottomLeft)) {
+    private void triangleToTriangle(Vertex<Point> parent, Point bottomLeft, double angle, double dist) {
+        List<Vertex<Point>> closePoints = regionFree(bottomLeft);
+        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
             double newDist = dist;
-
+            Vertex<Point> newV = new Vertex<>(bottomLeft);
+            pointGraph.addVertex(newV);
+            if (parent != null)
+                newV.connect(parent);
             pointList.add(bottomLeft);
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
@@ -148,22 +167,29 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(top, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
 
-            triangleToTriangle(top, angle, newDist);
+            triangleToTriangle(newV, top, angle, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
-            triangleToTriangle(bottomRight, angle, newDist);
+            triangleToTriangle(newV, bottomRight, angle, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
-            triangleToTriangle(upperLeft, angle, newDist);
+            triangleToTriangle(newV, upperLeft, angle, newDist);
             distributionVisualizationList.add(new SvgPathCommand(upperLeft, SvgPathCommand.CommandType.MOVE_TO));
-            triangleToTriangle(lowerLeft, angle, newDist);
+            triangleToTriangle(newV, lowerLeft, angle, newDist);
             distributionVisualizationList.add(new SvgPathCommand(lowerLeft, SvgPathCommand.CommandType.MOVE_TO));
-
+        } else {
+            for (Vertex<Point> p : closePoints)
+                p.connect(parent);
         }
     }
 
-    private void squareToSquare(Point bottomRight, double angle, double dist) {
+    private void squareToSquare(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
         assert (Double.compare(dist, disLen) <= 0);
-        if (boundary.insideRegion(bottomRight) && regionFree(bottomRight)) {
+        List<Vertex<Point>> closePoints = regionFree(bottomRight);
+        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0)) {
             double newDist = disLen;
+            Vertex<Point> newV = new Vertex<>(bottomRight);
+            pointGraph.addVertex(newV);
+            if (parent != null)
+                newV.connect(parent);
             /* Include randomness if type is RANDOM */
             if (type == RenderType.RANDOM) {
                 Random rand = new Random();
@@ -185,14 +211,17 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
-            squareToSquare(upperRight, angle + Math.PI / 2, newDist);
+            squareToSquare(newV, upperRight, angle + Math.PI / 2, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            squareToSquare(upperLeft, angle, newDist);
+            squareToSquare(newV, upperLeft, angle, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            squareToSquare(bottomLeft, angle - Math.PI / 2, newDist);
+            squareToSquare(newV, bottomLeft, angle - Math.PI / 2, newDist);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
+        } else {
+            for (Vertex<Point> p : closePoints)
+                p.connect(parent);
         }
     }
 
@@ -203,31 +232,31 @@ public final class PointDistribution {
     }
 
     public void toRegularGraph() {
-        pointGraph = new Graph(disLen);
-        for (Point point : pointList) {
-            Vertex<Point> vertex = new Vertex<>(point);
-            pointGraph.addVertex(vertex);
-        }
-
-        ArrayList<Vertex<Point>> vertices = pointGraph.getVertices();
-        for (int i = 0; i < vertices.size(); i++)
-            for (int j = i + 1; j < vertices.size(); j++) {
-                Vertex<Point> vertexI = vertices.get(i), vertexJ = vertices.get(j);
-                double distance = Point.getDistance(vertexI.getData(), vertexJ.getData());
-
-                if (type == RenderType.RANDOM) {
-                    System.out.println(Math.abs(distance - disLen * 0.7) + " " + disLen * 0.3 + " "
-                            + (Double.compare(Math.abs(distance - disLen * 0.7), disLen * 0.31) <= 0));
-                    if (Double.compare(distance - disLen * 0.7, disLen * 0.35) <= 0) {
-                        vertexI.connect(vertexJ);
-                    }
-                } else {
-                    if (Math.abs(distance - disLen) < disLen * 0.01) {
-                        vertexI.connect(vertexJ);
-                    }
-                }
-
-            }
+//        pointGraph = new Graph(disLen);
+//        for (Point point : pointList) {
+//            Vertex<Point> vertex = new Vertex<>(point);
+//            pointGraph.addVertex(vertex);
+//        }
+//
+//        ArrayList<Vertex<Point>> vertices = pointGraph.getVertices();
+//        for (int i = 0; i < vertices.size(); i++)
+//            for (int j = i + 1; j < vertices.size(); j++) {
+//                Vertex<Point> vertexI = vertices.get(i), vertexJ = vertices.get(j);
+//                double distance = Point.getDistance(vertexI.getData(), vertexJ.getData());
+//
+//                if (type == RenderType.RANDOM) {
+//                    System.out.println(Math.abs(distance - disLen * 0.7) + " " + disLen * 0.3 + " "
+//                            + (Double.compare(Math.abs(distance - disLen * 0.7), disLen * 0.31) <= 0));
+//                    if (Double.compare(distance - disLen * 0.7, disLen * 0.35) <= 0) {
+//                        vertexI.connect(vertexJ);
+//                    }
+//                } else {
+//                    if (Math.abs(distance - disLen) < disLen * 0.01) {
+//                        vertexI.connect(vertexJ);
+//                    }
+//                }
+//
+//            }
     }
 
     public List<SvgPathCommand> toTraversal(List<SvgPathCommand> renderedDecoCommands) {
@@ -273,21 +302,21 @@ public final class PointDistribution {
     final class TTFTF implements Distribution {
         @Override
         public void generate(Point start) {
-            squareToTriangle(start, 0, disLen);
+            squareToTriangle(null, start, 0, disLen);
         }
     }
 
     final class Grid implements Distribution {
         @Override
         public void generate(Point start) {
-            squareToSquare(start, 0, disLen);
+            squareToSquare(null, start, 0, disLen);
         }
     }
 
     public final class Triangle implements Distribution {
         @Override
         public void generate(Point start) {
-            triangleToTriangle(start, 0, disLen);
+            triangleToTriangle(null, start, 0, disLen);
         }
     }
 
@@ -300,7 +329,7 @@ public final class PointDistribution {
 
         @Override
         public void generate(Point start) {
-
+            angleRestricted(null, start, angles, disLen, 0);
         }
     }
 
