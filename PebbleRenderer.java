@@ -19,12 +19,15 @@ public class PebbleRenderer extends PatternRenderer {
     private CircleBound decoCommandsBound = null;
     private List<Point> touchPoints = null;
     private TreeNode<Point> treeRoot;
+    private GenerationInfo info;
 
-    public PebbleRenderer(TreeNode<Point> treeRoot, List<SvgPathCommand> decoCommands, SvgFileProcessor decoElemFile) {
-        super(treeRoot);
-        this.treeRoot = treeRoot;
+
+    public PebbleRenderer(List<SvgPathCommand> decoCommands, GenerationInfo info) {
+        super(info.getSpanningTree());
+        this.treeRoot = info.getSpanningTree();
         this.decoCommands = decoCommands;
-        this.decoElemFile = decoElemFile;
+        this.decoElemFile = info.getDecoElementFile();
+        this.info = info;
         if (decoElemFile != null) {
             Pair<CircleBound, List<Point>> decoElemBound = decoElemFile.getBoundingCircle();
             decoCommandsBound = decoElemBound.getKey();
@@ -43,9 +46,9 @@ public class PebbleRenderer extends PatternRenderer {
      */
     @Override
     public void pebbleFilling() {
-        if (true || decoElemFile == null) {
+        if (decoElemFile == null) {
             // render a pebble, which would be handled in normal pebbleFilling
-            pebbleFilling2();
+            pebbleFilling2(true);
         } else {
             assert decoCommandsBound != null && touchPoints != null;
             List<Double> touchPointAngle = new ArrayList<>();
@@ -54,11 +57,18 @@ public class PebbleRenderer extends PatternRenderer {
             }
 
             // Create a new tree where each
+            PointDistribution distribution = new PointDistribution(touchPointAngle, info);
+            distribution.generate();
+            List<SvgPathCommand> traversalCommands = distribution.toTraversal();
+            treeRoot = info.getSpanningTree();
+            pebbleFilling2(false);
+            traversalCommands.addAll(renderedCommands);
+            SvgFileProcessor.outputSvgCommands(traversalCommands, "withTree");
         }
 
     }
 
-    public void pebbleFilling2() {
+    public void pebbleFilling2(boolean optimizePebble) {
         double dist = Point.getDistance(treeRoot.getData(), treeRoot.getChildren().get(0).getData());
         for (TreeNode<Point> firstChildren : treeRoot.getChildren()) {
             if (Double.compare((Point.getDistance(treeRoot.getData(), firstChildren.getData())), dist) < 0)
@@ -77,19 +87,21 @@ public class PebbleRenderer extends PatternRenderer {
 
         // first determination loop, make sure each pebble touches one pebble
         pebbleRenderDetermineRadii(treeRoot, determinedBounds);
-
-        pebbleReplaceShortSegment(treeRoot, determinedBounds);
-        // second determination loop, make sure each pebble touches two pebbles
-        pebbleAdjustTreenode(treeRoot, dist, determinedBounds);
-        pebbleRenderDraw(treeRoot, 0);
-        SvgFileProcessor.outputSvgCommands(renderedCommands, "before second adjust");
-        renderedCommands.clear();
-        renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
+        if (optimizePebble) {
+            pebbleReplaceShortSegment(treeRoot, determinedBounds);
+            // second determination loop, make sure each pebble touches two pebbles
+            pebbleAdjustTreenode(treeRoot, dist, determinedBounds);
+            pebbleRenderDraw(treeRoot, 0);
+            SvgFileProcessor.outputSvgCommands(renderedCommands, "before second adjust");
+            renderedCommands.clear();
+            renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
 
 //
-        pebbleSecondAdjustTreenode(treeRoot, determinedBounds);
+            pebbleSecondAdjustTreenode(treeRoot, determinedBounds);
 //
 //        pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
+        }
+
 
         pebbleRenderDraw(treeRoot, 0);
     }

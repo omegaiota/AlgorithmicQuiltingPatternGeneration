@@ -43,16 +43,14 @@ public class TreeTraversal {
         }
     }
 
-    public List<SvgPathCommand> traverseTree(List<SvgPathCommand> renderedDecoCommands) {
+    public List<SvgPathCommand> traverseTree() {
         renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
         treeOrdering(tree, null);
         preOrderTraversal(tree, null);
-//        squiggleCommands = new ArrayList<>();
-//        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
         return renderedCommands;
     }
 
-    public List<SvgPathCommand> traverseSquiggleTree(List<SvgPathCommand> renderedDecoCommands) {
+    public List<SvgPathCommand> traverseSquiggleTree() {
 //        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
 //        treeOrdering(tree, null);
 //        squiggleCommands = new ArrayList<>();

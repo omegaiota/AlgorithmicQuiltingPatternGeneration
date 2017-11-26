@@ -37,6 +37,8 @@ public class Vertex<T> {
     }
 
     public void connect(Vertex<T> otherNode) {
+        if (otherNode == null)
+            return;
         Random rand = new Random();
         int weight = rand.nextInt(100) + 1;
         otherNode.neighbors.add(this);

@@ -56,7 +56,7 @@ public class Main extends Application {
     private final Button loadDecoElementButton = new Button("Load a pattern file ...");
     private final Button loadSvgFileButton = new Button("Load SVG file");
     private final Button generateButton = new Button("Generate");
-    List<String> tileList = new ArrayList<>(), alongPathList = new ArrayList<>(), endpointList = new ArrayList<>(), squiggleList = new ArrayList<>();
+    List<String> tileList = new ArrayList<>(), alongPathList = new ArrayList<>(), endpointList = new ArrayList<>();
     private PatternRenderer patternRenderer;
     /* Layout: VBox, HBox*/
     //Column
@@ -67,7 +67,7 @@ public class Main extends Application {
             skeletonRendering = new VBox(columnItemBundleSpacing), patternRendering = new VBox(columnItemBundleSpacing),
             patternPropertyInput = new VBox(columnItemBundleSpacing), svgToPat = new VBox(columnItemBundleSpacing),
             skeletonGenPropertyInput = new VBox(columnItemBundleSpacing), skeletonRenderPropertyInput = new VBox(columnItemBundleSpacing),
-            pathRender = new VBox(3), patternSelection = new VBox(columnItemBundleSpacing);
+            patternSelection = new VBox(columnItemBundleSpacing);
     private HBox menu = new HBox(15), patternSourceBox = new HBox(2), fileSourceBox = new HBox(2);
     //ComboBox
     private ComboBox skeletonGenComboBox = new ComboBox(), skeletonRenderComboBox = new ComboBox(),
@@ -83,10 +83,11 @@ public class Main extends Application {
             alongPathLibrary = new File("./src/resources/patterns/alongPath/"),
             endpointLibrary = new File("./src/resources/patterns/endpoints/");
     /* TextField */
-    private TextField textField = new TextField(), patternRenderTextFiled = new TextField(), skeletonGenTextField = new TextField(),
+    private TextField patternRenderTextFiled = new TextField(), skeletonGenTextField = new TextField(),
             skeletonRenderTextField = new TextField();
     /* File processor, renderer */
-    private SvgFileProcessor skeletonPathFile, decoElementFile = null, regionFile, svgFile;
+    private SvgFileProcessor decoElementFile = null, regionFile, svgFile;
+    private GenerationInfo info = new GenerationInfo();
     private SpinePatternMerger mergedPattern;
 
     public static void main(String[] args) {
@@ -217,6 +218,7 @@ public class Main extends Application {
             if (file != null) {
                 System.out.println("Loading a region ....");
                 regionFile = new SvgFileProcessor(file);
+                info.setRegionFile(regionFile);
                 try {
                     /** Process the svg file */
                     try {
@@ -311,36 +313,32 @@ public class Main extends Application {
                 } catch (XPathExpressionException e1) {
                     e1.printStackTrace();
                 }
+            info.setDecoElementFile(renderedDecoElemFileProcessor);
 
             /* Skeleton Path Generation */
             PointDistribution distribute = null;
             List<SvgPathCommand> skeletonPathCommands = new ArrayList<>();
-            TreeNode<Point> skeletonSpanningTree = null;
             File skeletonPathFile = null;
             SvgFileProcessor skeletonPathFileProcessor = null;
             String skeletonName = regionFile.getfFileName();
             int rows = -1;
-            int distributionDist = 0;
             ArrayList<SvgPathCommand> temp = new ArrayList<>();
 
             skeletonName += skeletonGenComboBox.getValue().toString();
             switch ((SkeletonPathType) skeletonGenComboBox.getValue()) {
                 case GRID_TESSELLATION:
                 case THREE_3_4_3_4_TESSELLATION:
-                    distributionDist = Integer.valueOf(skeletonGenTextField.getText());
+                    info.setPointDistributionDist(Integer.valueOf(skeletonGenTextField.getText()));
                     System.out.println("Skeleton Path: Grid Tessellation");
                     if (skeletonGenComboBox.getValue() == GRID_TESSELLATION) {
-                        distribute = new PointDistribution(PointDistribution.RenderType.TRIANGLE,
-                                boundary, distributionDist, regionFile);
+                        distribute = new PointDistribution(PointDistribution.RenderType.TRIANGLE, info);
                     } else {
-                        distribute = new PointDistribution(PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR,
-                                boundary, distributionDist, regionFile);
+                        distribute = new PointDistribution(PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR, info);
                     }
                     distribute.generate();
                     distribute.outputDistribution();
-                    skeletonPathCommands = distribute.toTraversal(renderedDecoCommands);
+                    skeletonPathCommands = distribute.toTraversal();
                     temp.addAll(skeletonPathCommands);
-                    skeletonSpanningTree = distribute.getSpanningTree();
                     break;
 
                 case HILBERT_CURVE:
@@ -400,7 +398,7 @@ public class Main extends Application {
                     skeletonGenComboBox.getValue().equals(GRID_TESSELLATION)) {
                 switch ((SkeletonRenderType) skeletonRenderComboBox.getValue()) {
                     case FIXED_WIDTH_FILL:
-                        double width = distributionDist / 5;
+                        double width = info.getPointDistributionDist() / 5.0;
                         switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
                             case "none":
                                 skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
@@ -409,7 +407,7 @@ public class Main extends Application {
                             default:
                                     /* scale deco to full*/
                                 renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                        (distributionDist - width) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                        (info.getPointDistributionDist() - width) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
                                         renderedDecoCommands.get(0).getDestinationPoint());
                                 skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                         renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
@@ -419,9 +417,9 @@ public class Main extends Application {
                         SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
                         break;
                     case PEBBLE:
-                        if (skeletonSpanningTree == null) {
+                        if (info.getSpanningTree() == null) {
                         } else {
-                            skeletonrenderer = new PebbleRenderer(skeletonSpanningTree, renderedDecoCommands, decoElementFile);
+                            skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info);
                             skeletonrenderer.pebbleFilling();
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
                             temp.addAll(skeletonrenderer.getRenderedCommands());
@@ -429,9 +427,9 @@ public class Main extends Application {
                         }
                         break;
                     case RECTANGLE:
-                        if (skeletonSpanningTree == null) {
+                        if (info.getSpanningTree() == null) {
                         } else {
-                            skeletonrenderer = new PebbleRenderer(skeletonSpanningTree, renderedDecoCommands, decoElementFile);
+                            skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info);
                             ((PebbleRenderer) skeletonrenderer).rectanglePacking();
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName);
                             temp.addAll(skeletonrenderer.getRenderedCommands());
@@ -440,10 +438,10 @@ public class Main extends Application {
                         break;
                     case SQUIGGLE:
                         renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                (distributionDist) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                (info.getPointDistributionDist()) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
                                 renderedDecoCommands.get(0).getDestinationPoint());
                         if (distribute != null)
-                            skeletonPathCommands = distribute.toSguiggleTraversal(renderedDecoCommands);
+                            skeletonPathCommands = distribute.toSguiggleTraversal();
                         SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName + "_" + decoFileName);
                         break;
                     case NONE:
@@ -457,7 +455,7 @@ public class Main extends Application {
                                 default:
                                     /* scale deco to full*/
                                     renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                            distributionDist / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                            info.getPointDistributionDist() / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
                                             renderedDecoCommands.get(0).getDestinationPoint());
                                     skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                             renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
