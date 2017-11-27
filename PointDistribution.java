@@ -1,5 +1,7 @@
 package jackiequiltpatterndeterminaiton;
 
+import javafx.util.Pair;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -81,19 +83,89 @@ public final class PointDistribution {
         return closePoints;
     }
 
-    private void angleRestricted(Vertex<Point> parent, Point current, List<Double> restriction, double dist, double currentAngle) {
+    private void angleRestrictedBFS(Vertex<Point> parent, Point current, List<Double> restriction, double dist, double currentAngle, boolean continueRecurse) {
+        List<Vertex<Point>> parentList = new ArrayList<>();
+        List<Point> currentList = new ArrayList<>();
+        List<Double> currentAngleList = new ArrayList<>();
+        Vertex<Point> newV = new Vertex<>(current);
+        pointGraph.addVertex(newV);
+        Point zeroAnglePoint = new Point(current.x + dist, current.y);
+        for (double angle : restriction) {
+            Point newPoint = zeroAnglePoint.rotateAroundCenter(current, currentAngle + angle);
+            double newAngle = (angle + currentAngle + Math.PI);
+            while (newAngle > Math.PI * 2)
+                newAngle -= Math.PI * 2;
+            while (newAngle < 0)
+                newAngle += Math.PI * 2;
+            parentList.add(newV);
+            currentList.add(newPoint);
+            currentAngleList.add(newAngle);
+        }
+
+        while (!currentList.isEmpty()) {
+            assert currentAngleList.size() == currentList.size() && parentList.size() == currentList.size();
+            parent = parentList.remove(0);
+            current = currentList.remove(0);
+            currentAngle = currentAngleList.remove(0);
+
+            List<Vertex<Point>> closePoints = regionFree(current, dist);
+            boolean isFree = (closePoints.size() == 0) || (closePoints.size() == 1 && closePoints.get(0) == parent);
+            if (pointGraph.getVertices().size() < restriction.size() + 1) {
+                if (parent == pointGraph.getVertices().get(0)) ;
+                System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current) + " regionFreeSize:" + closePoints.size());
+            }
+            if (boundary.insideRegion(current) && isFree) {
+                newV = new Vertex<>(current);
+                pointGraph.addVertex(newV);
+                if (parent != null)
+                    newV.connect(parent);
+                zeroAnglePoint = new Point(current.x + dist, current.y);
+                for (double angle : restriction) {
+                    Point newPoint = zeroAnglePoint.rotateAroundCenter(current, currentAngle + angle);
+                    double newAngle = (angle + currentAngle + Math.PI);
+                    while (newAngle > Math.PI * 2)
+                        newAngle -= Math.PI * 2;
+                    while (newAngle < 0)
+                        newAngle += Math.PI * 2;
+                    parentList.add(newV);
+                    currentList.add(newPoint);
+                    currentAngleList.add(newAngle);
+                }
+
+            }
+
+
+        }
+
+    }
+
+    private void angleRestrictedDFS(Vertex<Point> parent, Point current, List<Double> restriction, double dist, double currentAngle, boolean continueRecurse) {
         List<Vertex<Point>> closePoints = regionFree(current, dist);
-        if (boundary.insideRegion(current) && closePoints.size() == 0) {
+        boolean isFree = (closePoints.size() == 0) || (closePoints.size() == 1 && closePoints.get(0) == parent);
+//        if (pointGraph.getVertices().size() != 0) {
+//            if (parent == pointGraph.getVertices().get(0));
+//            System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current) + " regionFreeSize:" + closePoints.size());
+//        }
+        if (boundary.insideRegion(current) && isFree) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(current);
             pointGraph.addVertex(newV);
             if (parent != null)
                 newV.connect(parent);
             Point zeroAnglePoint = new Point(current.x + dist, current.y);
-            for (double angle : restriction) {
-                Point newPoint = zeroAnglePoint.rotateAroundCenter(current, angle);
-                angleRestricted(newV, newPoint, restriction, dist, angle);
+            if (continueRecurse) {
+                for (double angle : restriction) {
+                    Point newPoint = zeroAnglePoint.rotateAroundCenter(current, currentAngle + angle);
+                    double newAngle = (angle + currentAngle + Math.PI);
+                    while (newAngle > Math.PI * 2)
+                        newAngle -= Math.PI * 2;
+                    while (newAngle < 0)
+                        newAngle += Math.PI * 2;
+                    angleRestrictedDFS(newV, newPoint, restriction, dist, newAngle, continueRecurse);
+                }
             }
+
+        } else {
 
         }
     }
@@ -318,7 +390,8 @@ public final class PointDistribution {
 
         @Override
         public void generate(Point start) {
-            angleRestricted(null, start, angles, disLen, 0);
+            System.out.println("Restriction size:" + angles.size());
+            angleRestrictedDFS(null, start, angles, disLen, 0, true);
         }
     }
 

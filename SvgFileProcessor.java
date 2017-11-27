@@ -16,8 +16,11 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 /**
@@ -394,28 +397,38 @@ public class SvgFileProcessor {
                 '}';
     }
 
-    public Pair<CircleBound, List<Point>> getBoundingCircle() {
+    //    public Pair<CircleBound, List<Point>> getBoundingCircle() {
+    public Pair<CircleBound, List<Integer>> getBoundingCircle() {
         List<Point> pointList = getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList());
         CircleBound bound = SmallestEnclosingCircle.makeCircle(pointList);
-        List<Point> touchList = pointList.stream().filter(e -> Math.abs(Point.getDistance(bound.getCenter(), e) - bound.getRadii()) < 0.01).collect(Collectors.toList());
-        if (touchList.size() != 0) {
-            for (int i = 0; i < pointList.size(); i++) {
-                if (pointList.get(i) == touchList.get(0)) {
-                    List<SvgPathCommand> newCommandList = new ArrayList<>();
-                    for (int j = 0; j < commandLists.size(); j++) {
-                        newCommandList.add(commandLists.get((j + i) % pointList.size()));
-                        newCommandList.get(j).setCommandType(SvgPathCommand.CommandType.LINE_TO);
-
-                    }
-                    newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
-                    commandLists.clear();
-                    PatternRenderer.insertPatternToList(newCommandList, commandLists, newCommandList.get(0).getDestinationPoint(), -1 * Point.getAngle(bound.getCenter(), pointList.get(i)));
-
-                    return new Pair<>(bound, touchList);
-                }
+        int[] touchIndex = IntStream.range(0, pointList.size()).filter(i -> Math.abs(Point.getDistance(bound.getCenter(), pointList.get(i)) - bound.getRadii()) < 0.5).toArray();
+//        List<Point> touchList = pointList.stream().filter(e -> Math.abs(Point.getDistance(bound.getCenter(), e) - bound.getRadii()) < 0.01).collect(Collectors.toList());
+//        System.out.println("Original size:" + touchList.size());
+        System.out.println("Original size:" + touchIndex.length);
+        if (touchIndex.length != 0) {
+            int first = touchIndex[0];
+            List<SvgPathCommand> newCommandList = new ArrayList<>();
+            for (int j = 0; j < commandLists.size(); j++) {
+                newCommandList.add(commandLists.get((j + first) % pointList.size()));
+                newCommandList.get(j).setCommandType(SvgPathCommand.CommandType.LINE_TO);
             }
+            newCommandList.add(new SvgPathCommand(newCommandList.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
+            newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
+            commandLists.clear();
+            PatternRenderer.insertPatternToList(newCommandList, commandLists, newCommandList.get(0).getDestinationPoint(), -1 * Point.getAngle(bound.getCenter(), pointList.get(first)));
+            CircleBound newBound = SmallestEnclosingCircle.makeCircle(getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList()));
+//            Stream<Point> touch =  Arrays.stream(touchIndex).mapToObj(i -> commandLists.get((i - first + pointList.size()) % pointList.size()).getDestinationPoint());
+            touchIndex = Arrays.stream(touchIndex).map(i -> (i - first + pointList.size()) % pointList.size()).toArray();
+            ArrayList<Integer> touchIndexList = new ArrayList<>();
+            for (int i : touchIndex) {
+                touchIndexList.add(i);
+            }
+
+            return new Pair<>(newBound, touchIndexList);
         }
-        return new Pair<>(bound, touchList);
+
+
+        return new Pair<>(bound, new ArrayList<>());
     }
 
 

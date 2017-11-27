@@ -2,12 +2,7 @@ package jackiequiltpatterndeterminaiton;
 
 import javafx.util.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Pebble
@@ -17,9 +12,11 @@ public class PebbleRenderer extends PatternRenderer {
             decoCommands;
     private SvgFileProcessor decoElemFile = null;
     private CircleBound decoCommandsBound = null;
-    private List<Point> touchPoints = null;
+    private List<Integer> touchPointIndex = null;
     private TreeNode<Point> treeRoot;
     private GenerationInfo info;
+    private List<Double> touchPointAngle = new ArrayList<>();
+
 
 
     public PebbleRenderer(List<SvgPathCommand> decoCommands, GenerationInfo info) {
@@ -29,9 +26,9 @@ public class PebbleRenderer extends PatternRenderer {
         this.decoElemFile = info.getDecoElementFile();
         this.info = info;
         if (decoElemFile != null) {
-            Pair<CircleBound, List<Point>> decoElemBound = decoElemFile.getBoundingCircle();
+            Pair<CircleBound, List<Integer>> decoElemBound = decoElemFile.getBoundingCircle();
             decoCommandsBound = decoElemBound.getKey();
-            touchPoints = decoElemBound.getValue();
+            touchPointIndex = decoElemBound.getValue();
             this.decoCommands = decoElemFile.getCommandList();
         }
     }
@@ -50,13 +47,17 @@ public class PebbleRenderer extends PatternRenderer {
             // render a pebble, which would be handled in normal pebbleFilling
             pebbleFilling2(true);
         } else {
-            assert decoCommandsBound != null && touchPoints != null;
-            List<Double> touchPointAngle = new ArrayList<>();
-            for (Point p : touchPoints) {
+            assert decoCommandsBound != null && touchPointIndex != null;
+            for (Integer index : touchPointIndex) {
+                Point p = decoCommands.get(index).getDestinationPoint();
                 touchPointAngle.add(Point.getAngle(decoCommandsBound.getCenter(), p));
             }
+            Collections.sort(touchPointAngle);
+
 
             // Create a new tree where each
+            for (double a : touchPointAngle)
+                System.out.println("touch angle: " + Math.toDegrees(a));
             PointDistribution distribution = new PointDistribution(touchPointAngle, info);
             distribution.generate();
             List<SvgPathCommand> traversalCommands = distribution.toTraversal();
@@ -88,22 +89,31 @@ public class PebbleRenderer extends PatternRenderer {
         // first determination loop, make sure each pebble touches one pebble
         pebbleRenderDetermineRadii(treeRoot, determinedBounds);
         if (optimizePebble) {
+            outputCurrent("stage0");
+
             pebbleReplaceShortSegment(treeRoot, determinedBounds);
             // second determination loop, make sure each pebble touches two pebbles
             pebbleAdjustTreenode(treeRoot, dist, determinedBounds);
-            pebbleRenderDraw(treeRoot, 0);
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "before second adjust");
-            renderedCommands.clear();
+            outputCurrent("stage1_after_first_adjust");
             renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
-
-//
             pebbleSecondAdjustTreenode(treeRoot, determinedBounds);
-//
-//        pebbleSecondAdjustTreenode(treeRoot, dist, determinedBounds);
+            pebbleRenderDraw(treeRoot, 0);
+
+        } else {
+            outputCurrent("stage0");
+            renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
+//             pebbleAdjustTreenode(treeRoot, dist / 0.66, determinedBounds);
+            pebbleRenderDraw2(treeRoot, 0);
+
         }
 
 
+    }
+
+    public void outputCurrent(String name) {
         pebbleRenderDraw(treeRoot, 0);
+        SvgFileProcessor.outputSvgCommands(renderedCommands, name);
+        renderedCommands.clear();
     }
 
     public void rectanglePacking() {
@@ -226,50 +236,118 @@ public class PebbleRenderer extends PatternRenderer {
             double thisParentDist = Point.getDistance(thisNode.getParent().getData(), thisNode.getData());
             double thisRadii = thisNode.getBoundingCircle().getRadii();
             double tempRadii;
-            Point bestCenter = thisNode.getData();
+            Point bestCenter = thisNode.getBoundingCircle().getCenter();
             double bestRadii = thisRadii;
             boolean isValid;
-            for (int i = 0; i < ITERATION; i++) {
+            for (int i = 1; i < ITERATION; i++) {
                 isValid = true;
-                shiftLen = dist / ITERATION * i * 0.5;
+                shiftLen = (dist / (double) ITERATION) * i;
                 Point newCenter = Point.intermediatePointWithLen(thisNode.getParent().getData(), thisNode.getData(), thisParentDist + shiftLen);
                 tempRadii = thisRadii + shiftLen;
                 for (CircleBound b : determinedBounds) {
-                    boolean isSelfTest = thisNode.getData() == b.getCenter();
-                    boolean isParentTest = thisNode.getParent().getData() == b.getCenter();
-                    if ((!isSelfTest) || (!isParentTest) || Double.compare(Point.getDistance(b.getCenter(), newCenter) - (b.getRadii() + tempRadii), -0.05) < 0) {
+                    boolean isSelf = thisNode.getData() == b.getCenter();
+                    boolean isParent = thisNode.getParent().getData() == b.getCenter();
+                    assert Point.getDistance(thisNode.getParent().getData(), newCenter) > thisParentDist;
+                    if ((!isSelf) && (!isParent) && Double.compare(Point.getDistance(b.getCenter(), newCenter) - (b.getRadii() + tempRadii), -0.05) < 0) {
                         isValid = false;
                         break;
                     }
                 }
 
                 if (isValid) {
-                    if (tempRadii > bestRadii) {
-                        bestRadii = Double.min(tempRadii, dist);
+                    if (tempRadii > bestRadii && tempRadii < dist) {
+                        bestRadii = tempRadii;
                         bestCenter = newCenter;
                     }
-
+                } else {
+                    break;
                 }
             }
-            determinedBounds.remove(thisNode.getBoundingCircle());
-            thisNode.setData(bestCenter);
-            thisNode.setBoundingCircle(new CircleBound(bestRadii, thisNode.getData()));
-            determinedBounds.add(thisNode.getBoundingCircle());
+            if (bestCenter != thisNode.getBoundingCircle().getCenter()) {
+                determinedBounds.remove(thisNode.getBoundingCircle());
+                thisNode.setData(bestCenter);
+                thisNode.setBoundingCircle(new CircleBound(bestRadii, thisNode.getData()));
+                determinedBounds.add(thisNode.getBoundingCircle());
+            }
+
         }
         for (TreeNode<Point> child : thisNode.getChildren()) {
             pebbleAdjustTreenode(child, dist, determinedBounds);
         }
     }
 
+    public void pebbleRenderDraw2(TreeNode<Point> thisNode, double angle) {
+        boolean DEBUG = false;
+        boolean DRAW_BOUND = false;
+        HashMap<Double, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
+        HashMap<Integer, TreeNode<Point>> indexChildMap = new HashMap<>();
+        /* Record the direction of the children*/
+        for (TreeNode<Point> child : thisNode.getChildren()) {
+            double thisAngle = Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
+            degreeTreeNodeMap.put(thisAngle, child);
+        }
+
+        Point zeroAnglePoint = new Point(thisNode.getData().x + thisNode.getBoundingCircle().getRadii(), thisNode.getData().y);
+        Point startDrawingPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
+        Point primitiveCentroid = thisNode.getData();
+        renderedCommands.add(new SvgPathCommand(startDrawingPoint, SvgPathCommand.CommandType.LINE_TO));
+        if (DEBUG) {
+            SvgFileProcessor.outputSvgCommands(renderedCommands, "test");
+        }
+        // Insert a kissing primitive instead of a pebble
+        List<SvgPathCommand> scaledCommands = new ArrayList<>();
+
+        if (decoCommands.size() != 0) {
+            double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
+            PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
+                    decoCommands.get(0).getDestinationPoint()),
+                    scaledCommands, startDrawingPoint, Math.toRadians(angle));
+            if (DRAW_BOUND)
+                renderedCommands.addAll(scaledCommands);
+            printMapping(scaledCommands, primitiveCentroid);
+        }
+
+        /** Pebbles **/
+        for (int i = 0; i < scaledCommands.size(); i++) {
+            renderedCommands.add(scaledCommands.get(i));
+            if (touchPointIndex.contains(i)) {
+                double thisAngle = Math.toDegrees(Point.getAngle(thisNode.getData(), scaledCommands.get(i).getDestinationPoint()));
+                TreeNode<Point> child = degreeTreeNodeMap.get(thisAngle);
+                double currentError = 8.0;
+                Double key = thisAngle;
+                if (child == null) {
+                    for (Double k : degreeTreeNodeMap.keySet()) {
+                        if (Math.abs(k - thisAngle) < currentError) {
+                            child = degreeTreeNodeMap.get(k);
+                            key = k;
+                            currentError = Math.abs(k - thisAngle);
+                        }
+                    }
+                }
+
+
+//                System.out.println("current index:" + i);
+//                System.out.println("Looking for: " + thisAngle);
+                if (child == null) {
+//                    System.out.println("failed");
+//                    assert false;
+                } else {
+//                    System.out.println("succeeded");
+                    pebbleRenderDraw2(child, (thisAngle + 180) % 360);
+                    degreeTreeNodeMap.remove(key);
+
+                }
+            }
+        }
+
+    }
     public void pebbleRenderDraw(TreeNode<Point> thisNode, int angle) {
         boolean DEBUG = false;
+        boolean DRAW_BOUND = true;
         HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
         boolean[] degreeTable = new boolean[360];
         Arrays.fill(degreeTable, false);
         /* Record the direction of the children*/
-        System.out.println(decoCommands.size());
-
-
         for (TreeNode<Point> child : thisNode.getChildren()) {
             int thisAngle = (int) Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
             degreeTable[thisAngle] = true;
@@ -292,8 +370,8 @@ public class PebbleRenderer extends PatternRenderer {
             PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     decoCommands.get(0).getDestinationPoint()),
                     scaledCommands, startDrawingPoint, Math.toRadians(angle));
-            renderedCommands.addAll(scaledCommands);
-//            primitiveCentroid = SvgFileProcessor.getCentroidOnList(scaledCommands);
+            if (DRAW_BOUND)
+                renderedCommands.addAll(scaledCommands);
             printMapping(scaledCommands, primitiveCentroid);
         }
 
@@ -305,8 +383,10 @@ public class PebbleRenderer extends PatternRenderer {
             TreeNode<Point> child;
             Point cutPoint;
             if (scaledCommands.size() != 0) {
-                cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
-//                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
+                if (!DRAW_BOUND)
+                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
+                else
+                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
             } else {
                 cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
             }
@@ -318,8 +398,10 @@ public class PebbleRenderer extends PatternRenderer {
                 int searchAngle = j % 360;
                 int newAngle = (searchAngle + 180) % 360;
                 if (scaledCommands.size() != 0) {
-                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
-//                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
+                    if (!DRAW_BOUND)
+                        cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
+                    else
+                        cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 } else {
                     cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 }
@@ -334,8 +416,10 @@ public class PebbleRenderer extends PatternRenderer {
         }
         Point thisPoint;
         if (scaledCommands.size() != 0) {
-            thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
-//            thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
+            if (!DRAW_BOUND)
+                thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
+            else
+                thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         } else {
             thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         }

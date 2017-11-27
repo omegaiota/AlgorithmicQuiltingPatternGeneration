@@ -103,10 +103,12 @@ public class Main extends Application {
     }
 
     private void setDefaultValue() {
-        skeletonGenComboBox.setValue(GRID_TESSELLATION);
-        skeletonRenderComboBox.setValue(NONE);
+        skeletonGenComboBox.setValue(THREE_3_4_3_4_TESSELLATION);
+        skeletonRenderTextField.setText("0");
+        skeletonGenTextField.setText("30");
+        skeletonRenderComboBox.setValue(PEBBLE);
         patternRenderComboBox.setValue("No Rendering");
-        noPattern.setSelected(true);
+        patternFromLibrary.setSelected(true);
     }
 
     public BorderPane setLayoutWithGraph(Stage stage) {
