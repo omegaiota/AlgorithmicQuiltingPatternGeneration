@@ -15,6 +15,7 @@ public final class PointDistribution {
     private double disLen = 0;
     private GenerationInfo info;
     private TreeNode<Point> spanningTree;
+    private List<Point> points = new ArrayList<>();
 
     public PointDistribution(RenderType type, GenerationInfo info) {
         this.type = type;
@@ -46,7 +47,7 @@ public final class PointDistribution {
         strategy = new AngleRestriction(restrictions);
     }
 
-    public static List<Point> generateRandom(GenerationInfo info) {
+    public static List<Point> poissonDiskSamples(GenerationInfo info) {
         Region boundary = info.getRegionFile().getBoundary();
         List<Point> points = new ArrayList<>();
         int total = 0;
@@ -128,6 +129,10 @@ public final class PointDistribution {
 
         return root;
 
+    }
+
+    public List<Point> getPoints() {
+        return points;
     }
 
     private void initialization() {
@@ -257,6 +262,7 @@ public final class PointDistribution {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomRight);
             pointGraph.addVertex(newV);
+            points.add(bottomRight);
             if (parent != null)
                 newV.connect(parent);
 
@@ -298,6 +304,8 @@ public final class PointDistribution {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomLeft);
             pointGraph.addVertex(newV);
+            points.add(bottomLeft);
+
             if (parent != null && add)
                 newV.connect(parent);
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
@@ -325,6 +333,8 @@ public final class PointDistribution {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomLeft);
             pointGraph.addVertex(newV);
+            points.add(bottomLeft);
+
             if (parent != null)
                 newV.connect(parent);
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
@@ -358,6 +368,7 @@ public final class PointDistribution {
             double newDist = disLen;
             Vertex<Point> newV = new Vertex<>(bottomRight);
             pointGraph.addVertex(newV);
+            points.add(bottomRight);
             if (parent != null)
                 newV.connect(parent);
             /* Include randomness if type is RANDOM */
@@ -462,6 +473,7 @@ public final class PointDistribution {
                 double newDist = disLen;
                 Vertex<Point> newV = new Vertex<>(curr);
                 pointGraph.addVertex(newV);
+                points.add(curr);
                 if (parent != null)
                     newV.connect(parent);
 
