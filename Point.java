@@ -57,7 +57,7 @@ public class Point {
     public static Point randomNearby(Point origin, double radius) {
         double r = Math.random() * radius;
         double theta = Math.random() * Math.PI;
-        return origin.addPoint(new Point(r * Math.cos(theta), 3 * Math.sin(theta)));
+        return origin.add(new Point(r * Math.cos(theta), 3 * Math.sin(theta)));
     }
 
     /** truncateDouble: truncates value so that it fits precision
@@ -171,7 +171,7 @@ public class Point {
     }
 
     public static Point sumOfPoint(Point finalPoint, Point shiftPoint) {
-        return finalPoint.addPoint(shiftPoint);
+        return finalPoint.add(shiftPoint);
     }
 
     public static Point vertOffset(Point dest, Point src, double offset) {
@@ -274,10 +274,10 @@ public class Point {
     }
 
     /**
-     * rotate a point with angle radian around a central point
+     * rotate a point with a radian angle around a central point
      */
     public Point rotateAroundCenter(Point center, double angle) {
-        return this.minusPoint(center).rotateAroundOrigin(angle).addPoint(center);
+        return this.minus(center).rotateAroundOrigin(angle).add(center);
     }
 
     /**
@@ -288,17 +288,20 @@ public class Point {
     }
 
     public Point scaleAroundCenter(Point center, Double proportion) {
-        return this.minusPoint(center).scaleAroundOrigin(proportion).addPoint(center);
+        return this.minus(center).scaleAroundOrigin(proportion).add(center);
     }
 
-    public Point minusPoint(Point shiftPoint) {
+    public Point minus(Point shiftPoint) {
         return new Point(x - shiftPoint.x, y - shiftPoint.y);
     }
 
-    public Point addPoint(Point shiftPoint) {
+    public Point add(Point shiftPoint) {
         return new Point(x + shiftPoint.x, y + shiftPoint.y);
     }
 
+    public Point divide(double factor) {
+        return new Point(x / factor, y / factor);
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

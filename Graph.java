@@ -32,7 +32,6 @@ public class Graph {
      * @return
      */
     public TreeNode<Point> generateSpanningTree() {
-        pointPerturb();
         boolean flag = true;
         HashSet<Vertex<Point>> toInclude = new HashSet<>();
         HashMap<Vertex<Point>, TreeNode<Point>> vertexTreeNodeHashMap = new HashMap<>();
@@ -42,7 +41,6 @@ public class Graph {
         toInclude.remove(mVertices.get(0));
 
         while (!toInclude.isEmpty() && flag) {
-            //System.out.println("Remaining:" + toInclude.size());
          int minCost = 10000;
             Vertex<Point> minVertex = null, parentVertex = null;
             for (Vertex<Point> key : vertexTreeNodeHashMap.keySet()) {

@@ -53,6 +53,13 @@ public class SvgPathCommand {
         this.controlPoint2 = new Point(oldCommand.getControlPoint2());
         this.commandType = oldCommand.getCommandType();
     }
+
+    public SvgPathCommand(SvgPathCommand oldCommand, CommandType newType) {
+        this.destinationPoint = new Point(oldCommand.getDestinationPoint());
+        this.controlPoint1 = new Point(oldCommand.getControlPoint1());
+        this.controlPoint2 = new Point(oldCommand.getControlPoint2());
+        this.commandType = newType;
+    }
     public SvgPathCommand(Point destinationPoint, CommandType commandType) {
         this.destinationPoint = new Point(destinationPoint);
         this.controlPoint1 = new Point();
@@ -61,17 +68,17 @@ public class SvgPathCommand {
     }
     public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart) {
         this.commandType = oldCommand.getCommandType();
-        destinationPoint = oldCommand.getDestinationPoint().addPoint(finalStart).minusPoint(originalStart);
-        controlPoint1 = oldCommand.getControlPoint1().addPoint(finalStart).minusPoint(originalStart);
-        controlPoint2 = oldCommand.getControlPoint2().addPoint(finalStart).minusPoint(originalStart);
+        destinationPoint = oldCommand.getDestinationPoint().add(finalStart).minus(originalStart);
+        controlPoint1 = oldCommand.getControlPoint1().add(finalStart).minus(originalStart);
+        controlPoint2 = oldCommand.getControlPoint2().add(finalStart).minus(originalStart);
     }
 
     /** generate a path command from an old command whose center point is shifted and rotated*/
     public SvgPathCommand(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double radian) {
         this.commandType = oldCommand.getCommandType();
-        destinationPoint = oldCommand.getDestinationPoint().minusPoint(originalStart).rotateAroundOrigin(radian).addPoint(finalStart);
-        controlPoint1 = oldCommand.getControlPoint1().minusPoint(originalStart).rotateAroundOrigin(radian).addPoint(finalStart);
-        controlPoint2 = oldCommand.getControlPoint2().minusPoint(originalStart).rotateAroundOrigin(radian).addPoint(finalStart);
+        destinationPoint = oldCommand.getDestinationPoint().minus(originalStart).rotateAroundOrigin(radian).add(finalStart);
+        controlPoint1 = oldCommand.getControlPoint1().minus(originalStart).rotateAroundOrigin(radian).add(finalStart);
+        controlPoint2 = oldCommand.getControlPoint2().minus(originalStart).rotateAroundOrigin(radian).add(finalStart);
     }
 
     /** generate a path command from an old command who is rotated around the center point for angle*/
@@ -99,9 +106,9 @@ public class SvgPathCommand {
 
     public static SvgPathCommand commandFromShiftAndRotate(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double angle) {
         SvgPathCommand copy = new SvgPathCommand(oldCommand);
-        copy.setDestinationPoint(copy.getDestinationPoint().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart));
-        copy.setControlPoint1(copy.getControlPoint1().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart));
-        copy.setControlPoint2(copy.getControlPoint2().minusPoint(originalStart).rotateAroundOrigin(angle).addPoint(finalStart));
+        copy.setDestinationPoint(copy.getDestinationPoint().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));
+        copy.setControlPoint1(copy.getControlPoint1().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));
+        copy.setControlPoint2(copy.getControlPoint2().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));
         return copy;
     }
 
@@ -110,9 +117,9 @@ public class SvgPathCommand {
      */
     public static SvgPathCommand commandFromShift(SvgPathCommand oldCommand, Point originalStart, Point finalStart) {
         SvgPathCommand copy = new SvgPathCommand(oldCommand);
-        copy.setDestinationPoint(copy.getDestinationPoint().addPoint(finalStart).minusPoint(originalStart));
-        copy.setControlPoint1(copy.getControlPoint1().addPoint(finalStart).minusPoint(originalStart));
-        copy.setControlPoint2(copy.getControlPoint2().addPoint(finalStart).minusPoint(originalStart));
+        copy.setDestinationPoint(copy.getDestinationPoint().add(finalStart).minus(originalStart));
+        copy.setControlPoint1(copy.getControlPoint1().add(finalStart).minus(originalStart));
+        copy.setControlPoint2(copy.getControlPoint2().add(finalStart).minus(originalStart));
         return copy;
 
     }

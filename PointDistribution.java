@@ -1,10 +1,6 @@
 package jackiequiltpatterndeterminaiton;
 
-import javafx.util.Pair;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by JacquelineLi on 6/21/17.
@@ -32,6 +28,9 @@ public final class PointDistribution {
             case TRIANGLE:
                 strategy = new Triangle();
                 break;
+            case VINE:
+                strategy = new VINE();
+                break;
             case THREE_THREE_FOUR_THREE_FOUR:
             default:
                 strategy = new TTFTF();
@@ -45,6 +44,90 @@ public final class PointDistribution {
         this.info = info;
         initialization();
         strategy = new AngleRestriction(restrictions);
+    }
+
+    public static List<Point> generateRandom(GenerationInfo info) {
+        Region boundary = info.getRegionFile().getBoundary();
+        List<Point> points = new ArrayList<>();
+        int total = 0;
+        Point minPoint = info.getRegionFile().getMinPoint(), maxPoint = info.getRegionFile().getMaxPoint();
+
+        /* Poisson Disk Sampling*/
+        int NUM = 500;
+        double area = (maxPoint.x - minPoint.x) * (maxPoint.y - minPoint.y);
+        double radius = Math.sqrt(area / NUM / 4.0);
+
+        while (total < NUM) {
+            double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
+                    y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
+            Point tempPoint = new Point(x, y);
+            boolean isValid = true;
+            for (Point p : points) {
+                if (Point.getDistance(tempPoint, p) < radius) {
+                    isValid = false;
+                    break;
+                }
+            }
+            if (isValid) {
+                if (boundary.insideRegion(tempPoint)) {
+                    points.add(tempPoint);
+                    total++;
+                }
+            }
+        }
+
+
+        return points;
+    }
+
+    public static TreeNode<Point> toMST(List<Point> points) {
+        List<Point> sorted = new ArrayList<>(points);
+        Collections.sort(sorted, (p1, p2) -> ((Double) (p1.x)).compareTo(p2.x));
+
+        int n = points.size();
+        double[][] dist = new double[n][n];
+        List<TreeNode<Point>> nodes = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                dist[i][j] = Point.getDistance(sorted.get(i), sorted.get(j));
+            }
+            dist[i][i] = Double.MAX_VALUE;
+            nodes.add(new TreeNode<>(sorted.get(i)));
+        }
+
+        TreeNode<Point> root = nodes.get(0);
+        int counter = 1;
+        Set<Integer> pointsIncluded = new HashSet<>();
+        pointsIncluded.add(0);
+
+        while (counter != n) {
+            int minPointIndex = -1, parentIndex = -1;
+            double minDist = Double.MAX_VALUE;
+            for (Integer parent : pointsIncluded) {
+                for (int i = 0; i < n; i++) {
+                    double currDist = dist[parent][i];
+                    if (currDist < minDist) {
+                        minDist = currDist;
+                        minPointIndex = i;
+                        parentIndex = parent;
+                    }
+                }
+            }
+
+            nodes.get(parentIndex).addChild(nodes.get(minPointIndex));
+            System.out.println(minDist + " " + minPointIndex + " " + parentIndex);
+            pointsIncluded.add(minPointIndex);
+            counter++;
+            for (Integer seen : pointsIncluded) {
+                dist[seen][minPointIndex] = Double.MAX_VALUE;
+                dist[minPointIndex][seen] = Double.MAX_VALUE;
+            }
+
+
+        }
+
+        return root;
+
     }
 
     private void initialization() {
@@ -68,8 +151,6 @@ public final class PointDistribution {
         System.out.println("starting point is inside boundary:" + boundary.insideRegion(start));
         strategy.generate(start);
         toTraversal();
-
-
     }
 
     private List<Vertex<Point>> regionFree(Point testPoint, double tolerance) {
@@ -248,7 +329,7 @@ public final class PointDistribution {
                 newV.connect(parent);
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
-            Point upperLeft = top.minusPoint(new Point(dist, 0));
+            Point upperLeft = top.minus(new Point(dist, 0));
             Point lowerLeft = new Point(bottomLeft.x - (dist / 2), bottomLeft.y + dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
@@ -316,7 +397,7 @@ public final class PointDistribution {
     public void outputDistribution() {
         distributionVisualizationList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
         distributionVisualizationList.addAll(regionFileProcessed.getCommandList());
-        SvgFileProcessor.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type);
+        SvgFileProcessor.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type, info);
     }
 
 
@@ -352,7 +433,7 @@ public final class PointDistribution {
     }
 
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE
     }
 
     interface Distribution {
@@ -364,6 +445,60 @@ public final class PointDistribution {
         @Override
         public void generate(Point start) {
             squareToTriangle(null, start, 0, disLen);
+        }
+    }
+
+    final class VINE implements Distribution {
+
+        @Override
+        public void generate(Point start) {
+//            squareToTriangle(null, start, 0, disLen * 2);
+            genVine(null, start, 0, disLen, Math.toRadians(30), false, 0);
+        }
+
+        private void genVine(Vertex<Point> parent, Point curr, double angle, double dist, double leafAngle, boolean isLeaf, int vineLen) {
+            List<Vertex<Point>> closePoints = regionFree(curr, isLeaf ? disLen - 0.005 : 1);
+            if ((closePoints.size() == 0) && (boundary.insideRegion(curr))) {
+                double newDist = disLen;
+                Vertex<Point> newV = new Vertex<>(curr);
+                pointGraph.addVertex(newV);
+                if (parent != null)
+                    newV.connect(parent);
+
+                /* generate two leaves*/
+                if (!isLeaf) {
+                    Point extendedParentCurr;
+                    if (parent != null)
+                        extendedParentCurr = Point.intermediatePointWithLen(parent.getData(), curr, disLen * 2);
+                    else
+                        extendedParentCurr = new Point(curr.x + disLen, curr.y).rotateAroundCenter(curr, angle);
+                    Point leaf1 = extendedParentCurr.rotateAroundCenter(curr, leafAngle);
+                    Point leaf2 = extendedParentCurr.rotateAroundCenter(curr, -1 * leafAngle);
+//                double newAngle = (angle + currentAngle + Math.PI);
+                    genVine(newV, leaf1, angle + leafAngle, dist, leafAngle, true, vineLen + 1);
+                    genVine(newV, leaf2, angle - leafAngle, dist, leafAngle, true, vineLen + 1);
+                    /* continue on current branch */
+                    if (vineLen < 5)
+                        genVine(newV, extendedParentCurr, angle, dist, leafAngle, false, vineLen + 1);
+                    /* branch out*/
+//                    if (vineLen == 3)
+                    if (parent != null)
+                        if (Math.random() < 0.3)
+                            genVine(newV, Point.intermediatePointWithLen(parent.getData(), curr, disLen * 3).rotateAroundCenter(curr, Math.toRadians(60)), (angle + Math.toRadians(60)) % (2 * Math.PI), dist, leafAngle, false, vineLen + 1);
+//                    if (vineLen == 2)
+                    if (parent != null)
+                        if (Math.random() < 0.3)
+                            genVine(newV, Point.intermediatePointWithLen(parent.getData(), curr, disLen * 3).rotateAroundCenter(curr, Math.toRadians(300)), (angle + Math.toRadians(300)) % (2 * Math.PI), dist, leafAngle, false, vineLen + 1);
+
+                }
+
+            }
+
+            try {
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -391,7 +526,7 @@ public final class PointDistribution {
         @Override
         public void generate(Point start) {
             System.out.println("Restriction size:" + angles.size());
-            angleRestrictedDFS(null, start, angles, disLen, 0, true);
+            angleRestrictedBFS(null, start, angles, disLen, 0, true);
         }
     }
 

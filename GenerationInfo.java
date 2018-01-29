@@ -10,11 +10,21 @@ public final class GenerationInfo {
     private SvgFileProcessor regionFile;
     private double pointDistributionDist;
     private TreeNode<Point> spanningTree;
+    private boolean linearizeCommands;
 
     public GenerationInfo() {
         regionFile = null;
         skeletonPathFile = null;
         decoElementFile = null;
+        linearizeCommands = true;
+    }
+
+    public boolean isLinearizeCommands() {
+        return linearizeCommands;
+    }
+
+    public void setLinearizeCommands(boolean linearizeCommands) {
+        this.linearizeCommands = linearizeCommands;
     }
 
     public TreeNode<Point> getSpanningTree() {

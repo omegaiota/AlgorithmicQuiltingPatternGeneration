@@ -42,7 +42,7 @@ public class SvgFileProcessor {
     }
 
 
-    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName) {
+    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, GenerationInfo info) {
         try {
             PrintWriter writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
             writer.println("<svg");
@@ -65,14 +65,17 @@ public class SvgFileProcessor {
             writer.println("    <path");
             writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
             writer.print("    d=\"");
-            outputCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
+
+            // First command needs to be moved to
+            writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
             for (int i = 0; i < outputCommandList.size(); i++) {
                 SvgPathCommand command = outputCommandList.get(i);
+
+                // Change moveTo to lineTo so that path will be one stitch
                 if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
-                    System.out.println("WARNING: MOVE_TO inside commandlist");
-                    command.setCommandType(SvgPathCommand.CommandType.LINE_TO);
-                }
-                writer.print(command.toSvgCode());
+                    writer.print(new SvgPathCommand(command, SvgPathCommand.CommandType.LINE_TO).toSvgCode());
+                } else
+                    writer.print(command.toSvgCode());
             }
             writer.println("\"");
             writer.println("       id=\"path3342\"\n");

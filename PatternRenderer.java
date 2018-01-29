@@ -2,12 +2,18 @@ package jackiequiltpatterndeterminaiton;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  */
 public class PatternRenderer {
-    private List<SvgPathCommand> skeletonPathCommands, decorativeElementCommands, renderedCommands = new ArrayList<>();
+    private List<SvgPathCommand> skeletonPathCommands;
+    private List<SvgPathCommand> decorativeElementCommands;
+
+
+    private List<SvgPathCommand> renderedCommands = new ArrayList<>();
     private TreeNode<Point> spanningTree;
     private RenderType renderType;
     private String patternName = "", skeletonPathName = "";
@@ -53,7 +59,42 @@ public class PatternRenderer {
                 newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
             combinedCommands.add(newCommand);
         }
+    }
 
+    public void toCatmullRom() {
+//        renderedCommands.addAll(skeletonPathCommands);
+        Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
+        for (int i = 0; i < skeletonPathCommands.size(); i++) {
+            Point p = skeletonPathCommands.get(i).getDestinationPoint();
+            SvgPathCommand pastRecord = destinationCommandMap.get(p);
+            if (pastRecord != null) {
+                renderedCommands.add(new SvgPathCommand(pastRecord.getControlPoint2(),
+                        pastRecord.getControlPoint1(), p, SvgPathCommand.CommandType.CURVE_TO));
+                continue;
+            }
+            if (i == 0 || i == skeletonPathCommands.size() - 1) {
+                renderedCommands.add(skeletonPathCommands.get(i));
+                continue;
+            } else {
+                Point p2 = skeletonPathCommands.get(i).getDestinationPoint(),
+                        p1 = skeletonPathCommands.get(i - 1).getDestinationPoint();
+                Point p3, p0;
+                if (i - 2 < 0)
+                    p0 = p1.minus(p2.minus(p1));
+                else
+                    p0 = skeletonPathCommands.get(i - 2).getDestinationPoint();
+                if (i + 2 > skeletonPathCommands.size() - 1)
+                    p3 = p2.add(p2.minus(p1));
+                else
+                    p3 = skeletonPathCommands.get(i + 1).getDestinationPoint();
+                Point c1 = p2.minus(p0).divide(6).add(p1), c2 = p2.minus(p3.minus(p1).divide(6));
+                SvgPathCommand newCommand = new SvgPathCommand(c1, c2, skeletonPathCommands.get(i).getDestinationPoint(),
+                        SvgPathCommand.CommandType.CURVE_TO);
+                renderedCommands.add(newCommand);
+                destinationCommandMap.put(p1, newCommand);
+            }
+
+        }
     }
 
     public List<SvgPathCommand> getRenderedCommands() {
@@ -177,15 +218,15 @@ public class PatternRenderer {
 
 
     public File outputEchoed(int number) {
-        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number);
+        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number, null);
     }
 
     public File  outputRotated(Integer angle) {
-        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue());
+        return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue(), null);
     }
 
     public enum RenderType {
-        NO_DECORATION, WITH_DECORATION, ROTATION, ECHO
+        NO_DECORATION, WITH_DECORATION, ROTATION, ECHO, CATMULL_ROM
     }
 
 

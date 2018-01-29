@@ -20,6 +20,12 @@ public class TreeNode<T> {
        this.neighbors = neighbors;
    }
 
+    public TreeNode(T data) {
+        this.data = data;
+        this.children = new ArrayList<>();
+        this.neighbors = new ArrayList<>();
+    }
+
     public RectangleBound getBoundingRectangle() {
         return boundingRectangle;
     }
