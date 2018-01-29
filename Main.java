@@ -420,6 +420,23 @@ public class Main extends Application {
                         skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                 renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM);
                         skeletonrenderer.toCatmullRom();
+
+                        /*TODO: rewrite code! below code is exactly the same as FIXED WIDTH FILL*/
+                        switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
+                            case "none":
+                                skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
+                                skeletonrenderer.fixedWidthFilling(0.0, Double.valueOf(skeletonRenderTextField.getText()));
+                                break;
+                            default:
+                                    /* scale deco to full*/
+                                renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
+                                        (info.getPointDistributionDist()) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                        renderedDecoCommands.get(0).getDestinationPoint());
+                                skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
+                                        renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
+                                skeletonrenderer.fixedWidthFilling(0.0, Double.valueOf(skeletonRenderTextField.getText()));
+                                break;
+                        }
                         SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
                         break;
                     case FIXED_WIDTH_FILL:
