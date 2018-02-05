@@ -414,20 +414,17 @@ public class Main extends Application {
                         SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
                         break;
                     case PEBBLE:
-                        if (info.getSpanningTree() == null) {
-                        } else {
-                            skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info, skeletonGenComboBox.getValue().equals(VINE));
-                            skeletonrenderer.pebbleFilling();
-                            SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
-                            temp.addAll(skeletonrenderer.getRenderedCommands());
-                            SvgFileProcessor.outputSvgCommands(temp, skeletonName + "_temp_" + decoFileName, info);
-                        }
-                        break;
                     case RECTANGLE:
+
                         if (info.getSpanningTree() == null) {
                         } else {
-                            skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info, false);
-                            ((PebbleRenderer) skeletonrenderer).rectanglePacking();
+                            skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info,
+                                    skeletonRenderType != RECTANGLE && skeletonGenComboBox.getValue().equals(VINE));
+                            if (skeletonRenderType.equals(PEBBLE)) {
+                                skeletonrenderer.pebbleFilling();
+                            } else {
+                                ((PebbleRenderer) skeletonrenderer).rectanglePacking();
+                            }
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
                             temp.addAll(skeletonrenderer.getRenderedCommands());
                             SvgFileProcessor.outputSvgCommands(temp, skeletonName + "_temp_" + decoFileName, info);
