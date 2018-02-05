@@ -135,23 +135,9 @@ public class Main extends Application {
         patternSelection.getChildren().addAll(patternSelectionLabel, patternSourceBox, fileSourceBox);
 
         /* initialize pattern library */
-        for (File tileFile : tileLibrary.listFiles()) {
-            String fileName = tileFile.getName();
-            fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
-            tileList.add(fileName);
-        }
-
-        for (File tileFile : alongPathLibrary.listFiles()) {
-            String fileName = tileFile.getName();
-            fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
-            alongPathList.add(fileName);
-        }
-
-        for (File tileFile : endpointLibrary.listFiles()) {
-            String fileName = tileFile.getName();
-            fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
-            endpointList.add(fileName);
-        }
+        addLibraryFilesToList(tileLibrary, tileList);
+        addLibraryFilesToList(alongPathLibrary, alongPathList);
+        addLibraryFilesToList(endpointLibrary, endpointList);
 
 
         System.out.println(endpointList.size() + " " + alongPathList.size() + " " + tileList.size());
@@ -185,6 +171,14 @@ public class Main extends Application {
         //Buttons, File loader
         buttonActions(stage);
         return layout;
+    }
+
+    private void addLibraryFilesToList(File folderFile, List<String> fileList) {
+        for (File tileFile : folderFile.listFiles()) {
+            String fileName = tileFile.getName();
+            fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
+            fileList.add(fileName);
+        }
     }
 
 
