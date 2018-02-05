@@ -368,9 +368,9 @@ public class Main extends Application {
 
             /* Tree Structure based rendering */
             skeletonName += skeletonRenderComboBox.getValue().toString();
-            if (skeletonPathType.isTreeStructure()
-                    ) {
-                switch ((SkeletonRenderType) skeletonRenderComboBox.getValue()) {
+            SkeletonRenderType skeletonRenderType = (SkeletonRenderType) skeletonRenderComboBox.getValue();
+            if (skeletonPathType.isTreeStructure()) {
+                switch (skeletonRenderType) {
                     case CURVE:
                         skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                 renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM);

@@ -67,8 +67,10 @@ public class SvgFileProcessor {
             writer.print("    d=\"");
 
             // First command needs to be moved to
-            writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
             for (int i = 0; i < outputCommandList.size(); i++) {
+                if (i == 0) {
+                    writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
+                }
                 SvgPathCommand command = outputCommandList.get(i);
 
                 // Change moveTo to lineTo so that path will be one stitch
@@ -199,15 +201,18 @@ public class SvgFileProcessor {
         }
         width = maxPoint.x - minPoint.x;
         height = maxPoint.y - minPoint.y;
-        patternHeight = commandLists.get(0).getDestinationPoint().y - minPoint.y;
-        //widthRight = maxPoint.getX() - getCommandList().get(0).get(0).getDestinationPoint().getX();
-        widthRight = getCommandList().get(getCommandList().size() - 1).getDestinationPoint().x - getCommandList().get(0).getDestinationPoint().x;
+        if (commandLists.size() > 0) {
+            patternHeight = commandLists.get(0).getDestinationPoint().y - minPoint.y;
+            widthRight = commandLists.get(commandLists.size() - 1).getDestinationPoint().x - getCommandList().get(0).getDestinationPoint().x;
 
-        System.out.println("File loaded:" + "maxPoint=" + maxPoint.toString() + "minPoint=" + minPoint.toString()
-                +  "width=" + width + ";\n height=" + height + "effective height" + getEffectiveHeight() +
-                "\npattern height:" + patternHeight + " first height:"
-                + commandLists.get(0).getDestinationPoint().y);
-        System.out.println();
+            System.out.println(String.format("File loaded:\n maxPoint = %s minPoint = %s" +
+                            "\n width = %.2f height = %.2f\n " +
+                            "effective height = %.2f pattern height = %.2f\n" +
+                            "first height = %.2f\n\n",
+                    maxPoint, minPoint, width, height, getEffectiveHeight(), patternHeight, commandLists.get(0).getDestinationPoint().y
+            ));
+        }
+
     }
 
     private void processPath(Node pathNode, ArrayList<SvgPathCommand> pathCommandList) {
@@ -219,7 +224,8 @@ public class SvgFileProcessor {
         for (int i = 0; i < pathElemArray.length; i++) {
 
             /** if the last command is close path, add a command that lineTo initial point*/
-            if ((i == pathElemArray.length - 1) && (pathElemArray[i].substring(0,1).equalsIgnoreCase("z"))) {
+            if ((i == pathElemArray.length - 1) && (pathElemArray[i].length() > 0)
+                    && (pathElemArray[i].substring(0, 1).equalsIgnoreCase("z"))) {
                 System.out.println("closing path");
                 SvgPathCommand initialComm = pathCommandList.get(0);
                 pathCommandList.add(new SvgPathCommand(initialComm.getControlPoint1(), initialComm.getControlPoint2(),
@@ -233,6 +239,8 @@ public class SvgFileProcessor {
 
     public Point parseString(String commandString, ArrayList<SvgPathCommand> pathCommandList, Point current) {
         String[] arguments = commandString.split(" ");
+        if (arguments.length == 0 || arguments[0].length() == 0)
+            return new Point();
         char commandChar = arguments[0].toLowerCase().charAt(0);
         boolean useAbsCoordinate = Character.isUpperCase(arguments[0].charAt(0));
 
