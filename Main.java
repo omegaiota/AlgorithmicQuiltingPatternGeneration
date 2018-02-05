@@ -1,17 +1,11 @@
 package jackiequiltpatterndeterminaiton;
 
-import com.sun.tools.corba.se.idl.toJavaPortable.Skeleton;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -269,39 +263,31 @@ public class Main extends Application {
             SvgFileProcessor renderedDecoElemFileProcessor = null;
             List<SvgPathCommand> renderedDecoCommands = new ArrayList<>();
             int repetitions;
-            switch (patternRenderComboBox.getValue().toString()) {
+            String patternRenderMethod = patternRenderComboBox.getValue().toString();
+            switch (patternRenderMethod) {
                 case "No Rendering":
                     renderedDecoCommands = decoCommands;
                     renderedDecoElemFileProcessor = decoElementFile;
                     decoFileName += "_noRender";
                     break;
                 case "Repeat with Rotation":
+                case "Echo":
                     patternRenderer = new PatternRenderer(decoFileName, decoCommands, PatternRenderer.RenderType.ROTATION);
                     repetitions = Integer.valueOf(patternRenderTextFiled.getText());
-                    patternRenderer.repeatWithRotation(repetitions);
+                    if (patternRenderMethod.equals("Echo")) {
+                        patternRenderer.echoPattern(repetitions);
+                    } else {
+                        patternRenderer.repeatWithRotation(repetitions);
+                    }
                     renderedDecoCommands = patternRenderer.getRenderedCommands();
                     renderedDecoElemFileProcessor = new SvgFileProcessor(patternRenderer.outputRotated(Integer.valueOf(patternRenderTextFiled.getText())));
-                    decoFileName += "_Rotation_" + repetitions;
-                    break;
-                case "Echo":
-                    patternRenderer = new PatternRenderer(decoFileName, decoCommands, PatternRenderer.RenderType.ECHO);
-                    repetitions = Integer.valueOf(patternRenderTextFiled.getText());
-                    patternRenderer.echoPattern(repetitions);
-                    renderedDecoCommands = patternRenderer.getRenderedCommands();
-                    decoFileName += "_Echo_" + repetitions;
-                    renderedDecoElemFileProcessor = new SvgFileProcessor(patternRenderer.outputEchoed(Integer.valueOf(patternRenderTextFiled.getText())));
+                    decoFileName += String.format("_%s_", patternRenderMethod) + repetitions;
                     break;
             }
             if (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText() != "none")
                 try {
                     renderedDecoElemFileProcessor.processSvg();
-                } catch (ParserConfigurationException e1) {
-                    e1.printStackTrace();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                } catch (SAXException e1) {
-                    e1.printStackTrace();
-                } catch (XPathExpressionException e1) {
+                } catch (Exception e1) {
                     e1.printStackTrace();
                 }
             info.setDecoElementFile(renderedDecoElemFileProcessor);
