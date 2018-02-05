@@ -447,14 +447,6 @@ public class Main extends Application {
                             SvgFileProcessor.outputSvgCommands(temp, skeletonName + "_temp_" + decoFileName, info);
                         }
                         break;
-                    case SQUIGGLE:
-                        renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                (info.getPointDistributionDist()) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
-                                renderedDecoCommands.get(0).getDestinationPoint());
-                        if (distribute != null)
-                            skeletonPathCommands = distribute.toSguiggleTraversal();
-                        SvgFileProcessor.outputSvgCommands(skeletonPathCommands, skeletonName + "_" + decoFileName, info);
-                        break;
                     case NONE:
                         if (skeletonPathCommands.size() != 0) {
                             System.out.println("Skeleton Size" + skeletonPathCommands.size());
@@ -495,8 +487,7 @@ public class Main extends Application {
                         }
                         renderedCommands = skeletonrenderer.fixedWidthFilling(5, Double.valueOf(skeletonRenderTextField.getText()));
                         break;
-                    case SQUIGGLE:
-                        break;
+
                     case ALONG_PATH:
                         mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                         /** Combine pattern */
@@ -591,13 +582,13 @@ public class Main extends Application {
             skeletonRenderComboBox.setValue(NONE);
             if (newSkeletonPathType.isTreeStructure()) {
                 patternLibraryComboBox.getItems().setAll(endpointList);
-                skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, SQUIGGLE, PEBBLE, RECTANGLE, CURVE);
+                skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, PEBBLE, RECTANGLE, CURVE);
             } else if (newSkeletonPathType.equals(SNAKE)) {
                 System.out.println("Snake");
-                skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH, SQUIGGLE, TILING);
+                skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH, TILING);
             } else {
                 System.out.println("case 2: none tree structure");
-                skeletonRenderComboBox.getItems().setAll(NONE, SQUIGGLE, ALONG_PATH);
+                skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH);
             }
 
             switch (newSkeletonPathType) {
@@ -730,7 +721,7 @@ public class Main extends Application {
     }
 
     public enum SkeletonRenderType {
-        NONE, FIXED_WIDTH_FILL, SQUIGGLE, PEBBLE, TILING, ALONG_PATH, RECTANGLE, CURVE
+        NONE, FIXED_WIDTH_FILL, PEBBLE, TILING, ALONG_PATH, RECTANGLE, CURVE
     }
 
     public enum FileSourceType {

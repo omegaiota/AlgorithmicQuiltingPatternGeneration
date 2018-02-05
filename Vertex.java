@@ -47,16 +47,8 @@ public class Vertex<T> {
         this.weight.add(weight);
     }
 
-    public boolean isConnected(Vertex<T> otherNode) {
-        return neighbors.contains(otherNode);
-    }
-
     public T getData() {
         return data;
-    }
-
-    public void setData(T data) {
-        this.data = data;
     }
 
     public List<Integer> getWeight() {

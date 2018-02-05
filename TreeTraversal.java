@@ -50,14 +50,6 @@ public class TreeTraversal {
         return renderedCommands;
     }
 
-    public List<SvgPathCommand> traverseSquiggleTree() {
-//        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
-//        treeOrdering(tree, null);
-//        squiggleCommands = new ArrayList<>();
-//        sguigglePreorderTraversal(tree, null, renderedDecoCommands);
-
-        return squiggleCommands;
-    }
 
     private void preOrderTraversal(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
         //no filling
@@ -97,49 +89,6 @@ public class TreeTraversal {
         }
     }
 
-//    private void sguigglePreorderTraversal(TreeNode<Point> treeNode, TreeNode<Point> parentNode, List<SvgPathCommand> renderedDecoCommands) {
-//        //no filling
-//
-//        Point parentPoint = (parentNode == null) ? new Point() : parentNode.getData();
-//
-//        final List<SvgPathCommand> sguiggalized;
-//        if (parentNode != null) {
-//            sguiggalized = SvgPathCommand.sguiggalized(parentNode.getData(), treeNode.getData(), SvgPathCommand.CommandType.LINE_TO);
-//        } else {
-//            System.out.println("parent node is null");
-//            (sguiggalized = new ArrayList<>()).add(new SvgPathCommand(treeNode.getData(), SvgPathCommand.CommandType.LINE_TO));
-//        }
-//        System.out.println(squiggleCommands.size() + "  0");
-//        System.out.println("Squiggalized size: " + sguiggalized.size());
-//        List<SvgPathCommand> sguiggalizedReverse = new ArrayList<>();
-//        for (int i = sguiggalized.size() - 1; i >= 0; i--)
-//            sguiggalizedReverse.add(sguiggalized.get(i));
-//        squiggleCommands.addAll(sguiggalized);
-//        System.out.println(squiggleCommands.size() + "  1");
-//
-//        //SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-1");
-//        List<TreeNode<Point>> children = treeNode.getChildren();
-//        TreeNode<Point>[] childArray = children.toArray(new TreeNode[children.size()]);
-//
-//        if (childArray.length == 0) {
-//            System.out.println(squiggleCommands.size() + "  2");
-//            PatternRenderer.insertPatternToList(renderedDecoCommands, squiggleCommands, treeNode.getData(), Point.getAngle(treeNode.getData(), parentPoint));
-//            //  SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-3");
-//            System.out.println(squiggleCommands.size() + "  3");
-//            squiggleCommands.addAll(sguiggalizedReverse);
-//            System.out.println(squiggleCommands.size() + "  4");
-//
-//        } else {
-//            for (TreeNode<Point> child : childArray) {
-//                System.out.println(squiggleCommands.size() + "  5");
-////                sguigglePreorderTraversal(child, treeNode, renderedDecoCommands);
-//                squiggleCommands.addAll(sguiggalizedReverse);
-//                System.out.println(squiggleCommands.size() + "  6");
-//                //   SvgFileProcessor.outputSvgCommands(squiggleCommands, "hey" + counter + "-2-" + (counter2++) );
-//
-//            }
-//        }
-//    }
 
     public List<SvgPathCommand> getSquiggleCommands() {
         return squiggleCommands;

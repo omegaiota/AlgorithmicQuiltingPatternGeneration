@@ -419,17 +419,6 @@ public final class PointDistribution {
         return commands;
     }
 
-    public List<SvgPathCommand> toSguiggleTraversal() {
-        toSpanningTree();
-        info.setSpanningTree(spanningTree);
-        List<SvgPathCommand> commands = this.squiggleTraverseTree();
-        return commands;
-    }
-
-    private List<SvgPathCommand> squiggleTraverseTree() {
-        TreeTraversal renderer = new TreeTraversal(spanningTree);
-        return renderer.traverseSquiggleTree();
-    }
 
     public void toSpanningTree() {
 

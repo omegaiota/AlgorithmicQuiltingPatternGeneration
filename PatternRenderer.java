@@ -41,11 +41,6 @@ public class PatternRenderer {
         this.spanningTree = spanningTree;
     }
 
-    public PatternRenderer(ArrayList<SvgPathCommand> commands, RenderType type) {
-        this.skeletonPathCommands = commands;
-        this.renderType = type;
-    }
-
     public static void insertPatternToList(List<SvgPathCommand> patternCommands,
                                            List<SvgPathCommand> combinedCommands,
                                            Point insertionPoint, double rotationAngleInRadian) {
