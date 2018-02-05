@@ -320,21 +320,7 @@ public class Main extends Application {
             if (skeletonPathType.isTessellation()) {
                 info.setPointDistributionDist(Integer.valueOf(skeletonGenTextField.getText()));
                 System.out.println("Skeleton Path: Grid Tessellation");
-                switch ((SkeletonPathType) skeletonGenComboBox.getValue()) {
-                    case GRID_TESSELLATION:
-                        distribute = new PointDistribution(PointDistribution.RenderType.GRID, info);
-                        break;
-                    case THREE_3_4_3_4_TESSELLATION:
-                        distribute = new PointDistribution(PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR, info);
-                        break;
-                    case VINE:
-                        distribute = new PointDistribution(PointDistribution.RenderType.VINE, info);
-                        break;
-                    default:
-                        distribute = new PointDistribution(PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR, info);
-                        break;
-                }
-
+                distribute = new PointDistribution(skeletonPathType.getPointDistributionType(), info);
                 distribute.generate();
                 distribute.outputDistribution();
                 skeletonPathCommands = distribute.toTraversal();
@@ -703,7 +689,7 @@ public class Main extends Application {
     }
 
     public enum SkeletonPathType {
-        GRID_TESSELLATION, THREE_3_4_3_4_TESSELLATION, POISSON_DISK, HILBERT_CURVE, ECHO, MEDIAL_AXIS, SNAKE, VINE;
+        GRID_TESSELLATION, TRIANGLE_TESSELLATION, THREE_3_4_3_4_TESSELLATION, POISSON_DISK, HILBERT_CURVE, ECHO, MEDIAL_AXIS, SNAKE, VINE;
 
         public boolean isTreeStructure() {
             switch (this) {
@@ -711,6 +697,7 @@ public class Main extends Application {
                 case GRID_TESSELLATION:
                 case POISSON_DISK:
                 case VINE:
+                case TRIANGLE_TESSELLATION:
                     return true;
                 default:
                     return false;
@@ -721,9 +708,23 @@ public class Main extends Application {
             switch (this) {
                 case THREE_3_4_3_4_TESSELLATION:
                 case GRID_TESSELLATION:
+                case TRIANGLE_TESSELLATION:
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        public PointDistribution.RenderType getPointDistributionType() {
+            switch (this) {
+                case GRID_TESSELLATION:
+                    return PointDistribution.RenderType.GRID;
+                case VINE:
+                    return PointDistribution.RenderType.VINE;
+                case TRIANGLE_TESSELLATION:
+                    return PointDistribution.RenderType.TRIANGLE;
+                default:
+                    return PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR;
             }
         }
     }
