@@ -11,12 +11,21 @@ public final class GenerationInfo {
     private double pointDistributionDist;
     private TreeNode<Point> spanningTree;
     private boolean linearizeCommands;
+    private double poissonRadius;
 
     public GenerationInfo() {
         regionFile = null;
         skeletonPathFile = null;
         decoElementFile = null;
         linearizeCommands = true;
+    }
+
+    public double getPoissonRadius() {
+        return poissonRadius;
+    }
+
+    public void setPoissonRadius(double poissonRadius) {
+        this.poissonRadius = poissonRadius;
     }
 
     public boolean isLinearizeCommands() {

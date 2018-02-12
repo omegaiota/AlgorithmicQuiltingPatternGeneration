@@ -1,10 +1,8 @@
 package jackiequiltpatterndeterminaiton;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  */
@@ -41,23 +39,38 @@ public class PatternRenderer {
         this.spanningTree = spanningTree;
     }
 
-    public static void insertPatternToList(List<SvgPathCommand> patternCommands,
-                                           List<SvgPathCommand> combinedCommands,
+    /**
+     * Translate some commands to start at a insertion point and rotate them for some angles around the insertion point
+     * and return the commands.
+     * If supplied with a destination list, it will insert the transformed commands at the end of the list
+     *
+     * @param patternCommands       commands that will be transformed
+     * @param destination           list to which transformed commands will be attached to. null if doesn't want attach.
+     * @param insertionPoint        point to which commands need to be translated to
+     * @param rotationAngleInRadian angle(specified in radian) that the transformed commands will be rotated
+     * @return
+     */
+    public static List<SvgPathCommand> insertPatternToList(List<SvgPathCommand> patternCommands,
+                                                           List<SvgPathCommand> destination,
                                            Point insertionPoint, double rotationAngleInRadian) {
         if (patternCommands.size() == 0)
-            return;
+            return new ArrayList<>();
+        List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
         Point patternPoint = patternCommands.get(0).getDestinationPoint();
         SvgPathCommand newCommand;
         for (int j = 0; j < patternCommands.size(); j++) {
             newCommand = new SvgPathCommand(patternCommands.get(j), patternPoint, insertionPoint, rotationAngleInRadian);
             if (j == 0)
                 newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
-            combinedCommands.add(newCommand);
+            transformedDecoElmentCommands.add(newCommand);
         }
+
+        if (destination != null)
+            destination.addAll(transformedDecoElmentCommands);
+        return transformedDecoElmentCommands;
     }
 
     public void toCatmullRom() {
-//        renderedCommands.addAll(skeletonPathCommands);
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
         for (int i = 0; i < skeletonPathCommands.size(); i++) {
             Point p = skeletonPathCommands.get(i).getDestinationPoint();
@@ -82,7 +95,8 @@ public class PatternRenderer {
                     p3 = p2.add(p2.minus(p1));
                 else
                     p3 = skeletonPathCommands.get(i + 1).getDestinationPoint();
-                Point c1 = p2.minus(p0).divide(6).add(p1), c2 = p2.minus(p3.minus(p1).divide(6));
+                Point c1 = p2.minus(p0).divide(6).add(p1),
+                        c2 = p2.minus(p3.minus(p1).divide(6));
                 SvgPathCommand newCommand = new SvgPathCommand(c1, c2, skeletonPathCommands.get(i).getDestinationPoint(),
                         SvgPathCommand.CommandType.CURVE_TO);
                 renderedCommands.add(newCommand);
@@ -90,6 +104,78 @@ public class PatternRenderer {
             }
 
         }
+    }
+
+
+    /**
+     * Adding decorative element to treenodes on a spline tree
+     *
+     * @param decoElmentCommands deco element
+     */
+    public void addDecoElmentToSplineTree(List<SvgPathCommand> decoElmentCommands, GenerationInfo info) {
+        /**
+         * I'm assuming that rendered commands is holding the tree skeleton after combined to splines
+         */
+        Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
+        List<RectangleBound> decoBounds = new ArrayList<>();
+        int n = renderedCommands.size();
+
+        for (int i = n - 1; i >= 0; i--) {
+            Point p = renderedCommands.get(i).getDestinationPoint();
+            SvgPathCommand pastRecord = destinationCommandMap.get(p);
+            if (pastRecord != null) {
+                continue;
+            }
+            Point prevDest = renderedCommands.get(i == 0 ? 0 : i - 1).getDestinationPoint();
+//            double anglePrev = Point.getAngle(renderedCommands.get(i == n-1 ? i : i + 1).getDestinationPoint(), p);
+            double anglePrev = getTangentAngleBezier(prevDest,
+                    renderedCommands.get(i).getControlPoint1(),
+                    renderedCommands.get(i).getControlPoint2(),
+                    renderedCommands.get(i).getDestinationPoint());
+            List<SvgPathCommand> renderedcommands = PatternRenderer.insertPatternToList(decoElmentCommands,
+                    null, p, anglePrev);
+            RectangleBound thisBound = getBoundingBox(renderedcommands);
+            boolean collides = false;
+
+            for (RectangleBound b : decoBounds) {
+                if (b.touches(thisBound)) {
+                    collides = true;
+                    break;
+                }
+            }
+            if (!collides) {
+                decoBounds.add(thisBound);
+                renderedCommands.addAll(i + 1, renderedcommands);
+            } else {
+
+                System.out.println("COLLIDES!");
+            }
+
+            destinationCommandMap.put(p, renderedCommands.get(i));
+
+        }
+    }
+
+    private RectangleBound getBoundingBox(List<SvgPathCommand> commands) {
+        int n = commands.size();
+        List<Point> points = commands.stream().map(p -> p.getDestinationPoint()).collect(Collectors.toList());
+        points.sort(Comparator.comparingDouble(p -> p.x));
+
+        double minx = points.get(0).x, maxx = points.get(n - 1).x;
+        System.out.println("minx:" + minx + " maxx:" + maxx);
+        points.sort(Comparator.comparingDouble(p -> p.y));
+        double miny = points.get(0).y, maxy = points.get(n - 1).y;
+        RectangleBound bound = new RectangleBound(minx, miny, maxx, maxy);
+        System.out.println(bound);
+        return bound;
+    }
+
+    private double getTangentAngleBezier(Point p0, Point p1, Point p2, Point p3) {
+        /* P(t) = (1 - t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3 */
+        double t = 0.99;
+        double c0 = Math.pow((1 - t), 3), c1 = 3 * t * (1 - t) * (1 - t), c2 = 3 * t * t * (1 - t), c3 = t * t * t;
+        Point stepped = (p0.multiply(c0)).add((p1.multiply(c1))).add(p2.multiply(c2)).add(p3.multiply(c3));
+        return (Point.getAngle(stepped, p3) + Math.PI);
     }
 
     public List<SvgPathCommand> getRenderedCommands() {

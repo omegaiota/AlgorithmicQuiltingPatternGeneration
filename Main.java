@@ -91,10 +91,10 @@ public class Main extends Application {
     }
 
     private void setDefaultValue() {
-        skeletonGenComboBox.setValue(THREE_3_4_3_4_TESSELLATION);
+        skeletonGenComboBox.setValue(POISSON_DISK);
         skeletonRenderTextField.setText("0");
         skeletonGenTextField.setText("30");
-        skeletonRenderComboBox.setValue(PEBBLE);
+        skeletonRenderComboBox.setValue(CATMULL_ROM);
         patternRenderComboBox.setValue("No Rendering");
         patternFromLibrary.setSelected(true);
     }
@@ -305,6 +305,7 @@ public class Main extends Application {
             SkeletonPathType skeletonPathType = (SkeletonPathType) skeletonGenComboBox.getValue();
             if (skeletonPathType.isTessellation()) {
                 info.setPointDistributionDist(Integer.valueOf(skeletonGenTextField.getText()));
+                System.out.println("Distribution dist set to" + info.getPointDistributionDist());
                 System.out.println("Skeleton Path: Grid Tessellation");
                 distribute = new PointDistribution(skeletonPathType.getPointDistributionType(), info);
                 distribute.generate();
@@ -371,28 +372,26 @@ public class Main extends Application {
             SkeletonRenderType skeletonRenderType = (SkeletonRenderType) skeletonRenderComboBox.getValue();
             if (skeletonPathType.isTreeStructure()) {
                 switch (skeletonRenderType) {
-                    case CURVE:
+                    case CATMULL_ROM:
                         skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                 renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM);
                         skeletonrenderer.toCatmullRom();
+                        /* A curved tree is not really "rendered"/ we still want to be able to put patterns on it. needs to add additional
+                         * parameterization here for selecting how we want the deco elements put on the curved tree */
+                        SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_catmull_rom_skeleton_" + decoFileName, info);
+                        /*TODO: rewrite code! below code is exactly the same as FIXED WIDTH FILL*/
+                        if (!((ToggleButton) patternSourceGroup.getSelectedToggle()).getText().equals("none")) {
+                                    /* scale deco to full*/
+                            renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
+                                    (info.getPointDistributionDist()) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                    renderedDecoCommands.get(0).getDestinationPoint());
+                                /* Adding a "pair" of leaves */
+                            skeletonrenderer.addDecoElmentToSplineTree(renderedDecoCommands, info);
 
-//                        /*TODO: rewrite code! below code is exactly the same as FIXED WIDTH FILL*/
-//                        switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
-//                            case "none":
-//                                skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION);
-//                                skeletonrenderer.fixedWidthFilling(0.0, Double.valueOf(skeletonRenderTextField.getText()));
-//                                break;
-//                            default:
-//                                    /* scale deco to full*/
-//                                renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-//                                        (info.getPointDistributionDist()) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
-//                                        renderedDecoCommands.get(0).getDestinationPoint());
-//                                skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
-//                                        renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
-//                                skeletonrenderer.fixedWidthFilling(0.0, Double.valueOf(skeletonRenderTextField.getText()));
-//                                break;
-//                        }
-                        SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
+                                /* Adding alternating leaves*/
+
+                        }
+                        SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_catmull_rom_" + decoFileName, info);
                         break;
                     case FIXED_WIDTH_FILL:
                         double width = info.getPointDistributionDist() / 5.0;
@@ -404,7 +403,7 @@ public class Main extends Application {
                             default:
                                     /* scale deco to full*/
                                 renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                        (info.getPointDistributionDist() - width) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                        (info.getPointDistributionDist() - width) / (2.0 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
                                         renderedDecoCommands.get(0).getDestinationPoint());
                                 skeletonrenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
                                         renderedDecoCommands, PatternRenderer.RenderType.WITH_DECORATION);
@@ -565,7 +564,7 @@ public class Main extends Application {
             skeletonRenderComboBox.setValue(NONE);
             if (newSkeletonPathType.isTreeStructure()) {
                 patternLibraryComboBox.getItems().setAll(endpointList);
-                skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, PEBBLE, RECTANGLE, CURVE);
+                skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, PEBBLE, RECTANGLE, CATMULL_ROM);
             } else if (newSkeletonPathType.equals(SNAKE)) {
                 System.out.println("Snake");
                 skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH, TILING);
@@ -704,12 +703,11 @@ public class Main extends Application {
     }
 
     public enum SkeletonRenderType {
-        NONE, FIXED_WIDTH_FILL, PEBBLE, TILING, ALONG_PATH, RECTANGLE, CURVE
+        NONE, FIXED_WIDTH_FILL, PEBBLE, TILING, ALONG_PATH, RECTANGLE, CATMULL_ROM
     }
 
     public enum FileSourceType {
         FILE, LIBRARY, NONE;
     }
-
 
 }

@@ -14,6 +14,12 @@ public class RectangleBound {
         this.center = center;
     }
 
+    public RectangleBound(double minx, double miny, double maxx, double maxy) {
+        width = maxx - minx;
+        height = maxy - miny;
+        center = new Point(minx + width * 0.5, miny + height * 0.5);
+    }
+
     static boolean isBetween(double testNum, double boundA, double boundB) {
         if (boundA < boundB) {
             return (testNum > boundA) && (testNum < boundB);
@@ -125,7 +131,7 @@ public class RectangleBound {
         return false;
     }
 
-    private boolean isInsideBox(Point testPoint) {
+    public boolean isInsideBox(Point testPoint) {
         return isBetween(testPoint.x, getLeft(), getRight()) && isBetween(testPoint.y, getUp(), getDown());
 
     }
@@ -183,5 +189,13 @@ public class RectangleBound {
     }
 
 
+    @Override
+    public String toString() {
+        return "RectangleBound{" +
+                "center=" + center +
+                ", width=" + width +
+                ", height=" + height +
+                '}';
+    }
 }
 

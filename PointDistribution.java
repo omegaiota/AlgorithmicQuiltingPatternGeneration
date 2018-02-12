@@ -12,6 +12,8 @@ public final class PointDistribution {
     private RenderType type;
     private Region boundary;
     private Graph pointGraph;
+
+
     private double disLen = 0;
     private GenerationInfo info;
     private TreeNode<Point> spanningTree;
@@ -57,7 +59,7 @@ public final class PointDistribution {
         int NUM = 500;
         double area = (maxPoint.x - minPoint.x) * (maxPoint.y - minPoint.y);
         double radius = Math.sqrt(area / NUM / 4.0);
-
+        info.setPoissonRadius(radius);
         while (total < NUM) {
             double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
                     y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;

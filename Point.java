@@ -283,12 +283,12 @@ public class Point {
     /**
      * scale a point around origin
      */
-    public Point scaleAroundOrigin(Double proportion) {
+    public Point multiply(Double proportion) {
         return new Point(x * proportion, y * proportion);
     }
 
     public Point scaleAroundCenter(Point center, Double proportion) {
-        return this.minus(center).scaleAroundOrigin(proportion).add(center);
+        return this.minus(center).multiply(proportion).add(center);
     }
 
     public Point minus(Point shiftPoint) {
@@ -298,7 +298,6 @@ public class Point {
     public Point add(Point shiftPoint) {
         return new Point(x + shiftPoint.x, y + shiftPoint.y);
     }
-
     public Point divide(double factor) {
         return new Point(x / factor, y / factor);
     }
