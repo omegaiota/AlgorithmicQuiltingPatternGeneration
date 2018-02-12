@@ -383,12 +383,13 @@ public class Main extends Application {
                         if (!((ToggleButton) patternSourceGroup.getSelectedToggle()).getText().equals("none")) {
                                     /* scale deco to full*/
                             renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                    (info.getPointDistributionDist()) / (1.4 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                    (info.getPointDistributionDist()) / (1.6 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
                                     renderedDecoCommands.get(0).getDestinationPoint());
                                 /* Adding a "pair" of leaves */
-                            skeletonrenderer.addDecoElmentToSplineTree(renderedDecoCommands, info);
-
+//                            skeletonrenderer.addDecoElmentToSplineTree(renderedDecoCommands, info);
                                 /* Adding alternating leaves*/
+                            skeletonrenderer.addAlternatingDecoElmentToSplineTree(renderedDecoCommands, info);
+
 
                         }
                         SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_catmull_rom_" + decoFileName, info);

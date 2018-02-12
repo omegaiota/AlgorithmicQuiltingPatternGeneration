@@ -108,7 +108,7 @@ public class PatternRenderer {
 
 
     /**
-     * Adding decorative element to treenodes on a spline tree
+     * Adding decorative element to treenodes on a spline tree (Deco Element is a pair)
      *
      * @param decoElmentCommands deco element
      */
@@ -154,6 +154,83 @@ public class PatternRenderer {
             destinationCommandMap.put(p, renderedCommands.get(i));
 
         }
+    }
+
+    /**
+     * Adding decorative element to treenodes on a spline tree (Alternating)
+     * TODO: refactor this to combine it with non-alternating algorithm since they are largely the same
+     *
+     * @param decoElmentCommands deco element
+     */
+    public void addAlternatingDecoElmentToSplineTree(List<SvgPathCommand> decoElmentCommands, GenerationInfo info) {
+        /**
+         * I'm assuming that rendered commands is holding the tree skeleton after combined to splines
+         */
+        Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
+        List<RectangleBound> decoBounds = new ArrayList<>();
+        int n = renderedCommands.size();
+
+        List<SvgPathCommand> skeletonPath = renderedCommands;
+        /* Spline pre-processing : break splines that are too long */
+
+        for (int i = n - 1; i >= 0; i--) {
+            Point p = skeletonPath.get(i).getDestinationPoint();
+            SvgPathCommand pastRecord = destinationCommandMap.get(p);
+            if (pastRecord != null) {
+                continue;
+            }
+            Point prevDest = skeletonPath.get(i == 0 ? 0 : i - 1).getDestinationPoint();
+//            double anglePrev = Point.getAngle(renderedCommands.get(i == n-1 ? i : i + 1).getDestinationPoint(), p);
+            double anglePrev = getTangentAngleBezier(prevDest,
+                    skeletonPath.get(i).getControlPoint1(),
+                    skeletonPath.get(i).getControlPoint2(),
+                    skeletonPath.get(i).getDestinationPoint());
+
+            /* Alternatve leave direction for even branches*/
+            if (i % 2 == 0)
+                anglePrev = -1.0 * anglePrev;
+            List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(decoElmentCommands,
+                    null, p, anglePrev);
+            RectangleBound thisBound = getBoundingBox(scaledRotatedDecoComamnds);
+
+            /* Collison Detection / Solving */
+            if (!thisBound.collidesWith(decoBounds)) {
+                decoBounds.add(thisBound);
+                skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
+            } else {
+                double proportion = 1.0;
+                boolean resolved = false;
+                System.out.println("COLLIDES!");
+                while (proportion > 0.5 && !resolved) {
+                    /* Collision Solving Strategy 1, shrink to 50% and test again */
+                    for (int j = 0; j < 6; j++) {
+                        if (resolved)
+                            continue;
+                        double testAngle = anglePrev * (1.0 + (j - 3.0) * 0.3);
+                        List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(scaledRotatedDecoComamnds,
+                                null, p, testAngle);
+                        thisBound = getBoundingBox(rotated);
+                        if (!thisBound.collidesWith(decoBounds)) {
+                            System.out.println("COLLIDES BUT RESOLVED!");
+                            decoBounds.add(thisBound);
+                            skeletonPath.addAll(i + 1, rotated);
+                            resolved = true;
+                            break;
+                        }
+                    }
+
+
+                    proportion *= 0.8;
+                    scaledRotatedDecoComamnds = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
+                            proportion, scaledRotatedDecoComamnds.get(0).getDestinationPoint());
+                }
+
+            }
+
+            destinationCommandMap.put(p, skeletonPath.get(i));
+        }
+
+        renderedCommands = skeletonPath;
     }
 
     private RectangleBound getBoundingBox(List<SvgPathCommand> commands) {

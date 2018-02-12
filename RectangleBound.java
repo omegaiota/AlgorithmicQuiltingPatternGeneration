@@ -1,5 +1,7 @@
 package jackiequiltpatterndeterminaiton;
 
+import java.util.Collection;
+
 /**
  * Created by JacquelineLi on 10/29/17.
  */
@@ -90,6 +92,21 @@ public class RectangleBound {
         return new Point(getRight(), getDown());
     }
 
+    /**
+     * Test if a given rectangle bound collides with any boundary in bounds
+     *
+     * @param bounds
+     * @return
+     */
+    public boolean collidesWith(Collection<RectangleBound> bounds) {
+        boolean collides = false;
+        for (RectangleBound b : bounds) {
+            if (b.touches(this)) {
+                return true;
+            }
+        }
+        return false;
+    }
     public boolean touches(RectangleBound other) {
         // check if this's right border is inside
         if (isInsideBox(other.getCenter())) {
