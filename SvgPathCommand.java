@@ -162,6 +162,45 @@ public class SvgPathCommand {
         return SvgPathCommand.commandsScaling(returnList, newDist / squiggleDist, parentNodeData);
     }
 
+    /**
+     * Break a Bezier Spline at a point using DeCasteljau's algorithm
+     *
+     * @param start start point of the bezier curve
+     * @param t     a value between 0,1 specifying the position to break the curve
+     * @param c1
+     * @param c2
+     * @param end
+     * @return
+     */
+    public static SvgPathCommand splineSplitting(Point start, Point c1, Point c2, Point end, double t) {
+        double x1 = start.x, y1 = start.y,
+                x2 = c1.x, y2 = c1.y,
+                x3 = c2.x, y3 = c2.y,
+                x4 = end.x, y4 = end.y;
+        double x12 = (x2 - x1) * t + x1,
+                y12 = (y2 - y1) * t + y1,
+
+                x23 = (x3 - x2) * t + x2,
+                y23 = (y3 - y2) * t + y2,
+
+                x34 = (x4 - x3) * t + x3,
+                y34 = (y4 - y3) * t + y3,
+
+                x123 = (x23 - x12) * t + x12,
+                y123 = (y23 - y12) * t + y12,
+
+                x234 = (x34 - x23) * t + x23,
+                y234 = (y34 - y23) * t + y23,
+
+                x1234 = (x234 - x123) * t + x123,
+                y1234 = (y234 - y123) * t + y123;
+        return new SvgPathCommand(new Point(x12, y12),
+                new Point(x123, y123),
+                new Point(x1234, y1234),
+                CommandType.CURVE_TO);
+
+    }
+
     public void setLineTo() {
         this.commandType = CommandType.LINE_TO;
     }

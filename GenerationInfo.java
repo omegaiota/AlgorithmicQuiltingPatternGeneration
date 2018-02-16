@@ -12,12 +12,21 @@ public final class GenerationInfo {
     private TreeNode<Point> spanningTree;
     private boolean linearizeCommands;
     private double poissonRadius;
+    private double decoElmentScalingFactor = 1.0;
 
     public GenerationInfo() {
         regionFile = null;
         skeletonPathFile = null;
         decoElementFile = null;
         linearizeCommands = true;
+    }
+
+    public double getDecoElmentScalingFactor() {
+        return decoElmentScalingFactor;
+    }
+
+    public void setDecoElmentScalingFactor(double decoElmentScalingFactor) {
+        this.decoElmentScalingFactor = decoElmentScalingFactor;
     }
 
     public double getPoissonRadius() {

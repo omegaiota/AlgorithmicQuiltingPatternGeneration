@@ -1,6 +1,9 @@
 package jackiequiltpatterndeterminaiton;
 
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by JacquelineLi on 10/29/17.
@@ -30,6 +33,18 @@ public class RectangleBound {
             return (testNum > boundB) && (testNum < boundA);
 //            return (Double.compare(testNum - boundB, 0.05) > 0 && (Double.compare(boundA - testNum, 0.05) > 0));
         }
+    }
+
+    public static RectangleBound getBoundingBox(List<SvgPathCommand> commands) {
+        int n = commands.size();
+        List<Point> points = commands.stream().map(p -> p.getDestinationPoint()).collect(Collectors.toList());
+        points.sort(Comparator.comparingDouble(p -> p.x));
+
+        double minx = points.get(0).x, maxx = points.get(n - 1).x;
+        points.sort(Comparator.comparingDouble(p -> p.y));
+        double miny = points.get(0).y, maxy = points.get(n - 1).y;
+        RectangleBound bound = new RectangleBound(minx, miny, maxx, maxy);
+        return bound;
     }
 
     public double getWidth() {
@@ -99,7 +114,6 @@ public class RectangleBound {
      * @return
      */
     public boolean collidesWith(Collection<RectangleBound> bounds) {
-        boolean collides = false;
         for (RectangleBound b : bounds) {
             if (b.touches(this)) {
                 return true;
@@ -110,39 +124,30 @@ public class RectangleBound {
     public boolean touches(RectangleBound other) {
         // check if this's right border is inside
         if (isInsideBox(other.getCenter())) {
-//            System.out.println("other.center in inside");
             return true;
         }
         if (isInsideBox(other.getUpperLeft())) {
-//            System.out.println("other.getUpperLeft in inside");
             return true;
         }
         if (isInsideBox(other.getUpperRight())) {
-//            System.out.println("other.getUpperRight in inside");
             return true;
         }
         if (isInsideBox(other.getLowerLeft())) {
-//            System.out.println("other.getLowerLeft in inside");
             return true;
         }
         if (other.isInsideBox(getUpperLeft())) {
-//            System.out.println("my getUpperLeft() inside other ");
             return true;
         }
         if (other.isInsideBox(getUpperRight())) {
-//            System.out.println("my getUpperRight() inside other ");
             return true;
         }
         if (other.isInsideBox(getLowerLeft())) {
-//            System.out.println("my getLowerLeft() inside other ");
             return true;
         }
         if (other.isInsideBox(getLowerRight())) {
-//            System.out.println("my getLowerRight() inside other ");
             return true;
         }
         if (other.isInsideBox(getCenter())) {
-//            System.out.println("my getCenter() inside other ");
             return true;
         }
         return false;

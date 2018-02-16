@@ -382,8 +382,9 @@ public class Main extends Application {
                         /*TODO: rewrite code! below code is exactly the same as FIXED WIDTH FILL*/
                         if (!((ToggleButton) patternSourceGroup.getSelectedToggle()).getText().equals("none")) {
                                     /* scale deco to full*/
+                            info.setDecoElmentScalingFactor(info.getPointDistributionDist() / (3.0 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())));
                             renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                                    (info.getPointDistributionDist()) / (1.6 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())),
+                                    info.getDecoElmentScalingFactor(),
                                     renderedDecoCommands.get(0).getDestinationPoint());
                                 /* Adding a "pair" of leaves */
 //                            skeletonrenderer.addDecoElmentToSplineTree(renderedDecoCommands, info);

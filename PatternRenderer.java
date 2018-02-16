@@ -134,7 +134,7 @@ public class PatternRenderer {
                     renderedCommands.get(i).getDestinationPoint());
             List<SvgPathCommand> renderedcommands = PatternRenderer.insertPatternToList(decoElmentCommands,
                     null, p, anglePrev);
-            RectangleBound thisBound = getBoundingBox(renderedcommands);
+            RectangleBound thisBound = RectangleBound.getBoundingBox(renderedcommands);
             boolean collides = false;
 
             for (RectangleBound b : decoBounds) {
@@ -166,12 +166,35 @@ public class PatternRenderer {
         /**
          * I'm assuming that rendered commands is holding the tree skeleton after combined to splines
          */
+        List<SvgPathCommand> skeletonPath = new ArrayList<>();
+        /* Spline pre-processing : break splines that are too long */
+        for (int i = 1; i < renderedCommands.size(); i++) {
+            double len = Point.getDistance(renderedCommands.get(i).getDestinationPoint(),
+                    renderedCommands.get(i - 1).getDestinationPoint());
+            double adjustionComparator = info.getDecoElementFile().getMaximumExtentFromStartPoint() * info.getDecoElmentScalingFactor();
+            System.out.printf("len:%.2f compareTo:%.2f  \n", len, adjustionComparator);
+            if (len > adjustionComparator * 0.7) {
+                /**
+                 * Spline is defined by destination point of i-1,  dest point of i, control points of i
+                 */
+                System.out.println("Breaking Spline");
+                Point start = renderedCommands.get(i - 1).getDestinationPoint(),
+                        c1 = renderedCommands.get(i).getControlPoint1(),
+                        c2 = renderedCommands.get(i).getControlPoint2(),
+                        end = renderedCommands.get(i).getDestinationPoint();
+                skeletonPath.add(SvgPathCommand.splineSplitting(start, c1, c2, end, 0.5));
+                // these points are in reverse order
+                SvgPathCommand secondHalf = SvgPathCommand.splineSplitting(end, c2, c1, start, 0.5);
+                skeletonPath.add(new SvgPathCommand(secondHalf.getControlPoint2(),
+                        secondHalf.getControlPoint1(), end, SvgPathCommand.CommandType.CURVE_TO));
+
+            } else
+                skeletonPath.add(renderedCommands.get(i));
+        }
+
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
         List<RectangleBound> decoBounds = new ArrayList<>();
-        int n = renderedCommands.size();
-
-        List<SvgPathCommand> skeletonPath = renderedCommands;
-        /* Spline pre-processing : break splines that are too long */
+        int n = skeletonPath.size();
 
         for (int i = n - 1; i >= 0; i--) {
             Point p = skeletonPath.get(i).getDestinationPoint();
@@ -180,7 +203,6 @@ public class PatternRenderer {
                 continue;
             }
             Point prevDest = skeletonPath.get(i == 0 ? 0 : i - 1).getDestinationPoint();
-//            double anglePrev = Point.getAngle(renderedCommands.get(i == n-1 ? i : i + 1).getDestinationPoint(), p);
             double anglePrev = getTangentAngleBezier(prevDest,
                     skeletonPath.get(i).getControlPoint1(),
                     skeletonPath.get(i).getControlPoint2(),
@@ -191,7 +213,7 @@ public class PatternRenderer {
                 anglePrev = -1.0 * anglePrev;
             List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(decoElmentCommands,
                     null, p, anglePrev);
-            RectangleBound thisBound = getBoundingBox(scaledRotatedDecoComamnds);
+            RectangleBound thisBound = RectangleBound.getBoundingBox(scaledRotatedDecoComamnds);
 
             /* Collison Detection / Solving */
             if (!thisBound.collidesWith(decoBounds)) {
@@ -201,51 +223,36 @@ public class PatternRenderer {
                 double proportion = 1.0;
                 boolean resolved = false;
                 System.out.println("COLLIDES!");
+                List<SvgPathCommand> copyCommands = new ArrayList<>(scaledRotatedDecoComamnds);
                 while (proportion > 0.5 && !resolved) {
+                    proportion *= 0.7;
                     /* Collision Solving Strategy 1, shrink to 50% and test again */
-                    for (int j = 0; j < 6; j++) {
+                    for (double rotationFactor = -0.5; rotationFactor < 0.5; rotationFactor++) {
                         if (resolved)
                             continue;
-                        double testAngle = anglePrev * (1.0 + (j - 3.0) * 0.3);
-                        List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(scaledRotatedDecoComamnds,
+                        double testAngle = anglePrev * rotationFactor;
+                        List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands,
                                 null, p, testAngle);
-                        thisBound = getBoundingBox(rotated);
+                        thisBound = RectangleBound.getBoundingBox(rotated);
                         if (!thisBound.collidesWith(decoBounds)) {
                             System.out.println("COLLIDES BUT RESOLVED!");
                             decoBounds.add(thisBound);
                             skeletonPath.addAll(i + 1, rotated);
                             resolved = true;
-                            break;
                         }
                     }
-
-
-                    proportion *= 0.8;
-                    scaledRotatedDecoComamnds = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
+                    copyCommands = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
                             proportion, scaledRotatedDecoComamnds.get(0).getDestinationPoint());
                 }
 
             }
-
             destinationCommandMap.put(p, skeletonPath.get(i));
         }
 
         renderedCommands = skeletonPath;
     }
 
-    private RectangleBound getBoundingBox(List<SvgPathCommand> commands) {
-        int n = commands.size();
-        List<Point> points = commands.stream().map(p -> p.getDestinationPoint()).collect(Collectors.toList());
-        points.sort(Comparator.comparingDouble(p -> p.x));
 
-        double minx = points.get(0).x, maxx = points.get(n - 1).x;
-        System.out.println("minx:" + minx + " maxx:" + maxx);
-        points.sort(Comparator.comparingDouble(p -> p.y));
-        double miny = points.get(0).y, maxy = points.get(n - 1).y;
-        RectangleBound bound = new RectangleBound(minx, miny, maxx, maxy);
-        System.out.println(bound);
-        return bound;
-    }
 
     private double getTangentAngleBezier(Point p0, Point p1, Point p2, Point p3) {
         /* P(t) = (1 - t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3 */
