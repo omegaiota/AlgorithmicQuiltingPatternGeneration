@@ -56,10 +56,15 @@ public final class PointDistribution {
         Point minPoint = info.getRegionFile().getMinPoint(), maxPoint = info.getRegionFile().getMaxPoint();
 
         /* Poisson Disk Sampling*/
-        int NUM = 500;
         double area = (maxPoint.x - minPoint.x) * (maxPoint.y - minPoint.y);
-        double radius = Math.sqrt(area / NUM / 4.0);
+//        double radius = Math.sqrt(area / NUM / 4.0);
+        double radius = info.getPointDistributionDist();
+        System.out.println("radius:" + radius);
+        System.out.println("area:" + area);
         info.setPoissonRadius(radius);
+        int NUM = (int) (area / (radius * radius * 4.0));
+        System.out.println("num:" + NUM);
+
         while (total < NUM) {
             double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
                     y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;

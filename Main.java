@@ -259,6 +259,11 @@ public class Main extends Application {
                     decoCommands = decoElementFile.getCommandList();
                     break;
             }
+
+            // Normalize deco element to 100 * 100
+            double maxDimension = decoElementFile.getWidth();
+            decoCommands = SvgPathCommand.commandsScaling(decoCommands, 100.0 / maxDimension, decoCommands.get(0).getDestinationPoint());
+
             /* Pattern rendering */
             SvgFileProcessor renderedDecoElemFileProcessor = null;
             List<SvgPathCommand> renderedDecoCommands = new ArrayList<>();
@@ -304,7 +309,7 @@ public class Main extends Application {
             skeletonName += skeletonGenComboBox.getValue().toString();
             SkeletonPathType skeletonPathType = (SkeletonPathType) skeletonGenComboBox.getValue();
             if (skeletonPathType.isTessellation()) {
-                info.setPointDistributionDist(Integer.valueOf(skeletonGenTextField.getText()));
+                info.setPointDistributionDist(Double.valueOf(skeletonGenTextField.getText()));
                 System.out.println("Distribution dist set to" + info.getPointDistributionDist());
                 System.out.println("Skeleton Path: Grid Tessellation");
                 distribute = new PointDistribution(skeletonPathType.getPointDistributionType(), info);
@@ -314,6 +319,7 @@ public class Main extends Application {
                 temp.addAll(skeletonPathCommands);
             } else switch (skeletonPathType) {
                 case POISSON_DISK:
+                    info.setPointDistributionDist(Double.valueOf(skeletonGenTextField.getText()));
                     info.setSpanningTree(PointDistribution.toMST(PointDistribution.poissonDiskSamples(info)));
                     TreeTraversal renderer = new TreeTraversal(info.getSpanningTree());
                     renderer.traverseTree();
@@ -382,7 +388,8 @@ public class Main extends Application {
                         /*TODO: rewrite code! below code is exactly the same as FIXED WIDTH FILL*/
                         if (!((ToggleButton) patternSourceGroup.getSelectedToggle()).getText().equals("none")) {
                                     /* scale deco to full*/
-                            info.setDecoElmentScalingFactor(info.getPointDistributionDist() / (3.0 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())));
+//                            info.setDecoElmentScalingFactor(info.getRegionFile().getBoundary().getArea() / (2.5 * Double.max(decoElementFile.getHeight(), decoElementFile.getWidth())));
+                            info.setDecoElmentScalingFactor(0.1);
                             renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
                                     info.getDecoElmentScalingFactor(),
                                     renderedDecoCommands.get(0).getDestinationPoint());
@@ -628,6 +635,7 @@ public class Main extends Application {
                 patternLibraryComboBox.getItems().setAll(tileList);
             }
         });
+
 
         /* Library ComboBox Listener/ pattern library combobox Listener */
         patternLibraryComboBox.valueProperty().addListener(((observable, oldValue, newValue) -> {

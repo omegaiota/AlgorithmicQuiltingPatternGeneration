@@ -1,7 +1,10 @@
 package jackiequiltpatterndeterminaiton;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +25,7 @@ public class PatternRenderer {
         this.skeletonPathCommands = skeletonPathCommands;
         this.renderType = type;
     }
+
     public PatternRenderer(List<SvgPathCommand> commands, RenderType type) {
         this.skeletonPathCommands = commands;
         this.renderType = type;
@@ -31,7 +35,7 @@ public class PatternRenderer {
         this.skeletonPathName = skeletonPathName;
         this.skeletonPathCommands = skeletonPathCommands;
         this.patternName = patternName;
-        this.decorativeElementCommands =  decorativeElementCommands;
+        this.decorativeElementCommands = decorativeElementCommands;
         this.renderType = type;
     }
 
@@ -52,7 +56,7 @@ public class PatternRenderer {
      */
     public static List<SvgPathCommand> insertPatternToList(List<SvgPathCommand> patternCommands,
                                                            List<SvgPathCommand> destination,
-                                           Point insertionPoint, double rotationAngleInRadian) {
+                                                           Point insertionPoint, double rotationAngleInRadian) {
         if (patternCommands.size() == 0)
             return new ArrayList<>();
         List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
@@ -167,33 +171,48 @@ public class PatternRenderer {
          * I'm assuming that rendered commands is holding the tree skeleton after combined to splines
          */
         List<SvgPathCommand> skeletonPath = new ArrayList<>();
+
         /* Spline pre-processing : break splines that are too long */
-        for (int i = 1; i < renderedCommands.size(); i++) {
-            double len = Point.getDistance(renderedCommands.get(i).getDestinationPoint(),
-                    renderedCommands.get(i - 1).getDestinationPoint());
-            double adjustionComparator = info.getDecoElementFile().getMaximumExtentFromStartPoint() * info.getDecoElmentScalingFactor();
-            System.out.printf("len:%.2f compareTo:%.2f  \n", len, adjustionComparator);
-            if (len > adjustionComparator * 0.7) {
-                /**
-                 * Spline is defined by destination point of i-1,  dest point of i, control points of i
-                 */
-                System.out.println("Breaking Spline");
+        double adjustionComparator = info.getDecoElementFile().getHeight() * info.getDecoElmentScalingFactor();
+        List<SvgPathCommand> splitted = new ArrayList<>();
+        boolean adjusted = true;
+
+        double MAX_LEN = adjustionComparator * 0.6;
+        while (adjusted && renderedCommands.size() > 0) {
+            adjusted = false;
+            splitted.add(renderedCommands.get(0));
+            for (int i = 1; i < renderedCommands.size(); i++) {
                 Point start = renderedCommands.get(i - 1).getDestinationPoint(),
                         c1 = renderedCommands.get(i).getControlPoint1(),
                         c2 = renderedCommands.get(i).getControlPoint2(),
                         end = renderedCommands.get(i).getDestinationPoint();
-                skeletonPath.add(SvgPathCommand.splineSplitting(start, c1, c2, end, 0.5));
-                // these points are in reverse order
-                SvgPathCommand secondHalf = SvgPathCommand.splineSplitting(end, c2, c1, start, 0.5);
-                skeletonPath.add(new SvgPathCommand(secondHalf.getControlPoint2(),
-                        secondHalf.getControlPoint1(), end, SvgPathCommand.CommandType.CURVE_TO));
+                double len = Spline.getLen(start, c1, c2, end);
+                // repeated split curve until smaller than adjustion
+                if (len > MAX_LEN) {
+                    adjusted = true;
+                    /**
+                     * Spline is defined by destination point of i-1,  dest point of i, control points of i
+                     */
+//                    System.out.println("Breaking Spline");
+                    splitted.add(Spline.splineSplitting(start, c1, c2, end, 0.5));
+                    // these points are in reverse order
+                    SvgPathCommand secondHalf = Spline.splineSplitting(end, c2, c1, start, 0.5);
+                    splitted.add(new SvgPathCommand(secondHalf.getControlPoint2(),
+                            secondHalf.getControlPoint1(), end, SvgPathCommand.CommandType.CURVE_TO));
 
-            } else
-                skeletonPath.add(renderedCommands.get(i));
+                } else {
+                    splitted.add(renderedCommands.get(i));
+                }
+            }
+            renderedCommands = new ArrayList<>(splitted);
+            System.out.println("size" + renderedCommands.size() + " adjusted:" + adjusted);
+            splitted.clear();
         }
 
+
+        skeletonPath.addAll(renderedCommands);
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
-        List<RectangleBound> decoBounds = new ArrayList<>();
+        List<ConvexHullBound> decoBounds = new ArrayList<>();
         int n = skeletonPath.size();
 
         for (int i = n - 1; i >= 0; i--) {
@@ -203,20 +222,33 @@ public class PatternRenderer {
                 continue;
             }
             Point prevDest = skeletonPath.get(i == 0 ? 0 : i - 1).getDestinationPoint();
-            double anglePrev = getTangentAngleBezier(prevDest,
-                    skeletonPath.get(i).getControlPoint1(),
-                    skeletonPath.get(i).getControlPoint2(),
-                    skeletonPath.get(i).getDestinationPoint());
 
             /* Alternatve leave direction for even branches*/
+            double anglePrev;
             if (i % 2 == 0)
-                anglePrev = -1.0 * anglePrev;
+                anglePrev = getTangentAngleBezier(prevDest,
+                        skeletonPath.get(i).getControlPoint1(),
+                        skeletonPath.get(i).getControlPoint2(),
+                        skeletonPath.get(i).getDestinationPoint());
+            else
+                anglePrev = getTangentAngleBezier(skeletonPath.get(i).getDestinationPoint(),
+                        skeletonPath.get(i).getControlPoint1(),
+                        skeletonPath.get(i).getControlPoint2(),
+                        prevDest);
+
+            double INITIAL_ANGLE = Math.PI / 2.0 / 8.0;
+            double SIGN;
+            if (i % 2 == 0)
+                SIGN = -1.0;
+            else
+                SIGN = 1.0;
+
+            anglePrev += INITIAL_ANGLE * SIGN;
             List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(decoElmentCommands,
                     null, p, anglePrev);
-            RectangleBound thisBound = RectangleBound.getBoundingBox(scaledRotatedDecoComamnds);
-
+            ConvexHullBound thisBound = ConvexHullBound.fromCommands(scaledRotatedDecoComamnds);
             /* Collison Detection / Solving */
-            if (!thisBound.collidesWith(decoBounds)) {
+            if (!thisBound.collidesWidth(decoBounds)) {
                 decoBounds.add(thisBound);
                 skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
             } else {
@@ -225,16 +257,16 @@ public class PatternRenderer {
                 System.out.println("COLLIDES!");
                 List<SvgPathCommand> copyCommands = new ArrayList<>(scaledRotatedDecoComamnds);
                 while (proportion > 0.5 && !resolved) {
-                    proportion *= 0.7;
+                    proportion *= 0.9;
                     /* Collision Solving Strategy 1, shrink to 50% and test again */
-                    for (double rotationFactor = -0.5; rotationFactor < 0.5; rotationFactor++) {
+                    for (double k = 2; k < 4; k += 0.5) {
                         if (resolved)
                             continue;
-                        double testAngle = anglePrev * rotationFactor;
+                        double testAngle = anglePrev + INITIAL_ANGLE * SIGN * k;
                         List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands,
                                 null, p, testAngle);
-                        thisBound = RectangleBound.getBoundingBox(rotated);
-                        if (!thisBound.collidesWith(decoBounds)) {
+                        thisBound = ConvexHullBound.fromCommands(rotated);
+                        if (!thisBound.collidesWidth(decoBounds)) {
                             System.out.println("COLLIDES BUT RESOLVED!");
                             decoBounds.add(thisBound);
                             skeletonPath.addAll(i + 1, rotated);
@@ -253,13 +285,13 @@ public class PatternRenderer {
     }
 
 
-
     private double getTangentAngleBezier(Point p0, Point p1, Point p2, Point p3) {
         /* P(t) = (1 - t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3 */
-        double t = 0.99;
+        double t = 0.97;
         double c0 = Math.pow((1 - t), 3), c1 = 3 * t * (1 - t) * (1 - t), c2 = 3 * t * t * (1 - t), c3 = t * t * t;
         Point stepped = (p0.multiply(c0)).add((p1.multiply(c1))).add(p2.multiply(c2)).add(p3.multiply(c3));
-        return (Point.getAngle(stepped, p3) + Math.PI);
+        double angle = Point.getAngle(stepped, p3);
+        return angle;
     }
 
     public List<SvgPathCommand> getRenderedCommands() {
@@ -276,20 +308,19 @@ public class PatternRenderer {
         for (int i = 1; i < skeletonPathCommands.size() - 1; i++) {
             SvgPathCommand commandThis = skeletonPathCommands.get(i),
                     commandPrev = skeletonPathCommands.get(i - 1),
-                    commandNext = skeletonPathCommands.get(i+1);
+                    commandNext = skeletonPathCommands.get(i + 1);
 
             double angleNext = Point.getAngle(commandThis.getDestinationPoint(), commandNext.getDestinationPoint());
             double anglePrev = Point.getAngle(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint());
             double betweenAngle = angleNext - anglePrev;
-            System.out.println( i + ":" + angleNext + " " + anglePrev + " " + betweenAngle);
+            System.out.println(i + ":" + angleNext + " " + anglePrev + " " + betweenAngle);
             double rotationAngle = -1.0 * betweenAngle / 2.0;
             if (betweenAngle > 0)
                 rotationAngle += Math.PI;
 
-            if (Double.compare(Math.abs(betweenAngle), 0.0001) < 0)
-            {
+            if (Double.compare(Math.abs(betweenAngle), 0.0001) < 0) {
                 /* leafnode*/
-                Point pointLeft = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width );
+                Point pointLeft = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width);
                 Point pointRight = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width * (-1));
                 renderedCommands.add(new SvgPathCommand(pointRight, SvgPathCommand.CommandType.LINE_TO));
                 if (renderType == RenderType.WITH_DECORATION) {
@@ -317,13 +348,13 @@ public class PatternRenderer {
         Double angle = Math.toRadians(360.0 / repetition);
         Double time = Math.PI * 2 / angle;
         System.out.println(time.intValue());
-        int repeat =  time.intValue();
+        int repeat = time.intValue();
         SvgPathCommand originCommand = new SvgPathCommand(skeletonPathCommands.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO);
         renderedCommands.addAll(skeletonPathCommands);
         for (int i = 1; i < repeat; i++) {
             renderedCommands.add(originCommand);
             for (int j = 1; j < skeletonPathCommands.size(); j++) {
-                renderedCommands.add(new SvgPathCommand(skeletonPathCommands.get(j), originCommand.getDestinationPoint(), i* angle ));
+                renderedCommands.add(new SvgPathCommand(skeletonPathCommands.get(j), originCommand.getDestinationPoint(), i * angle));
             }
         }
 
@@ -349,18 +380,18 @@ public class PatternRenderer {
             Point baseDestination = Point.intermediatePointWithProportion(start, end, 1 - proportion * k / 2);
             Point complementBaseDestination = Point.intermediatePointWithProportion(start, end, proportion * k / 2);
             if (k % 2 == 1)
-                renderedCommands.add( new SvgPathCommand(baseDestination, SvgPathCommand.CommandType.LINE_TO));
+                renderedCommands.add(new SvgPathCommand(baseDestination, SvgPathCommand.CommandType.LINE_TO));
             else
-                renderedCommands.add( new SvgPathCommand(complementBaseDestination, SvgPathCommand.CommandType.LINE_TO));
+                renderedCommands.add(new SvgPathCommand(complementBaseDestination, SvgPathCommand.CommandType.LINE_TO));
             System.out.println("Calling command with proportion:" + (1 - proportion * k));
             List<SvgPathCommand> scaled = SvgPathCommand.commandsScaling(skeletonPathCommands, 1 - proportion * k, new Point(midX, midY));
             List<SvgPathCommand> newSet = new ArrayList<>();
-            if (k % 2 == 1){
+            if (k % 2 == 1) {
                 System.out.println("this loop");
-            for (int i = scaled.size() - 2; i >= 1; i--) {
-                System.out.println(i);
-                newSet.add(scaled.get(i));
-            }
+                for (int i = scaled.size() - 2; i >= 1; i--) {
+                    System.out.println(i);
+                    newSet.add(scaled.get(i));
+                }
             } else {
                 System.out.println("that loop");
                 for (int i = 1; i < scaled.size() - 1; i++) {
@@ -370,11 +401,11 @@ public class PatternRenderer {
             //newSet = SvgPathCommand.commandsShift(scaled, baseDestination);
             renderedCommands.addAll(newSet);
             if (k % 2 == 1)
-                renderedCommands.add( new SvgPathCommand(complementBaseDestination, SvgPathCommand.CommandType.LINE_TO));
+                renderedCommands.add(new SvgPathCommand(complementBaseDestination, SvgPathCommand.CommandType.LINE_TO));
             else
-                renderedCommands.add( new SvgPathCommand(baseDestination, SvgPathCommand.CommandType.LINE_TO));
+                renderedCommands.add(new SvgPathCommand(baseDestination, SvgPathCommand.CommandType.LINE_TO));
         }
-        renderedCommands.add( new SvgPathCommand(center, SvgPathCommand.CommandType.LINE_TO));
+        renderedCommands.add(new SvgPathCommand(center, SvgPathCommand.CommandType.LINE_TO));
 
 
         return renderedCommands;
@@ -386,7 +417,7 @@ public class PatternRenderer {
         return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-echo-" + number, null);
     }
 
-    public File  outputRotated(Integer angle) {
+    public File outputRotated(Integer angle) {
         return SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonPathName + "-rotation-" + angle.intValue(), null);
     }
 

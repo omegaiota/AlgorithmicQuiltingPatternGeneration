@@ -15,17 +15,6 @@ public class Graph {
     public Graph(double disLen) {
         mVertices = new ArrayList<>();
     }
-
-    /**
-     * Perturbation
-     */
-    public void pointPerturb() {
-//        for (Vertex<Point> p : mVertices) {
-//            p.setData(jackiequiltpatterndeterminaiton.Point.randomNearby(p.getData(), disLen * 0.8));
-//        }
-    }
-
-
     /**
      * Generate a spanning tree by taking the first vertex as root and traverse it
      *

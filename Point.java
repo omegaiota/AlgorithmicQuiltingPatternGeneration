@@ -1,11 +1,12 @@
 package jackiequiltpatterndeterminaiton;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
  * Created by JacquelineLi on 6/13/17.
  */
-public class Point {
+public class Point implements Comparable<Point> {
     public static final int PRECISION = 4;
     public final double x, y;
     /** generate a point with absolute coordinates*/
@@ -321,5 +322,16 @@ public class Point {
         temp = Double.doubleToLongBits(y);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
+    }
+
+    @Override
+    public int compareTo(Point o) {
+
+        if (this.x == o.x) {
+            return Double.compare(this.y, o.y);
+        } else {
+            return Double.compare(this.x, o.x);
+        }
+
     }
 }

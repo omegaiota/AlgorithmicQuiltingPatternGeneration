@@ -17,6 +17,14 @@ public class Region {
         return boundary;
     }
 
+    public double getArea() {
+        double sum = 0.0;
+        for (int i = 0; i < boundary.size(); i++) {
+            Point next = boundary.get(i == boundary.size() - 1 ? 0 : i + 1);
+            sum = sum + (boundary.get(i).x * next.y) - (boundary.get(i).y * next.x);
+        }
+        return 0.5 * sum;
+    }
     public boolean insideRegion(Point testPoint) {
         int i;
         int j;
