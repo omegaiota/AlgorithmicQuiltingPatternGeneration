@@ -63,7 +63,7 @@ public final class PointDistribution {
         System.out.println("area:" + area);
         info.setPoissonRadius(radius);
         int NUM = (int) (area / (radius * radius * 4.0));
-        System.out.println("num:" + NUM);
+        System.out.println("num:" + area);
 
         while (total < NUM) {
             double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,

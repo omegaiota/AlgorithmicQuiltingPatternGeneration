@@ -162,7 +162,31 @@ public class SvgPathCommand {
         return SvgPathCommand.commandsScaling(returnList, newDist / squiggleDist, parentNodeData);
     }
 
+    /**
+     * Reflect command with respect to y axis
+     *
+     * @param decoElmentCommands
+     * @return
+     */
+    public static List<SvgPathCommand> reflect(List<SvgPathCommand> decoElmentCommands) {
+        double maxX = decoElmentCommands.stream().map(c -> c.getDestinationPoint().x).reduce(Double.MIN_VALUE, Double::max);
+        List<SvgPathCommand> reflected = new ArrayList<>();
+        for (SvgPathCommand c : decoElmentCommands) {
+            SvgPathCommand newCommand;
+            if (c.getCommandType() == CommandType.LINE_TO || c.getCommandType() == CommandType.MOVE_TO) {
+                newCommand = new SvgPathCommand(c);
+                newCommand.setDestinationPoint(new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y));
+            } else {
+                newCommand = new SvgPathCommand(new Point(maxX - c.getControlPoint1().x, c.getControlPoint1().y),
+                        new Point(maxX - c.getControlPoint2().x, c.getControlPoint2().y),
+                        new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y), CommandType.CURVE_TO);
+            }
+            reflected.add(newCommand);
+        }
 
+        reflected = SvgPathCommand.commandsShift(reflected, decoElmentCommands.get(0).destinationPoint);
+        return reflected;
+    }
 
     public void setLineTo() {
         this.commandType = CommandType.LINE_TO;

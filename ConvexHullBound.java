@@ -28,28 +28,31 @@ public class ConvexHullBound {
         return (val > 0) ? 1 : 2; // clock or counterclock wise
     }
 
-
-    // referenced from
-    // https://www.geeksforgeeks.org/convex-hull-set-1-jarviss-algorithm-or-wrapping/
-
     public static ConvexHullBound fromCommands(List<SvgPathCommand> commands) {
         List<Point> points = new ArrayList<>();
         for (int i = 1; i < commands.size(); i++) {
-            Point start = commands.get(i - 1).getDestinationPoint(),
-                    c1 = commands.get(i).getControlPoint1(),
-                    c2 = commands.get(i).getControlPoint2(),
-                    end = commands.get(i).getDestinationPoint();
-            points.add(start);
-            points.add(Spline.evaluate(start, c1, c2, end, 0.33));
-            points.add(Spline.evaluate(start, c1, c2, end, 0.66));
-            points.add(end);
+            if (commands.get(i).getCommandType() == SvgPathCommand.CommandType.CURVE_TO) {
+                Point start = commands.get(i - 1).getDestinationPoint(),
+                        c1 = commands.get(i).getControlPoint1(),
+                        c2 = commands.get(i).getControlPoint2(),
+                        end = commands.get(i).getDestinationPoint();
+                points.add(start);
+                points.add(Spline.evaluate(start, c1, c2, end, 0.2));
+                points.add(Spline.evaluate(start, c1, c2, end, 0.4));
+                points.add(Spline.evaluate(start, c1, c2, end, 0.6));
+                points.add(Spline.evaluate(start, c1, c2, end, 0.8));
+                points.add(end);
+            } else
+                points.add(commands.get(i).getDestinationPoint());
+
         }
 
         return ConvexHullBound.valueOf(points);
     }
 
-    // also referenced from the web, this code looks weird so might want to refactor
-    //
+
+    // referenced from
+    // https://www.geeksforgeeks.org/convex-hull-set-1-jarviss-algorithm-or-wrapping/
 
     /**
      * Get a convex hull out of a list of points using the quick hull algorithm
@@ -103,6 +106,13 @@ public class ConvexHullBound {
 
     }
 
+    // also referenced from the web, this code looks weird so might want to refactor
+    //
+
+    public Region getRegion() {
+        return region;
+    }
+
     public boolean collidesWith(ConvexHullBound other) {
         for (Point p : other.boundary) {
             if (region.insideRegion(p))
@@ -117,7 +127,7 @@ public class ConvexHullBound {
         return false;
     }
 
-    public boolean collidesWidth(List<ConvexHullBound> bounds) {
+    public boolean collidesWith(List<ConvexHullBound> bounds) {
         for (ConvexHullBound b : bounds) {
             if (this.collidesWith(b))
                 return true;
