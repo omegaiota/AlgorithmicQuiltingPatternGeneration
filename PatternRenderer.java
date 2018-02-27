@@ -132,7 +132,7 @@ public class PatternRenderer {
             }
             Point prevDest = renderedCommands.get(i == 0 ? 0 : i - 1).getDestinationPoint();
 //            double anglePrev = Point.getAngle(renderedCommands.get(i == n-1 ? i : i + 1).getDestinationPoint(), p);
-            double anglePrev = getTangentAngleBezier(prevDest,
+            double anglePrev = Spline.getTangentAngle(prevDest,
                     renderedCommands.get(i).getControlPoint1(),
                     renderedCommands.get(i).getControlPoint2(),
                     renderedCommands.get(i).getDestinationPoint());
@@ -172,12 +172,16 @@ public class PatternRenderer {
          */
         List<SvgPathCommand> skeletonPath = new ArrayList<>();
 
-        /* Spline pre-processing : break splines that are too long */
-        double adjustionComparator = info.getDecoElementFile().getHeight() * info.getDecoElmentScalingFactor();
-        List<SvgPathCommand> splitted = new ArrayList<>();
-        boolean adjusted = true;
+        List<SvgPathCommand> reflectedDecoelmentCommands = SvgPathCommand.reflect(decoElmentCommands);
 
-        double MAX_LEN = adjustionComparator * 0.6;
+        /* Spline pre-processing : break splines that are too long */
+        double adjustionComparator = info.getDecoElementFile().getHeight() * info.getDecorationSize();
+        List<SvgPathCommand> splitted = new ArrayList<>();
+        List<SvgPathCommand> originalPath = new ArrayList<>();
+        originalPath.addAll(renderedCommands);
+        boolean adjusted = true;
+        boolean isLeft = true;
+        double MAX_LEN = adjustionComparator * info.getDecorationGap();
         while (adjusted && renderedCommands.size() > 0) {
             adjusted = false;
             splitted.add(renderedCommands.get(0));
@@ -225,31 +229,38 @@ public class PatternRenderer {
 
             /* Alternatve leave direction for even branches*/
             double anglePrev;
-            if (i % 2 == 0)
-                anglePrev = getTangentAngleBezier(prevDest,
+            if (isLeft)
+                anglePrev = Spline.getTangentAngle(prevDest,
                         skeletonPath.get(i).getControlPoint1(),
                         skeletonPath.get(i).getControlPoint2(),
                         skeletonPath.get(i).getDestinationPoint());
             else
-                anglePrev = getTangentAngleBezier(skeletonPath.get(i).getDestinationPoint(),
+                anglePrev = Spline.getTangentAngle(skeletonPath.get(i).getDestinationPoint(),
                         skeletonPath.get(i).getControlPoint1(),
                         skeletonPath.get(i).getControlPoint2(),
                         prevDest);
 
-            double INITIAL_ANGLE = Math.PI / 2.0 / 8.0;
+            double INITIAL_ANGLE = Math.toRadians(info.getInitialAngle());
             double SIGN;
-            if (i % 2 == 0)
+            if (isLeft)
                 SIGN = -1.0;
             else
                 SIGN = 1.0;
 
+            /**
+             * If alternating direction
+             */
+            List<SvgPathCommand> originalCommandToUse = (i % 2 == 0) ? decoElmentCommands : reflectedDecoelmentCommands;
             anglePrev += INITIAL_ANGLE * SIGN;
-            List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(decoElmentCommands,
+            List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(originalCommandToUse,
                     null, p, anglePrev);
             ConvexHullBound thisBound = ConvexHullBound.fromCommands(scaledRotatedDecoComamnds);
+
+
             /* Collison Detection / Solving */
-            if (!thisBound.collidesWidth(decoBounds)) {
+            if (!collides(thisBound, decoBounds, originalPath)) {
                 decoBounds.add(thisBound);
+                isLeft = !isLeft;
                 skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
             } else {
                 double proportion = 1.0;
@@ -257,20 +268,21 @@ public class PatternRenderer {
                 System.out.println("COLLIDES!");
                 List<SvgPathCommand> copyCommands = new ArrayList<>(scaledRotatedDecoComamnds);
                 while (proportion > 0.5 && !resolved) {
-                    proportion *= 0.9;
+                    proportion *= 0.8;
                     /* Collision Solving Strategy 1, shrink to 50% and test again */
-                    for (double k = 2; k < 4; k += 0.5) {
+                    for (double testAngle = info.getInitialAngle(); testAngle < 80.0; testAngle += 10.0) {
                         if (resolved)
                             continue;
-                        double testAngle = anglePrev + INITIAL_ANGLE * SIGN * k;
                         List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands,
-                                null, p, testAngle);
+                                null, p, Math.toRadians(testAngle));
                         thisBound = ConvexHullBound.fromCommands(rotated);
-                        if (!thisBound.collidesWidth(decoBounds)) {
+                        if (!collides(thisBound, decoBounds, originalPath)) {
                             System.out.println("COLLIDES BUT RESOLVED!");
                             decoBounds.add(thisBound);
                             skeletonPath.addAll(i + 1, rotated);
                             resolved = true;
+                            isLeft = !isLeft;
+                            break;
                         }
                     }
                     copyCommands = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
@@ -285,14 +297,24 @@ public class PatternRenderer {
     }
 
 
-    private double getTangentAngleBezier(Point p0, Point p1, Point p2, Point p3) {
-        /* P(t) = (1 - t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3 */
-        double t = 0.97;
-        double c0 = Math.pow((1 - t), 3), c1 = 3 * t * (1 - t) * (1 - t), c2 = 3 * t * t * (1 - t), c3 = t * t * t;
-        Point stepped = (p0.multiply(c0)).add((p1.multiply(c1))).add(p2.multiply(c2)).add(p3.multiply(c3));
-        double angle = Point.getAngle(stepped, p3);
-        return angle;
+    private boolean collides(ConvexHullBound testBound, List<ConvexHullBound> bounds, List<SvgPathCommand> skeleton) {
+        if (testBound.collidesWith(bounds))
+            return true;
+
+        for (int i = 1; i < skeleton.size(); i++) {
+            Point start = skeleton.get(i - 1).getDestinationPoint(),
+                    c1 = skeleton.get(i).getControlPoint1(),
+                    c2 = skeleton.get(i).getControlPoint2(),
+                    end = skeleton.get(i).getDestinationPoint();
+            if (Spline.collidesWith(start, c1, c2, end, testBound))
+                return true;
+        }
+
+        return false;
     }
+
+
+
 
     public List<SvgPathCommand> getRenderedCommands() {
         return renderedCommands;
