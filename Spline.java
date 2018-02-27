@@ -60,4 +60,20 @@ public class Spline {
                 k3 = Math.pow(t, 3);
         return start.multiply(k0).add(c1.multiply(k1)).add(c2.multiply(k2)).add(end.multiply(k3));
     }
+
+    public static boolean collidesWith(Point start, Point c1, Point c2, Point end, ConvexHullBound bound) {
+        Point firstPointInBound = bound.getBoundary().get(0);
+        for (double i = 0; i < 1.01; i += 0.1) {
+            Point testPoint = evaluate(start, c1, c2, end, i);
+            if (Point.getDistance(testPoint, firstPointInBound) > 1.0)
+                if (bound.getRegion().insideRegion(testPoint))
+                    return true;
+        }
+        return false;
+    }
+
+    public static double getTangentAngle(Point p0, Point p1, Point p2, Point p3) {
+        /* P(t) = (1 - t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3 */
+        return Point.getAngle(Spline.evaluate(p0, p1, p2, p3, 0.97), p3);
+    }
 }
