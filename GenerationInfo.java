@@ -12,6 +12,7 @@ public final class GenerationInfo {
     private TreeNode<Point> spanningTree;
     private boolean linearizeCommands;
     private double poissonRadius;
+    private double decorationSize, decorationGap, initialAngle;
     private double decoElmentScalingFactor = 1.0;
 
     public GenerationInfo() {
@@ -19,6 +20,30 @@ public final class GenerationInfo {
         skeletonPathFile = null;
         decoElementFile = null;
         linearizeCommands = true;
+    }
+
+    public double getDecorationSize() {
+        return decorationSize;
+    }
+
+    public void setDecorationSize(double decorationSize) {
+        this.decorationSize = decorationSize;
+    }
+
+    public double getDecorationGap() {
+        return decorationGap;
+    }
+
+    public void setDecorationGap(double decorationGap) {
+        this.decorationGap = decorationGap;
+    }
+
+    public double getInitialAngle() {
+        return initialAngle;
+    }
+
+    public void setInitialAngle(double initialAngle) {
+        this.initialAngle = initialAngle;
     }
 
     public double getDecoElmentScalingFactor() {
