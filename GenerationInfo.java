@@ -1,5 +1,8 @@
 package jackiequiltpatterndeterminaiton;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by JacquelineLi on 11/26/17.
  */
@@ -8,12 +11,14 @@ public final class GenerationInfo {
     private SvgFileProcessor skeletonPathFile;
     private SvgFileProcessor decoElementFile;
     private SvgFileProcessor regionFile;
+    private SvgFileProcessor collisionFile;
     private double pointDistributionDist;
     private TreeNode<Point> spanningTree;
     private boolean linearizeCommands;
     private double poissonRadius;
     private double decorationSize, decorationGap, initialAngle;
     private double decoElmentScalingFactor = 1.0;
+    private List<SvgPathCommand> collisionCommands = new ArrayList<>();
 
     public GenerationInfo() {
         regionFile = null;
@@ -21,6 +26,23 @@ public final class GenerationInfo {
         decoElementFile = null;
         linearizeCommands = true;
     }
+
+    public List<SvgPathCommand> getCollisionCommands() {
+        return collisionCommands;
+    }
+
+    public void setCollisionCommands(List<SvgPathCommand> collisionCommands) {
+        this.collisionCommands = collisionCommands;
+    }
+
+    public SvgFileProcessor getCollisionFile() {
+        return collisionFile;
+    }
+
+    public void setCollisionFile(SvgFileProcessor collisionFile) {
+        this.collisionFile = collisionFile;
+    }
+
 
     public double getDecorationSize() {
         return decorationSize;
