@@ -5,6 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static jackiequiltpatterndeterminaiton.TreeTraversal.NodeType.IN;
+import static jackiequiltpatterndeterminaiton.TreeTraversal.NodeType.LEAF;
+import static jackiequiltpatterndeterminaiton.TreeTraversal.NodeType.OUT;
+
 /**
  * Created by JacquelineLi on 6/27/17.
  */
@@ -12,11 +16,12 @@ public class TreeTraversal {
     public static AtomicInteger counter = new AtomicInteger(0);
     List<SvgPathCommand> renderedCommands = new ArrayList<>();
     List<SvgPathCommand> squiggleCommands = new ArrayList<>();
+    List<NodeType> nodeLabel = new ArrayList<>();
     private TreeNode<Point> tree;
-
     public TreeTraversal(TreeNode<Point> tree) {
         this.tree = tree;
-        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
+//        renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
+//        nodeLabel.add(IN);
     }
 
     public static void treeOrdering(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
@@ -43,58 +48,51 @@ public class TreeTraversal {
         }
     }
 
+    public List<NodeType> getNodeLabel() {
+        return nodeLabel;
+    }
+
     public List<SvgPathCommand> traverseTree() {
         renderedCommands.add(new SvgPathCommand(tree.getData(), SvgPathCommand.CommandType.MOVE_TO));
+        nodeLabel.add(IN);
         treeOrdering(tree, null);
         preOrderTraversal(tree, null);
         return renderedCommands;
     }
 
-
     private void preOrderTraversal(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
         //no filling
-        int downIndex = renderedCommands.size();
         SvgPathCommand goDown = new SvgPathCommand(treeNode.getData(), SvgPathCommand.CommandType.LINE_TO),
                 goUp = new SvgPathCommand(treeNode.getData(), SvgPathCommand.CommandType.LINE_TO);
-        renderedCommands.add(goDown);
         List<TreeNode<Point>> children = treeNode.getChildren();
+
+        renderedCommands.add(goDown);
+        if (children.size() == 0)
+            nodeLabel.add(LEAF);
+        else
+            nodeLabel.add(IN);
+
         TreeNode<Point>[] childArray = children.toArray(new TreeNode[children.size()]);
         for (TreeNode<Point> child : childArray) {
             preOrderTraversal(child, treeNode);
-            int upIndex = renderedCommands.size();
-            renderedCommands.add(goUp);
 
-            // Spline Interpolation
-            if ((downIndex != 0) && ((upIndex - downIndex) != 1)) {
-//                Point p2 = renderedCommands.get(downIndex + 1).getDestinationPoint(),
-//                        p1 = renderedCommands.get(downIndex - 1).getDestinationPoint();
-//                Point p0, p3;
-//                if (downIndex - 2 < 0)
-//                    p0 = p1.minus(p2.minus(p1));
-//                else
-//                    p0 = renderedCommands.get(downIndex - 2).getDestinationPoint();
-//                if (downIndex + 2 > upIndex)
-//                    p3 = p2.add(p2.minus(p1));
-//                else
-//                    p3 = renderedCommands.get(downIndex + 2).getDestinationPoint();
-//                Point c1 = p2.minus(p0).divide(2).add(p1), c2 = p3.minus(p1).divide(2).add(p1);
-//                goDown.setControlPoint1(c1);
-//                goDown.setControlPoint2(c2);
-//
-//                goUp.setControlPoint1(c2);
-//                goUp.setControlPoint2(c1);
-//                goDown.setCommandType(SvgPathCommand.CommandType.CURVE_TO);
-//                goUp.setCommandType(SvgPathCommand.CommandType.CURVE_TO);
-            }
+            renderedCommands.add(goUp);
+            nodeLabel.add(OUT);
+            assert (goDown.getDestinationPoint().equals(goUp.getDestinationPoint()));
+
         }
     }
-
 
     public List<SvgPathCommand> getSquiggleCommands() {
         return squiggleCommands;
     }
+
     public List<SvgPathCommand> getRenderedCommands() {
         return renderedCommands;
+    }
+
+    public enum NodeType {
+        IN, OUT, LEAF
     }
 }
 

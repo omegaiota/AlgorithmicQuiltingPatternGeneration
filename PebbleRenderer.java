@@ -44,32 +44,32 @@ public final class PebbleRenderer extends PatternRenderer {
      */
     @Override
     public void pebbleFilling() {
-        pebbleFilling2(true);
+//        pebbleFilling2(true);
 
         // using optimized point touching algorithm
-//        if (decoElemFile == null || touchPointIndex.size() < 3) {
-//            // render a pebble, which would be handled in normal pebbleFilling
-//            pebbleFilling2(true);
-//        } else {
-//            assert decoCommandsBound != null && touchPointIndex != null;
-//            for (Integer index : touchPointIndex) {
-//                Point p = decoCommands.get(index).getDestinationPoint();
-//                touchPointAngle.add(Point.getAngle(decoCommandsBound.getCenter(), p));
-//            }
-//            Collections.sort(touchPointAngle);
-//
-//
-//            // Create a new tree where each
-//            for (double a : touchPointAngle)
-//                System.out.println("touch angle: " + Math.toDegrees(a));
-//            PointDistribution distribution = new PointDistribution(touchPointAngle, info);
-//            distribution.generate();
-//            List<SvgPathCommand> traversalCommands = distribution.toTraversal();
-//            treeRoot = info.getSpanningTree();
-//            pebbleFilling2(false);
-//            traversalCommands.addAll(renderedCommands);
-//            SvgFileProcessor.outputSvgCommands(traversalCommands, "withTree");
-//        }
+        if (decoElemFile == null || touchPointIndex.size() < 3) {
+            // render a pebble, which would be handled in normal pebbleFilling
+            pebbleFilling2(true);
+        } else {
+            assert decoCommandsBound != null && touchPointIndex != null;
+            for (Integer index : touchPointIndex) {
+                Point p = decoCommands.get(index).getDestinationPoint();
+                touchPointAngle.add(Point.getAngle(decoCommandsBound.getCenter(), p));
+            }
+            Collections.sort(touchPointAngle);
+
+
+            // Create a new tree where each
+            for (double a : touchPointAngle)
+                System.out.println("touch angle: " + Math.toDegrees(a));
+            PointDistribution distribution = new PointDistribution(touchPointAngle, info);
+            distribution.generate();
+            List<SvgPathCommand> traversalCommands = distribution.toTraversal();
+            treeRoot = info.getSpanningTree();
+            pebbleFilling2(false);
+            traversalCommands.addAll(renderedCommands);
+            SvgFileProcessor.outputSvgCommands(traversalCommands, "withTree", info);
+        }
 
     }
 
@@ -93,14 +93,14 @@ public final class PebbleRenderer extends PatternRenderer {
         Set<CircleBound> determinedBounds = new HashSet<>();
         treeRoot.setBoundingCircle(new CircleBound(dist, treeRoot.getData()));
 
-        // first determination loop, make sure each pebble touches one pebble
+        // first determination loop, make sure each pebble collidesWith one pebble
         pebbleRenderDetermineRadii(treeRoot, determinedBounds);
 
         if (optimizePebble) {
             outputCurrent("stage0");
 
             pebbleReplaceShortSegment(treeRoot, determinedBounds);
-            // second determination loop, make sure each pebble touches two pebbles
+            // second determination loop, make sure each pebble collidesWith two pebbles
             pebbleAdjustTreenode(treeRoot, dist, determinedBounds);
             outputCurrent("stage1_after_first_adjust");
             renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
@@ -116,7 +116,7 @@ public final class PebbleRenderer extends PatternRenderer {
             if (leafRenderOnly)
                 pebbleRenderDrawLeaf(treeRoot, 0);
             else
-                pebbleRenderDraw2(treeRoot, 0);
+                pebbleRenderDraw2(treeRoot, 0, info.getDrawBound());
 
         }
 
@@ -167,7 +167,7 @@ public final class PebbleRenderer extends PatternRenderer {
 //        renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
         Set<RectangleBound> determinedBounds = new HashSet<>();
         treeRoot.setBoundingRectangle(new RectangleBound(treeRoot.getData(), dist * 0.66, dist * 0.66));
-        // first determination loop, make sure each pebble touches one pebble
+        // first determination loop, make sure each pebble collidesWith one pebble
         rectangleRandomDistributeSquare(treeRoot, dist, determinedBounds);
         rectangleRenderDetermineBound(treeRoot, dist, determinedBounds, true);
         rectangleRenderDetermineBound(treeRoot, dist, determinedBounds, false);
@@ -262,7 +262,7 @@ public final class PebbleRenderer extends PatternRenderer {
     }
 
     /* Since all internal nodes touch at least its parent and one of its children, we only adjust positions of treenodes. We
-    push each treenode towards the direction of parent-self line until it touches a treeenode.
+    push each treenode towards the direction of parent-self line until it collidesWith a treeenode.
     */
     public void pebbleAdjustTreenode(TreeNode<Point> thisNode, double dist, final Set<CircleBound> determinedBounds) {
         if (thisNode.getChildren().size() == 0) {
@@ -312,11 +312,9 @@ public final class PebbleRenderer extends PatternRenderer {
         }
     }
 
-    public void pebbleRenderDraw2(TreeNode<Point> thisNode, double angle) {
+    public void pebbleRenderDraw2(TreeNode<Point> thisNode, double angle, boolean DRAW_BOUND) {
         boolean DEBUG = false;
-        boolean DRAW_BOUND = false;
         HashMap<Double, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
-        HashMap<Integer, TreeNode<Point>> indexChildMap = new HashMap<>();
         /* Record the direction of the children*/
         for (TreeNode<Point> child : thisNode.getChildren()) {
             double thisAngle = Math.toDegrees(Point.getAngle(thisNode.getData(), child.getData()));
@@ -325,11 +323,11 @@ public final class PebbleRenderer extends PatternRenderer {
 
         Point zeroAnglePoint = new Point(thisNode.getData().x + thisNode.getBoundingCircle().getRadii(), thisNode.getData().y);
         Point startDrawingPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
-        Point primitiveCentroid = thisNode.getData();
         renderedCommands.add(new SvgPathCommand(startDrawingPoint, SvgPathCommand.CommandType.LINE_TO));
         if (DEBUG) {
             SvgFileProcessor.outputSvgCommands(renderedCommands, "test", info);
         }
+
         // Insert a kissing primitive instead of a pebble
         List<SvgPathCommand> scaledCommands = new ArrayList<>();
 
@@ -340,7 +338,7 @@ public final class PebbleRenderer extends PatternRenderer {
                     scaledCommands, startDrawingPoint, Math.toRadians(angle));
             if (DRAW_BOUND)
                 renderedCommands.addAll(scaledCommands);
-            printMapping(scaledCommands, primitiveCentroid);
+//            printMapping(scaledCommands, primitiveCentroid);
         }
 
         /** Pebbles **/
@@ -362,14 +360,11 @@ public final class PebbleRenderer extends PatternRenderer {
                 }
 
 
-//                System.out.println("current index:" + i);
-//                System.out.println("Looking for: " + thisAngle);
                 if (child == null) {
 //                    System.out.println("failed");
 //                    assert false;
                 } else {
-//                    System.out.println("succeeded");
-                    pebbleRenderDraw2(child, (thisAngle + 180) % 360);
+                    pebbleRenderDraw2(child, (thisAngle + 180) % 360, DRAW_BOUND);
                     degreeTreeNodeMap.remove(key);
 
                 }
@@ -403,8 +398,9 @@ public final class PebbleRenderer extends PatternRenderer {
         }
     }
     public void pebbleRenderDraw(TreeNode<Point> thisNode, int angle) {
+        System.out.println("draw called");
         boolean DEBUG = false;
-        boolean DRAW_BOUND = true;
+        boolean DRAW_BOUND = info.getDrawBound();
         HashMap<Integer, TreeNode<Point>> degreeTreeNodeMap = new HashMap<>();
         boolean[] degreeTable = new boolean[360];
         Arrays.fill(degreeTable, false);

@@ -13,11 +13,13 @@ import java.util.function.DoubleUnaryOperator;
 public class ConvexHullBound {
 
     private List<Point> boundary;
+    private RectangleBound box;
     private Region region;
-
     public ConvexHullBound(List<Point> points) {
         this.boundary = new ArrayList<>(points);
         this.region = new Region(boundary);
+        this.box = RectangleBound.valueOf(boundary);
+
     }
 
     private static int orientation(Point p, Point q, Point r) {
@@ -30,6 +32,7 @@ public class ConvexHullBound {
 
     public static ConvexHullBound fromCommands(List<SvgPathCommand> commands) {
         List<Point> points = new ArrayList<>();
+        points.add(commands.get(0).getDestinationPoint());
         for (int i = 1; i < commands.size(); i++) {
             if (commands.get(i).getCommandType() == SvgPathCommand.CommandType.CURVE_TO) {
                 Point start = commands.get(i - 1).getDestinationPoint(),
@@ -42,17 +45,14 @@ public class ConvexHullBound {
                 points.add(Spline.evaluate(start, c1, c2, end, 0.6));
                 points.add(Spline.evaluate(start, c1, c2, end, 0.8));
                 points.add(end);
-            } else
+            } else {
                 points.add(commands.get(i).getDestinationPoint());
+            }
 
         }
 
         return ConvexHullBound.valueOf(points);
     }
-
-
-    // referenced from
-    // https://www.geeksforgeeks.org/convex-hull-set-1-jarviss-algorithm-or-wrapping/
 
     /**
      * Get a convex hull out of a list of points using the quick hull algorithm
@@ -73,12 +73,13 @@ public class ConvexHullBound {
         for (int i = 1; i < n; i++)
             if (points.get(i).x < points.get(l).x)
                 l = i;
-
+        int maxIteration = n * 10, it = 0;
         // Start from leftmost point, keep moving counterclockwise
         // until reach the start point again.  This loop runs O(h)
         // times where h is number of points in result or output.
         int p = l, q;
         do {
+            it++;
             // Add current point to result
             hull.add(points.get(p));
 
@@ -100,10 +101,18 @@ public class ConvexHullBound {
             // result 'hull'
             p = q;
 
-        } while (p != l);  // While we don't come to first point
+        } while (p != l && it < maxIteration);  // While we don't come to first point
 
         return new ConvexHullBound(hull);
 
+    }
+
+
+    // referenced from
+    // https://www.geeksforgeeks.org/convex-hull-set-1-jarviss-algorithm-or-wrapping/
+
+    public RectangleBound getBox() {
+        return box;
     }
 
     // also referenced from the web, this code looks weird so might want to refactor
@@ -114,18 +123,49 @@ public class ConvexHullBound {
     }
 
     public boolean collidesWith(ConvexHullBound other) {
-        for (Point p : other.boundary) {
-            if (region.insideRegion(p))
+        if (other.boundary.size() <= 0)
+            return false;
+        if (!this.box.collidesWith(other.box))
+            return false;
+
+        if (other.region.insideRegion(box.getCenter()))
+            return true;
+
+        if (region.insideRegion(other.box.getCenter()))
+            return true;
+
+        // Use line line intersection test
+        int i, j, p, q;
+        for (i = 0, j = boundary.size() - 1; i < boundary.size(); j = i++) {
+            for (p = 0, q = other.boundary.size() - 1; p < other.boundary.size(); q = p++) {
+                if (Point.intersect(boundary.get(i), boundary.get(j), other.boundary.get(p), other.boundary.get(q)))
+                    return true;
+            }
+        }
+        return false;
+
+    }
+
+    public boolean collidesWith(Point A, Point B) {
+        // optimization: test with bbox first
+        if (!(box.isInsideBox(A) || box.isInsideBox(B)))
+            return false;
+
+        // test if either end is inside
+        if (region.insideRegion(A) || region.insideRegion(B))
+            return true;
+
+        // test if cross boundary
+        int i, j;
+        for (i = 0, j = boundary.size() - 1; i < boundary.size(); j = i++) {
+            if (Point.intersect(boundary.get(i), boundary.get(j), A, B))
                 return true;
         }
-
-        for (Point p : boundary) {
-            if (other.region.insideRegion(p))
-                return true;
-        }
-
         return false;
     }
+
+
+
 
     public boolean collidesWith(List<ConvexHullBound> bounds) {
         for (ConvexHullBound b : bounds) {

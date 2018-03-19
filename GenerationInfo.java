@@ -15,16 +15,29 @@ public final class GenerationInfo {
     private double pointDistributionDist;
     private TreeNode<Point> spanningTree;
     private boolean linearizeCommands;
+    private List<TreeTraversal.NodeType> nodeType;
+    private boolean drawBound;
     private double poissonRadius;
-    private double decorationSize, decorationGap, initialAngle;
+    private double decorationSize = 0.0, decorationGap, initialAngle;
     private double decoElmentScalingFactor = 1.0;
     private List<SvgPathCommand> collisionCommands = new ArrayList<>();
-
     public GenerationInfo() {
         regionFile = null;
         skeletonPathFile = null;
         decoElementFile = null;
         linearizeCommands = true;
+    }
+
+    public List<TreeTraversal.NodeType> getNodeType() {
+        return nodeType;
+    }
+
+    public void setNodeType(List<TreeTraversal.NodeType> nodeType) {
+        this.nodeType = nodeType;
+    }
+
+    public boolean isDrawBound() {
+        return drawBound;
     }
 
     public List<SvgPathCommand> getCollisionCommands() {
@@ -57,7 +70,10 @@ public final class GenerationInfo {
     }
 
     public void setDecorationGap(double decorationGap) {
-        this.decorationGap = decorationGap;
+        if (this.decorationSize < 0.01)
+            this.decorationGap = decorationGap;
+        else
+            this.decorationGap = decorationGap * this.decorationSize;
     }
 
     public double getInitialAngle() {
@@ -130,5 +146,13 @@ public final class GenerationInfo {
 
     public void setPointDistributionDist(double pointDistributionDist) {
         this.pointDistributionDist = pointDistributionDist;
+    }
+
+    public boolean getDrawBound() {
+        return drawBound;
+    }
+
+    public void setDrawBound(boolean drawBound) {
+        this.drawBound = drawBound;
     }
 }

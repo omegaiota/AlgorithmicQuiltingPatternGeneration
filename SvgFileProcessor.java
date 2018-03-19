@@ -41,8 +41,12 @@ public class SvgFileProcessor {
         this.fSvgFile = importFile;
     }
 
-
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, GenerationInfo info) {
+        return outputSvgCommands(outputCommandList, fileName, 750, 750);
+
+    }
+
+    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, int width, int height) {
         try {
             PrintWriter writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
             writer.println("<svg");
@@ -53,8 +57,12 @@ public class SvgFileProcessor {
             writer.println("   xmlns=\"http://www.w3.org/2000/svg\"");
             writer.println("   xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\"");
             writer.println("   xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"");
-            writer.println("   width=\"210mm\"");
-            writer.println("   height=\"297mm\">");
+//            writer.println("   width=\"210mm\"");
+//            writer.println("   height=\"210mm\">");
+            writer.println(String.format("   width=\"%dpx\"", width));
+            writer.println(String.format("   height=\"%dpx\">", height));
+//            writer.println("   width=\"750px\"");
+//            writer.println("   height=\"750px\">");
             writer.println("   <g");
             writer.println("     inkscape:label=\"Layer 1\"");
             writer.println("     inkscape:groupmode=\"layer\"");
@@ -74,10 +82,14 @@ public class SvgFileProcessor {
                 SvgPathCommand command = outputCommandList.get(i);
 
                 // Change moveTo to lineTo so that path will be one stitch
-                if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
-                    writer.print(new SvgPathCommand(command, SvgPathCommand.CommandType.LINE_TO).toSvgCode());
-                } else
-                    writer.print(command.toSvgCode());
+                writer.print(command.toSvgCode());
+
+
+                //commented out this for generating set of 81 results
+//                if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
+//                    writer.print(new SvgPathCommand(command, SvgPathCommand.CommandType.LINE_TO).toSvgCode());
+//                } else
+//                    writer.print(command.toSvgCode());
             }
             writer.println("\"");
             writer.println("       id=\"path3342\"\n");
@@ -101,13 +113,18 @@ public class SvgFileProcessor {
 
                 if (command.isMoveTo() || command.isLineTo()) {
                     count++;
-                    if (command.isMoveTo())
-                        writer.println("N" + count + "G00" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
-                    else
-                        writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
+                    switch (command.getCommandType()) {
+                        case MOVE_TO:
+                            writer.println("N" + count + "G00" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
+                        case LINE_TO:
+                            writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
+                    }
                 } else if (command.isCurveTo()) {
                     count++;
-                    writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
+//                    writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
+                    writer.println(String.format("N%dG05I%.4fJ%.4fP%.4fQ%.4fX%.4fY%.4f", count, command.getControlPoint1().x, command.getControlPoint1().y, command.getControlPoint2().x,
+                            command.getControlPoint2().y, command.getDestinationPoint().x, command.getDestinationPoint().y));
+//                    writer.println("N" + count + "G01" + "X" + command.getDestinationPoint().x + "Y" + command.getDestinationPoint().y);
                 }
             }
             count++;

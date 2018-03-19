@@ -29,10 +29,13 @@ public class Region {
         int i;
         int j;
         boolean result = false;
+        if (boundary.size() <= 2)
+            return false;
         for (i = 0, j = boundary.size() - 1; i <  boundary.size(); j = i++) {
-            if ((boundary.get(i).y > testPoint.y) != (boundary.get(j).y > testPoint.y)
-                    && (testPoint.x < (boundary.get(j).x - boundary.get(i).x) * (testPoint.y - boundary.get(i).y)
-                    / (boundary.get(j).y - boundary.get(i).y) + boundary.get(i).x)) {
+            Point A = boundary.get(i), B = boundary.get(j);
+            if ((A.y > testPoint.y) != (B.y > testPoint.y)
+                    && (testPoint.x < (B.x - A.x) * (testPoint.y - A.y)
+                    / (B.y - A.y) + A.x)) {
                 result = !result;
             }
         }

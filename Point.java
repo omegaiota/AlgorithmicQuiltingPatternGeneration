@@ -90,6 +90,12 @@ public class Point implements Comparable<Point> {
         return new Point(truncateDouble(interX, PRECISION), truncateDouble(interY, PRECISION));
     }
 
+    public static double signedDistanceSignOnly(Point testPoint, Point A, Point B) {
+        double x1 = A.x, x2 = B.x, y1 = A.y, y2 = A.y, x = testPoint.x, y = testPoint.y;
+        double sign = (y2 - y1) * x - (x2 - x1) * y + x2 * y1 - x1 * y2;
+        return sign;
+    }
+
     public static Point interMediatePointWithX(Point L1, Point L2, double x) {
         /* find the standard form of line (L1, L2)
             Ax + By + C = 0 */

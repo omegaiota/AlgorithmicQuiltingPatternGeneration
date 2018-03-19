@@ -1,10 +1,38 @@
 package jackiequiltpatterndeterminaiton;
 
+import javafx.geometry.BoundingBox;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by JacquelineLi on 2/17/18.
  */
 public class Spline {
+    /**
+     * Split a bezier curve to half it's length
+     *
+     * @param start
+     * @param c1
+     * @param c2
+     * @param end
+     * @return
+     */
+    public static SvgPathCommand splineSplittingAtHalf(Point start, Point c1, Point c2, Point end) {
+        double len = 0;
+        List<Double> lengths = new ArrayList<>();
+        for (double i = 0; i < 0.99; i += 0.1) {
+            len += Point.getDistance(evaluate(start, c1, c2, end, i), evaluate(start, c1, c2, end, i + 0.1));
+            lengths.add(len);
+        }
 
+        for (int i = 0; i < lengths.size(); i++) {
+            if (lengths.get(i) > len * 0.5) {
+                return splineSplitting(start, c1, c2, end, i * 0.1);
+            }
+        }
+        return splineSplitting(start, c1, c2, end, 0.9);
+    }
     /**
      * Break a Bezier Spline at a point using DeCasteljau's algorithm
      *
@@ -46,7 +74,7 @@ public class Spline {
 
     public static double getLen(Point start, Point c1, Point c2, Point end) {
         double len = 0;
-        for (double i = 0; i < 0.99; i += 0.1) {
+        for (double i = 0; i <= 0.99; i += 0.1) {
             len += Point.getDistance(evaluate(start, c1, c2, end, i), evaluate(start, c1, c2, end, i + 0.1));
         }
 
@@ -62,14 +90,31 @@ public class Spline {
     }
 
     public static boolean collidesWith(Point start, Point c1, Point c2, Point end, ConvexHullBound bound) {
-        Point firstPointInBound = bound.getBoundary().get(0);
-        for (double i = 0; i < 1.01; i += 0.1) {
-            Point testPoint = evaluate(start, c1, c2, end, i);
-            if (Point.getDistance(testPoint, firstPointInBound) > 1.0)
-                if (bound.getRegion().insideRegion(testPoint))
-                    return true;
+
+
+        // optimization: test bbox collisions first, if boxes don't collide early out
+        RectangleBound lineBox = RectangleBound.valueOf(start, end);
+        if (!lineBox.collidesWith(bound.getBox()))
+            return false;
+
+        for (double i = 0; i < 1.01; i += 0.2) {
+            Point A = evaluate(start, c1, c2, end, i), B = (i < 1.00) ? evaluate(start, c1, c2, end, i + 0.1) : end;
+
+            // line line intersection
+            if (bound.collidesWith(A, B))
+                return true;
         }
         return false;
+    }
+
+    private static boolean contains(Point upperLeft, Point lowerRight, Point testPoint) {
+        double xLeft = Double.min(upperLeft.x, lowerRight.x), xRight = Double.max(upperLeft.x, lowerRight.x),
+                yUp = Double.max(upperLeft.y, lowerRight.y), yDown = Double.min(upperLeft.y, lowerRight.y);
+        if (testPoint.x > xRight || testPoint.x < xLeft)
+            return false;
+        if (testPoint.y < yDown || testPoint.y > yUp)
+            return false;
+        return true;
     }
 
     public static double getTangentAngle(Point p0, Point p1, Point p2, Point p3) {

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by JacquelineLi on 10/29/17.
@@ -12,6 +13,7 @@ public class RectangleBound {
     private final Point center;
     private double width;
     private double height;
+
 
     public RectangleBound(Point center, double width, double height) {
         this.width = width;
@@ -23,6 +25,19 @@ public class RectangleBound {
         width = maxx - minx;
         height = maxy - miny;
         center = new Point(minx + width * 0.5, miny + height * 0.5);
+    }
+
+    public static RectangleBound valueOf(Point start, Point end) {
+        return new RectangleBound(start.add(end).multiply(0.5), Math.abs(start.x - end.x), Math.abs(start.y - end.y));
+    }
+
+    public static RectangleBound valueOf(List<Point> points) {
+        double maxX = points.parallelStream().map(p -> p.x).max(Double::compareTo).get(),
+                minX = points.parallelStream().map(p -> p.x).min(Double::compareTo).get(),
+                maxY = points.parallelStream().map(p -> p.y).max(Double::compareTo).get(),
+                minY = points.parallelStream().map(p -> p.y).min(Double::compareTo).get();
+
+        return new RectangleBound(minX, minY, maxX, maxY);
     }
 
     static boolean isBetween(double testNum, double boundA, double boundB) {
@@ -115,42 +130,16 @@ public class RectangleBound {
      */
     public boolean collidesWith(Collection<RectangleBound> bounds) {
         for (RectangleBound b : bounds) {
-            if (b.touches(this)) {
+            if (b.collidesWith(this)) {
                 return true;
             }
         }
         return false;
     }
-    public boolean touches(RectangleBound other) {
-        // check if this's right border is inside
-        if (isInsideBox(other.getCenter())) {
-            return true;
-        }
-        if (isInsideBox(other.getUpperLeft())) {
-            return true;
-        }
-        if (isInsideBox(other.getUpperRight())) {
-            return true;
-        }
-        if (isInsideBox(other.getLowerLeft())) {
-            return true;
-        }
-        if (other.isInsideBox(getUpperLeft())) {
-            return true;
-        }
-        if (other.isInsideBox(getUpperRight())) {
-            return true;
-        }
-        if (other.isInsideBox(getLowerLeft())) {
-            return true;
-        }
-        if (other.isInsideBox(getLowerRight())) {
-            return true;
-        }
-        if (other.isInsideBox(getCenter())) {
-            return true;
-        }
-        return false;
+
+    public boolean collidesWith(RectangleBound other) {
+        return (Math.abs(center.x - other.center.x) * 2.0 < (width + other.width)) &&
+                (Math.abs(center.y - other.center.y) * 2.0 < (height + other.height));
     }
 
     public boolean isInsideBox(Point testPoint) {
@@ -161,7 +150,7 @@ public class RectangleBound {
     // return the tightest bound for an argument bound using this bound as a constraint
     public void modifyToTightestBound(RectangleBound initialBound) {
         Point testCenter = initialBound.getCenter();
-        if (touches(initialBound)) {
+        if (collidesWith(initialBound)) {
             double tentativeWidth = (Math.abs(center.x - initialBound.getCenter().x) - width * 0.5) * 2 - 0.0000001,
                     tentativeHeight = (Math.abs(center.y - initialBound.getCenter().y) - height * 0.5) * 2 - 0.0000001;
             tentativeHeight = Math.abs(tentativeHeight);
@@ -182,7 +171,7 @@ public class RectangleBound {
                 return;
         }
 
-//        if (touches(initialBound)) {
+//        if (collidesWith(initialBound)) {
 //            double tentativeWidth = 0.1, tentativeHeight = 0.1;
 ////            double distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5, distY = Math.abs(center.y - initialBound.getCenter().y) - height *0.5;
 //            double distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5 - tentativeWidth * 0.5, distY = Math.abs(center.y - initialBound.getCenter().y) - height *0.5 - tentativeHeight * 0.5;

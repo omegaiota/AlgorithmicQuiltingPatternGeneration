@@ -5,38 +5,39 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  */
 public class PatternRenderer {
     private List<SvgPathCommand> skeletonPathCommands;
     private List<SvgPathCommand> decorativeElementCommands;
-
-
     private List<SvgPathCommand> renderedCommands = new ArrayList<>();
     private TreeNode<Point> spanningTree;
     private RenderType renderType;
     private String patternName = "", skeletonPathName = "";
+    private GenerationInfo info;
 
-
-    public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, RenderType type) {
+    public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, RenderType type, GenerationInfo info) {
         this.skeletonPathName = skeletonPathName;
         this.skeletonPathCommands = skeletonPathCommands;
         this.renderType = type;
+        this.info = info;
     }
 
-    public PatternRenderer(List<SvgPathCommand> commands, RenderType type) {
+
+    public PatternRenderer(List<SvgPathCommand> commands, RenderType type, GenerationInfo info) {
         this.skeletonPathCommands = commands;
         this.renderType = type;
+        this.info = info;
     }
 
-    public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, String patternName, List<SvgPathCommand> decorativeElementCommands, RenderType type) {
+    public PatternRenderer(String skeletonPathName, List<SvgPathCommand> skeletonPathCommands, String patternName, List<SvgPathCommand> decorativeElementCommands, RenderType type, GenerationInfo info) {
         this.skeletonPathName = skeletonPathName;
         this.skeletonPathCommands = skeletonPathCommands;
         this.patternName = patternName;
         this.decorativeElementCommands = decorativeElementCommands;
         this.renderType = type;
+        this.info = info;
     }
 
     public PatternRenderer(TreeNode<Point> spanningTree) {
@@ -76,40 +77,50 @@ public class PatternRenderer {
 
     public void toCatmullRom() {
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
-        for (int i = 0; i < skeletonPathCommands.size(); i++) {
+        System.out.println("original:" + skeletonPathCommands.size() + "nodeType:" + info.getNodeType().size());
+
+        assert (skeletonPathCommands.size() == info.getNodeType().size());
+        renderedCommands.add(skeletonPathCommands.get(0));
+
+
+        for (int i = 1; i < skeletonPathCommands.size() - 1; i++) {
             Point p = skeletonPathCommands.get(i).getDestinationPoint();
             SvgPathCommand pastRecord = destinationCommandMap.get(p);
+
             if (pastRecord != null) {
                 renderedCommands.add(new SvgPathCommand(pastRecord.getControlPoint2(),
                         pastRecord.getControlPoint1(), p, SvgPathCommand.CommandType.CURVE_TO));
                 continue;
             }
-            if (i == 0 || i == skeletonPathCommands.size() - 1) {
-                renderedCommands.add(skeletonPathCommands.get(i));
-                continue;
-            } else {
-                Point p2 = skeletonPathCommands.get(i).getDestinationPoint(),
-                        p1 = skeletonPathCommands.get(i - 1).getDestinationPoint();
-                Point p3, p0;
-                if (i - 2 < 0)
-                    p0 = p1.minus(p2.minus(p1));
-                else
-                    p0 = skeletonPathCommands.get(i - 2).getDestinationPoint();
-                if (i + 2 > skeletonPathCommands.size() - 1)
-                    p3 = p2.add(p2.minus(p1));
-                else
-                    p3 = skeletonPathCommands.get(i + 1).getDestinationPoint();
-                Point c1 = p2.minus(p0).divide(6).add(p1),
-                        c2 = p2.minus(p3.minus(p1).divide(6));
-                SvgPathCommand newCommand = new SvgPathCommand(c1, c2, skeletonPathCommands.get(i).getDestinationPoint(),
-                        SvgPathCommand.CommandType.CURVE_TO);
-                renderedCommands.add(newCommand);
-                destinationCommandMap.put(p1, newCommand);
-            }
+
+            Point p2 = skeletonPathCommands.get(i).getDestinationPoint(),
+                    p1 = skeletonPathCommands.get(i - 1).getDestinationPoint();
+            Point p3, p0;
+            if (i - 2 < 0)
+                p0 = p1.minus(p2.minus(p1));
+            else
+                p0 = skeletonPathCommands.get(i - 2).getDestinationPoint();
+            if (i + 2 > skeletonPathCommands.size() - 1)
+                p3 = p2.add(p2.minus(p1));
+            else
+                p3 = skeletonPathCommands.get(i + 1).getDestinationPoint();
+            Point c1 = p2.minus(p0).divide(6).add(p1),
+                    c2 = p2.minus(p3.minus(p1).divide(6));
+            SvgPathCommand newCommand = new SvgPathCommand(c1, c2, p,
+                    SvgPathCommand.CommandType.CURVE_TO);
+            renderedCommands.add(newCommand);
+            destinationCommandMap.put(p1, newCommand);
+
 
         }
-    }
 
+
+        renderedCommands.add(skeletonPathCommands.get(skeletonPathCommands.size() - 1));
+        System.out.println("original:" + skeletonPathCommands.size() + "interpolated:" + renderedCommands.size());
+        assert (renderedCommands.size() == skeletonPathCommands.size());
+        assert (renderedCommands.size() == info.getNodeType().size());
+
+    }
 
     /**
      * Adding decorative element to treenodes on a spline tree (Deco Element is a pair)
@@ -142,7 +153,7 @@ public class PatternRenderer {
             boolean collides = false;
 
             for (RectangleBound b : decoBounds) {
-                if (b.touches(thisBound)) {
+                if (b.collidesWith(thisBound)) {
                     collides = true;
                     break;
                 }
@@ -175,207 +186,231 @@ public class PatternRenderer {
         List<SvgPathCommand> reflectedDecoelmentCommands = SvgPathCommand.reflect(decoElmentCommands),
                 reflectedCollisionGeoCommands = SvgPathCommand.reflect(collisionGeoCommands);
 
+
         /* Spline pre-processing : break splines that are too long */
-        double adjustionComparator = info.getDecoElementFile().getHeight() * info.getDecorationSize();
+//        double adjustionComparator = info.getDecoElementFile().getHeight() * info.getDecorationSize();
         List<SvgPathCommand> splitted = new ArrayList<>();
         List<SvgPathCommand> originalPath = new ArrayList<>();
+        List<TreeTraversal.NodeType> nodeType = new ArrayList<>(info.getNodeType()), splittedNodeType = new ArrayList<>(), beforeSplittedNodeType = new ArrayList<>(info.getNodeType());
+        for (TreeTraversal.NodeType t : nodeType) {
+            System.out.println(t);
+        }
         originalPath.addAll(renderedCommands);
         boolean adjusted = true;
         boolean isLeft = true;
-        double MAX_LEN = adjustionComparator * info.getDecorationGap();
+        double MAX_LEN = info.getDecorationGap();
+
         while (adjusted && renderedCommands.size() > 0) {
             adjusted = false;
             splitted.add(renderedCommands.get(0));
+            splittedNodeType.add(beforeSplittedNodeType.get(0));
             for (int i = 1; i < renderedCommands.size(); i++) {
-//                if (i != renderedCommands.size() - 1) {
-//                    Point p = renderedCommands.get(i).getDestinationPoint();
-//                    double destAngleNext = Point.getAngle(p, renderedCommands.get(i + 1).getDestinationPoint());
-//                    double destAnglePrev = Point.getAngle(p, renderedCommands.get(i - 1).getDestinationPoint());
-//                    double betweenAngle = destAngleNext - destAnglePrev;
-//
-//                    if (Double.compare(Math.abs(betweenAngle), 0.0001) < 0) {
-//                        continue;
-//                    }
-//                }
-
-
-                Point start = renderedCommands.get(i - 1).getDestinationPoint(),
-                        c1 = renderedCommands.get(i).getControlPoint1(),
-                        c2 = renderedCommands.get(i).getControlPoint2(),
-                        end = renderedCommands.get(i).getDestinationPoint();
-                double len = Spline.getLen(start, c1, c2, end);
-                // repeated split curve until smaller than adjustion
-                if (len * 0.9 > MAX_LEN) {
-                    adjusted = true;
-                    /**
-                     * Spline is defined by destination point of i-1,  dest point of i, control points of i
-                     */
-//                    System.out.println("Breaking Spline");
-                    splitted.add(Spline.splineSplitting(start, c1, c2, end, 0.5));
-                    // these points are in reverse order
-                    SvgPathCommand secondHalf = Spline.splineSplitting(end, c2, c1, start, 0.5);
-                    splitted.add(new SvgPathCommand(secondHalf.getControlPoint2(),
-                            secondHalf.getControlPoint1(), end, SvgPathCommand.CommandType.CURVE_TO));
-
+                double len;
+                if (renderedCommands.get(i).getCommandType() == SvgPathCommand.CommandType.CURVE_TO) {
+                    Point start = renderedCommands.get(i - 1).getDestinationPoint(),
+                            c1 = renderedCommands.get(i).getControlPoint1(),
+                            c2 = renderedCommands.get(i).getControlPoint2(),
+                            end = renderedCommands.get(i).getDestinationPoint();
+                    len = Spline.getLen(start, c1, c2, end);
+                    // repeated split curve until smaller than adjustion
+                    if (len > MAX_LEN) {
+                        adjusted = true;
+                        /**
+                         * Spline is defined by destination point of i-1,  dest point of i, control points of i
+                         */
+                        splitted.add(Spline.splineSplittingAtHalf(start, c1, c2, end));
+                        splittedNodeType.add(beforeSplittedNodeType.get(i) == TreeTraversal.NodeType.OUT ? TreeTraversal.NodeType.OUT : TreeTraversal.NodeType.IN);
+                        // these points are in reverse order
+                        SvgPathCommand secondHalf = Spline.splineSplitting(end, c2, c1, start, 0.5);
+                        splitted.add(new SvgPathCommand(secondHalf.getControlPoint2(),
+                                secondHalf.getControlPoint1(), end, SvgPathCommand.CommandType.CURVE_TO));
+                        splittedNodeType.add(beforeSplittedNodeType.get(i));
+                    } else {
+                        splitted.add(renderedCommands.get(i));
+                        splittedNodeType.add(beforeSplittedNodeType.get(i));
+                    }
                 } else {
                     splitted.add(renderedCommands.get(i));
+                    splittedNodeType.add(beforeSplittedNodeType.get(i));
                 }
+
+
             }
             renderedCommands = new ArrayList<>(splitted);
+            beforeSplittedNodeType = new ArrayList<>(splittedNodeType);
             System.out.println("size" + renderedCommands.size() + " adjusted:" + adjusted);
             splitted.clear();
+            splittedNodeType.clear();
         }
 
 
         skeletonPath.addAll(renderedCommands);
+        nodeType = beforeSplittedNodeType;
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
         List<ConvexHullBound> decoBounds = new ArrayList<>();
         int n = skeletonPath.size();
+        Map<Integer, List<SvgPathCommand>> leafNodeIndexCommandsMap = new HashMap<>();
 
-        for (int i = n - 1; i >= 0; i--) {
-            Point p = skeletonPath.get(i).getDestinationPoint();
-            SvgPathCommand pastRecord = destinationCommandMap.get(p);
-            if (pastRecord != null) {
-                continue;
-            }
-            Point prevDest = skeletonPath.get(i == 0 ? 0 : i - 1).getDestinationPoint();
+        int lastFailed = -1;
+        for (int preprocessing = 0; preprocessing < 2; preprocessing++) {
+            assert (skeletonPath.size() == n);
+            System.out.println("map size:" + leafNodeIndexCommandsMap.size());
+            for (int i = n - 1; i >= 0; i--) {
 
-            /* Alternatve leave direction for even branches*/
+                Point p = skeletonPath.get(i).getDestinationPoint();
+                /**
+                 * Check leaf node
+                 */
+                if (i % 100 == 0)
+                    System.out.println(i);
 
-            /*
-             double angleNext = Point.getAngle(commandThis.getDestinationPoint(), commandNext.getDestinationPoint());
-            double anglePrev = Point.getAngle(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint());
-            double betweenAngle = angleNext - anglePrev;
-            System.out.println(i + ":" + angleNext + " " + anglePrev + " " + betweenAngle);
-            double rotationAngle = -1.0 * betweenAngle / 2.0;
-            if (betweenAngle > 0)
-                rotationAngle += Math.PI;
+                boolean isLeafNode = false;
+                if (preprocessing == 1)
+                    isLeafNode = leafNodeIndexCommandsMap.containsKey(i);
+                else {
+                    isLeafNode = nodeType.get(i) == TreeTraversal.NodeType.LEAF;
 
-            if (Double.compare(Math.abs(betweenAngle), 0.0001) < 0) {
-
-            Point pointLeft = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width);
-            Point pointRight = Point.vertOffset(commandThis.getDestinationPoint(), commandPrev.getDestinationPoint(), width * (-1));
-            renderedCommands.add(new SvgPathCommand(pointRight, SvgPathCommand.CommandType.LINE_TO));
-            if (renderType == RenderType.WITH_DECORATION) {
-                double random = Math.random();
-
-                if (Double.compare(random, density) < 1.0)
-                    insertPatternToList(decorativeElementCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
-            }
-
-             */
-
-
-            double anglePrev;
-            if (isLeft)
-                anglePrev = Spline.getTangentAngle(prevDest,
-                        skeletonPath.get(i).getControlPoint1(),
-                        skeletonPath.get(i).getControlPoint2(),
-                        skeletonPath.get(i).getDestinationPoint());
-            else
-                anglePrev = Spline.getTangentAngle(skeletonPath.get(i).getDestinationPoint(),
-                        skeletonPath.get(i).getControlPoint1(),
-                        skeletonPath.get(i).getControlPoint2(),
-                        prevDest);
-
-            /**
-             * Check leaf node
-             */
-            boolean isLeafNode = false;
-            if (i != 0 && i != skeletonPath.size() - 1) {
-                double destAngleNext = Point.getAngle(p, skeletonPath.get(i + 1).getDestinationPoint());
-                double destAnglePrev = Point.getAngle(p, skeletonPath.get(i - 1).getDestinationPoint());
-                double betweenAngle = destAngleNext - destAnglePrev;
-
-                if (Double.compare(Math.abs(betweenAngle), 0.0001) < 0) {
-                    isLeafNode = true;
-//                    List<SvgPathCommand> rotatedCommands = PatternRenderer.insertPatternToList(decoElmentCommands,
-//                            null, p, anglePrev + Math.PI * 0.5);
-//
-//                    skeletonPath.addAll(i + 1, rotatedCommands);
-//                    continue;
                 }
-            }
 
-            double INITIAL_ANGLE = Math.toRadians(info.getInitialAngle());
-            double SIGN;
-            if (isLeft)
-                SIGN = -1.0;
-            else
-                SIGN = 1.0;
+                SvgPathCommand pastRecord = destinationCommandMap.get(p);
+                if (!isLeafNode && (preprocessing != 0) && pastRecord != null) {
+                    continue;
+                }
+                Point prevDest = skeletonPath.get(i == 0 ? 0 : i - 1).getDestinationPoint();
 
-            /**
-             * If alternating direction
-             */
-            List<SvgPathCommand> originalCommandToUse = (i % 2 == 0) ? decoElmentCommands : reflectedDecoelmentCommands;
-            List<SvgPathCommand> originalCollisionCommandToUse = (i % 2 == 0) ? collisionGeoCommands : reflectedCollisionGeoCommands;
-            if (!isLeafNode)
-                anglePrev += INITIAL_ANGLE * SIGN;
-            else
-                anglePrev += Math.PI * 0.5;
-            List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(originalCommandToUse,
-                    null, p, anglePrev);
-            List<SvgPathCommand> scaledRotatedCollision = PatternRenderer.insertPatternToList(originalCollisionCommandToUse,
-                    null, p, anglePrev);
-            List<SvgPathCommand> removedFirst = new ArrayList<>(scaledRotatedCollision);
-            removedFirst.remove(0);
-            ConvexHullBound thisBound = ConvexHullBound.fromCommands(removedFirst);
-//            ConvexHullBound thisBound = ConvexHullBound.fromCommands(scaledRotatedDecoComamnds);
 
+                if ((preprocessing == 0) && (!isLeafNode))
+                    continue;
+
+                if ((preprocessing == 1) && (isLeafNode)) {
+//                    System.out.println("hello from" + i +  "size:" + leafNodeIndexCommandsMap.get(i).size());
+                    skeletonPath.addAll(i + 1, leafNodeIndexCommandsMap.get(i));
+                    continue;
+
+                }
+
+                if ((preprocessing == 1) && (nodeType.get(i) == TreeTraversal.NodeType.OUT))
+                    continue;
+
+                /* Alternatve leave direction for even branches*/
+
+                double anglePrev;
+                if (isLeafNode || isLeft)
+                    anglePrev = Spline.getTangentAngle(prevDest, // anglePrev is in radian
+                            skeletonPath.get(i).getControlPoint1(),
+                            skeletonPath.get(i).getControlPoint2(),
+                            skeletonPath.get(i).getDestinationPoint());
+                else
+                    anglePrev = Spline.getTangentAngle(skeletonPath.get(i).getDestinationPoint(),
+                            skeletonPath.get(i).getControlPoint1(),
+                            skeletonPath.get(i).getControlPoint2(),
+                            prevDest);
+
+
+                final double INITIAL_ANGLE = Math.toRadians(info.getInitialAngle());
+                double SIGN = 1;
+
+                if (isLeft)
+                    SIGN *= 1.0;
+                else
+                    SIGN *= -1.0;
+
+                /**
+                 * If alternating direction
+                 */
+                List<SvgPathCommand> originalCommandToUse = (i % 2 == 0) ? decoElmentCommands : reflectedDecoelmentCommands;
+                List<SvgPathCommand> originalCollisionCommandToUse = (i % 2 == 0) ? collisionGeoCommands : reflectedCollisionGeoCommands;
+                if (!isLeafNode)
+                    anglePrev += INITIAL_ANGLE * SIGN;
+                else
+                    anglePrev += Math.PI * 0.5;
+                List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(originalCommandToUse,
+                        null, p, anglePrev);
+                List<SvgPathCommand> scaledRotatedCollision = PatternRenderer.insertPatternToList(originalCollisionCommandToUse,
+                        null, p, anglePrev);
+                List<SvgPathCommand> removedFirst = new ArrayList<>(scaledRotatedCollision);
+                removedFirst.remove(0);
+                ConvexHullBound thisBound = ConvexHullBound.fromCommands(removedFirst);
+
+//            if (i< 20) {
+//                List<SvgPathCommand> outputBoundWithSkeleton = new ArrayList<>();
+//                outputBoundWithSkeleton.addAll(scaledRotatedDecoComamnds);
+//                outputBoundWithSkeleton.addAll(scaledRotatedCollision);
+//                outputBoundWithSkeleton.addAll(originalSkeletonPath);
+//                SvgFileProcessor.outputSvgCommands(outputBoundWithSkeleton, "no collide collides " +
+//                        i , info);
+//            }
 
             /* Collison Detection / Solving */
-            if (!collides(thisBound, decoBounds, originalPath)) {
-                decoBounds.add(thisBound);
-                isLeft = !isLeft;
-                skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
-            } else {
-                double proportion = 1.0;
-                boolean resolved = false;
-                System.out.println("COLLIDES!");
-                List<SvgPathCommand> copyCommands = new ArrayList<>(scaledRotatedDecoComamnds);
-                List<SvgPathCommand> copyCollisionCommands = new ArrayList<>(scaledRotatedCollision);
-                while (proportion > 0.5 && !resolved) {
-                    proportion *= 0.8;
+                if (!collides(thisBound, decoBounds, originalPath)) {
+                    decoBounds.add(thisBound);
+                    isLeft = !isLeft;
+                    if (preprocessing == 0)
+                        leafNodeIndexCommandsMap.put(i, scaledRotatedDecoComamnds);
+                    else
+                        skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
+                } else {
+                    double proportion = 1.0;
+                    boolean resolved = false;
+                    List<SvgPathCommand> copyCommands = new ArrayList<>(scaledRotatedDecoComamnds);
+                    List<SvgPathCommand> copyCollisionCommands = new ArrayList<>(scaledRotatedCollision);
+                    final double MINIMUM_SIZE = isLeafNode ? 0.3 : 0.7;
+                    while (proportion > MINIMUM_SIZE && !resolved) {
+                        proportion *= 0.9;
                     /* Collision Solving Strategy 1, shrink to 50% and test again */
-                    for (double testAngle = info.getInitialAngle(); testAngle < 60.0; testAngle += 10.0) {
-                        if (resolved)
-                            continue;
-                        List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands,
-                                null, p, Math.toRadians(testAngle)),
-                                rotatedCollision = PatternRenderer.insertPatternToList(copyCollisionCommands,
-                                        null, p, Math.toRadians(testAngle));
-//                        thisBound = ConvexHullBound.fromCommands(rotated);
-                        List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision);
+                        for (double testAngle = info.getInitialAngle(); testAngle < 60.0; testAngle += 10.0) {
+                            // don't want to rotate leaf node
+                            double radianToRotate = isLeafNode ? 0 : (Math.toRadians(testAngle) - INITIAL_ANGLE) * SIGN;
+                            List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands, null, p, radianToRotate),
+                                    rotatedCollision = PatternRenderer.insertPatternToList(copyCollisionCommands, null, p, radianToRotate);
+                            List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision);
+                            removedFirstC.remove(0);
+                            thisBound = ConvexHullBound.fromCommands(removedFirstC);
+                            if (!collides(thisBound, decoBounds, originalPath)) {
+                                decoBounds.add(thisBound);
+                                if (preprocessing == 0)
+                                    leafNodeIndexCommandsMap.put(i, rotated);
+                                else
+                                    skeletonPath.addAll(i + 1, rotated);
+                                resolved = true;
+                                isLeft = !isLeft;
+                                break;
+                            }
 
-                        removedFirstC.remove(0);
-                        thisBound = ConvexHullBound.fromCommands(removedFirstC);
-                        if (!collides(thisBound, decoBounds, originalPath)) {
-                            System.out.println("COLLIDES BUT RESOLVED!");
-                            decoBounds.add(thisBound);
-                            skeletonPath.addAll(i + 1, rotated);
-                            resolved = true;
-                            isLeft = !isLeft;
-                            break;
+                            if (isLeafNode) // early out leaf nodes
+                                break;
                         }
+                        copyCommands = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
+                                proportion, scaledRotatedDecoComamnds.get(0).getDestinationPoint());
+                        copyCollisionCommands = SvgPathCommand.commandsScaling(scaledRotatedCollision,
+                                proportion, scaledRotatedCollision.get(0).getDestinationPoint());
                     }
-                    copyCommands = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
-                            proportion, scaledRotatedDecoComamnds.get(0).getDestinationPoint());
-                    copyCollisionCommands = SvgPathCommand.commandsScaling(scaledRotatedCollision,
-                            proportion, scaledRotatedDecoComamnds.get(0).getDestinationPoint());
-                }
+                    if (preprocessing == 1) {
+                        if (lastFailed != i) {
+                            lastFailed = i;
+                            i++;
+                            isLeft = !isLeft;
+                        } else
+                            isLeft = !isLeft;
+                    }
 
+
+                }
+                destinationCommandMap.put(p, skeletonPath.get(i));
             }
-            destinationCommandMap.put(p, skeletonPath.get(i));
+
         }
 
         renderedCommands = skeletonPath;
     }
 
-
     private boolean collides(ConvexHullBound testBound, List<ConvexHullBound> bounds, List<SvgPathCommand> skeleton) {
+
+        // collision detection with convex hulls
         if (testBound.collidesWith(bounds))
             return true;
 
+        // collision detection with skeleton
         for (int i = 1; i < skeleton.size(); i++) {
             Point start = skeleton.get(i - 1).getDestinationPoint(),
                     c1 = skeleton.get(i).getControlPoint1(),
@@ -388,11 +423,12 @@ public class PatternRenderer {
         return false;
     }
 
-
-
-
     public List<SvgPathCommand> getRenderedCommands() {
         return renderedCommands;
+    }
+
+    public void setRenderedCommands(List<SvgPathCommand> renderedCommands) {
+        this.renderedCommands = renderedCommands;
     }
 
     public void pebbleFilling() {
