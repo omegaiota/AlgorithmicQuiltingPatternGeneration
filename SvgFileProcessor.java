@@ -10,9 +10,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -43,64 +41,69 @@ public class SvgFileProcessor {
 
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, GenerationInfo info) {
         return outputSvgCommands(outputCommandList, fileName, 750, 750);
-
     }
 
-    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, int width, int height) {
+    private static PrintWriter writeHeader(String fileName, int width, int height) {
+        PrintWriter writer = null;
         try {
-            PrintWriter writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
-            writer.println("<svg");
-            writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
-            writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");
-            writer.println("   xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"");
-            writer.println("   xmlns:svg=\"http://www.w3.org/2000/svg\"");
-            writer.println("   xmlns=\"http://www.w3.org/2000/svg\"");
-            writer.println("   xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\"");
-            writer.println("   xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"");
+            writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        writer.println("<svg");
+        writer.println("   xmlns:dc=\"http://purl.org/dc/elements/1.1/\"");
+        writer.println("   xmlns:cc=\"http://creativecommons.org/ns#\"");
+        writer.println("   xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"");
+        writer.println("   xmlns:svg=\"http://www.w3.org/2000/svg\"");
+        writer.println("   xmlns=\"http://www.w3.org/2000/svg\"");
+        writer.println("   xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\"");
+        writer.println("   xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"");
 //            writer.println("   width=\"210mm\"");
 //            writer.println("   height=\"210mm\">");
-            writer.println(String.format("   width=\"%dpx\"", width));
-            writer.println(String.format("   height=\"%dpx\">", height));
+        writer.println(String.format("   width=\"%dpx\"", width));
+        writer.println(String.format("   height=\"%dpx\">", height));
 //            writer.println("   width=\"750px\"");
 //            writer.println("   height=\"750px\">");
-            writer.println("   <g");
-            writer.println("     inkscape:label=\"Layer 1\"");
-            writer.println("     inkscape:groupmode=\"layer\"");
-            writer.println("     id=\"layer1\">");
-            writer.println("");
-            writer.println("");
-
-            writer.println("    <path");
-            writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
-            writer.print("    d=\"");
-
-            // First command needs to be moved to
-            for (int i = 0; i < outputCommandList.size(); i++) {
-                if (i == 0) {
-                    writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
-                }
-                SvgPathCommand command = outputCommandList.get(i);
-
-                // Change moveTo to lineTo so that path will be one stitch
-                writer.print(command.toSvgCode());
+        writer.println("   <g");
+        writer.println("     inkscape:label=\"Layer 1\"");
+        writer.println("     inkscape:groupmode=\"layer\"");
+        writer.println("     id=\"layer1\">");
+        writer.println("");
+        writer.println("");
+        return writer;
+    }
 
 
-                //commented out this for generating set of 81 results
+    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, int width, int height) {
+        PrintWriter writer = writeHeader(fileName, width, height);
+        writer.println("    <path");
+        writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
+        writer.print("    d=\"");
+        // First command needs to be moved to
+        for (int i = 0; i < outputCommandList.size(); i++) {
+            if (i == 0) {
+                writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
+            }
+            SvgPathCommand command = outputCommandList.get(i);
+
+            // Change moveTo to lineTo so that path will be one stitch
+            writer.print(command.toSvgCode());
+
+
+            //commented out this for generating set of 81 results
 //                if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
 //                    writer.print(new SvgPathCommand(command, SvgPathCommand.CommandType.LINE_TO).toSvgCode());
 //                } else
 //                    writer.print(command.toSvgCode());
-            }
-            writer.println("\"");
-            writer.println("       id=\"path3342\"\n");
-            writer.println("       inkscape:connector-curvature=\"0\" />");
-            writer.println("  </g>");
-            writer.println("</svg>");
-            writer.close();
-
-        } catch (IOException e) {
-            // do something
         }
+        writer.println("\"");
+        writer.println("       id=\"path3342\"\n");
+        writer.println("       inkscape:connector-curvature=\"0\" />");
+        writer.println("  </g>");
+        writer.println("</svg>");
+        writer.close();
 
         return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + fileName + ".svg");
     }
@@ -181,6 +184,19 @@ public class SvgFileProcessor {
 
     }
 
+    public static void outputPoints(List<Point> points, GenerationInfo info) {
+        PrintWriter writer = writeHeader("points", 750, 750);
+        for (Point p : points) {
+            writer.print(p.toSvgCode());
+        }
+
+        writer.println("  </g>");
+        writer.println("</svg>");
+        writer.close();
+
+//        return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + "points" + ".svg");
+    }
+
     public Point getMinPoint() {
         return minPoint;
     }
@@ -211,7 +227,6 @@ public class SvgFileProcessor {
         pathNodeList = (NodeList) expression.evaluate(document, XPathConstants.NODESET);
 
         for (int i = 0; i < pathNodeList.getLength(); i++) {
-            assert pathNodeList.getLength() == 1;
             ArrayList<SvgPathCommand> aCommandList = new ArrayList<>();
             commandLists = aCommandList;
             processPath(pathNodeList.item(i), aCommandList);
@@ -418,6 +433,7 @@ public class SvgFileProcessor {
                 ((A.x <= C.x) && A.x >= D.x);
 
     }
+
     @Override
     public String toString() {
         return "SvgFileProcessor{" +
@@ -459,6 +475,4 @@ public class SvgFileProcessor {
 
         return new Pair<>(bound, new ArrayList<>());
     }
-
-
 }

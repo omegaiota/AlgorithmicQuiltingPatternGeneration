@@ -32,6 +32,8 @@ public class ConvexHullBound {
 
     public static ConvexHullBound fromCommands(List<SvgPathCommand> commands) {
         List<Point> points = new ArrayList<>();
+        if (commands == null)
+            return ConvexHullBound.valueOf(new ArrayList<>());
         points.add(commands.get(0).getDestinationPoint());
         for (int i = 1; i < commands.size(); i++) {
             if (commands.get(i).getCommandType() == SvgPathCommand.CommandType.CURVE_TO) {
@@ -169,8 +171,10 @@ public class ConvexHullBound {
 
     public boolean collidesWith(List<ConvexHullBound> bounds) {
         for (ConvexHullBound b : bounds) {
-            if (this.collidesWith(b))
+            if (this.collidesWith(b)) {
+                System.out.println("Colliding bounds:" + b + " " + this);
                 return true;
+            }
         }
         return false;
     }

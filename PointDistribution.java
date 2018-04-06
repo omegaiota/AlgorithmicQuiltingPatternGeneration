@@ -34,10 +34,14 @@ public final class PointDistribution {
             case VINE:
                 strategy = new VINE();
                 break;
+            case HEXAGON:
+                strategy = new Hexagon();
+                break;
             case THREE_THREE_FOUR_THREE_FOUR:
             default:
                 strategy = new TTFTF();
                 break;
+
 
         }
     }
@@ -62,7 +66,7 @@ public final class PointDistribution {
         System.out.println("radius:" + radius);
         System.out.println("area:" + area);
         info.setPoissonRadius(radius);
-        int NUM = (int) (area / (radius * radius * 4.0));
+        int NUM = (int) (area / (radius * radius * 3.5));
         System.out.println("num:" + area);
 
         while (total < NUM) {
@@ -138,6 +142,17 @@ public final class PointDistribution {
 
     }
 
+    public static void remapPoint(TreeNode<Point> spanningTree, Map<Point, Point> oldNewMap) {
+        if (spanningTree == null)
+            return;
+        if (oldNewMap.get(spanningTree.getData()) == null)
+            assert false;
+        spanningTree.setData(oldNewMap.get(spanningTree.getData()));
+        for (TreeNode<Point> child : spanningTree.getChildren()) {
+            remapPoint(child, oldNewMap);
+        }
+    }
+
     public List<Point> getPoints() {
         return points;
     }
@@ -152,13 +167,27 @@ public final class PointDistribution {
 
     public void generate() {
         double midX = 0, midY = 0;
-        for (Point vertex : boundary.getBoundary()) {
+        List<Point> allPoints = boundary.getPoints();
+        for (Point vertex : allPoints) {
             midX += vertex.x;
             midY += vertex.y;
         }
-        midX /= boundary.getBoundary().size();
-        midY /= boundary.getBoundary().size();
+        midX /= boundary.getPoints().size();
+        midY /= boundary.getPoints().size();
         Point start = new Point(midX, midY);
+        if (!boundary.insideRegion(start)) {
+            boolean found = false;
+            while (!found) {
+                int i = (int) (Math.random() * allPoints.size()), j = ((int) (Math.random() * allPoints.size()));
+                Point mid = boundary.getPoints().get(i).add(boundary.getPoints().get(j)).multiply(0.5);
+                if (boundary.insideRegion(mid)) {
+                    start = mid;
+                    found = true;
+                }
+            }
+
+
+        }
         distributionVisualizationList.add(new SvgPathCommand(start, SvgPathCommand.CommandType.MOVE_TO));
         System.out.println("starting point is inside boundary:" + boundary.insideRegion(start));
         strategy.generate(start);
@@ -265,7 +294,7 @@ public final class PointDistribution {
 
     private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
-        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0)) {
+        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0) && boundary.minDist(bottomRight) > dist * 0.5) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomRight);
             pointGraph.addVertex(newV);
@@ -307,7 +336,7 @@ public final class PointDistribution {
     private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist, boolean add) {
         List<Vertex<Point>> closePoints = regionFree(bottomLeft, 0.005);
 
-        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
+        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0) && boundary.minDist(bottomLeft) > dist * 0.5) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomLeft);
             pointGraph.addVertex(newV);
@@ -418,14 +447,12 @@ public final class PointDistribution {
         SvgFileProcessor.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type, info);
     }
 
-
     public List<SvgPathCommand> toTraversal() {
         toSpanningTree();
         info.setSpanningTree(spanningTree);
         List<SvgPathCommand> commands = this.traverseTree();
         return commands;
     }
-
 
     public void toSpanningTree() {
 
@@ -440,13 +467,51 @@ public final class PointDistribution {
     }
 
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE, HEXAGON
     }
 
     interface Distribution {
         void generate(Point start);
 
     }
+
+    final class Hexagon implements Distribution {
+
+        @Override
+        public void generate(Point start) {
+            hexagon(null, start, 0, disLen);
+        }
+
+        private void hexagon(Vertex<Point> parent, Point center, double angle, double dist) {
+            List<Vertex<Point>> closePoints = regionFree(center, 0.005);
+            if (boundary.insideRegion(center) && ((closePoints).size() == 0)) {
+                double newDist = dist;
+                Vertex<Point> newV = new Vertex<>(center);
+                pointGraph.addVertex(newV);
+                points.add(center);
+
+                if (parent != null)
+                    newV.connect(parent);
+
+                Point rotatingPoint = (parent == null) ? new Point(center.x + disLen, center.y) : parent.getData();
+                Point p1 = rotatingPoint.rotateAroundCenter(center, Math.toRadians(120)),
+                        p2 = rotatingPoint.rotateAroundCenter(center, Math.toRadians(240));
+
+                distributionVisualizationList.add(new SvgPathCommand(p1, SvgPathCommand.CommandType.LINE_TO));
+                distributionVisualizationList.add(new SvgPathCommand(p2, SvgPathCommand.CommandType.LINE_TO));
+
+                hexagon(newV, p1, angle, newDist);
+                distributionVisualizationList.add(new SvgPathCommand(p1, SvgPathCommand.CommandType.MOVE_TO));
+                hexagon(newV, p2, angle, newDist);
+                distributionVisualizationList.add(new SvgPathCommand(p1, SvgPathCommand.CommandType.MOVE_TO));
+            } else {
+                for (Vertex<Point> p : closePoints)
+                    p.connect(parent);
+            }
+        }
+    }
+
+
 
     final class TTFTF implements Distribution {
         @Override

@@ -318,8 +318,8 @@ public class PatternRenderer {
                 /**
                  * If alternating direction
                  */
-                List<SvgPathCommand> originalCommandToUse = (i % 2 == 0) ? decoElmentCommands : reflectedDecoelmentCommands;
-                List<SvgPathCommand> originalCollisionCommandToUse = (i % 2 == 0) ? collisionGeoCommands : reflectedCollisionGeoCommands;
+                List<SvgPathCommand> originalCommandToUse = (isLeft) ? decoElmentCommands : reflectedDecoelmentCommands;
+                List<SvgPathCommand> originalCollisionCommandToUse = (isLeft) ? collisionGeoCommands : reflectedCollisionGeoCommands;
                 if (!isLeafNode)
                     anglePrev += INITIAL_ANGLE * SIGN;
                 else
@@ -342,7 +342,7 @@ public class PatternRenderer {
 //            }
 
             /* Collison Detection / Solving */
-                if (!collides(thisBound, decoBounds, originalPath)) {
+                if (!collides(thisBound, decoBounds, originalPath, scaledRotatedDecoComamnds)) {
                     decoBounds.add(thisBound);
                     isLeft = !isLeft;
                     if (preprocessing == 0)
@@ -366,7 +366,7 @@ public class PatternRenderer {
                             List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision);
                             removedFirstC.remove(0);
                             thisBound = ConvexHullBound.fromCommands(removedFirstC);
-                            if (!collides(thisBound, decoBounds, originalPath)) {
+                            if (!collides(thisBound, decoBounds, originalPath, scaledRotatedDecoComamnds)) {
                                 decoBounds.add(thisBound);
                                 if (preprocessing == 0)
                                     leafNodeIndexCommandsMap.put(i, rotated);
@@ -404,12 +404,33 @@ public class PatternRenderer {
         renderedCommands = skeletonPath;
     }
 
-    private boolean collides(ConvexHullBound testBound, List<ConvexHullBound> bounds, List<SvgPathCommand> skeleton) {
+    private boolean collides(ConvexHullBound testBound, List<ConvexHullBound> bounds, List<SvgPathCommand> skeleton,
+                             List<SvgPathCommand> testCommands) {
 
         // collision detection with convex hulls
-        if (testBound.collidesWith(bounds))
+        if (testBound.collidesWith(bounds)) {
+            System.out.println("collides bounds");
             return true;
 
+        }
+
+        List<SvgPathCommand> commands = new ArrayList<>();
+        commands.addAll(info.getRegionFile().getCommandList());
+        commands.addAll(skeleton);
+        commands.addAll(testCommands);
+//        SvgFileProcessor.outputSvgCommands(commands, "testDebug", info);
+        if (!(info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getCenter()) &&
+                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getUpperLeft()) &&
+                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getLowerRight()) &&
+                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getLowerLeft()) &&
+                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getUpperRight()))
+                ) {
+            return true;
+        }
+
+        System.out.println("Skeleton size:" + skeleton.size());
+        System.out.println("Bounds size:" + bounds.size());
+        System.out.println("Region size:" + bounds.size());
         // collision detection with skeleton
         for (int i = 1; i < skeleton.size(); i++) {
             Point start = skeleton.get(i - 1).getDestinationPoint(),
@@ -459,8 +480,13 @@ public class PatternRenderer {
                 if (renderType == RenderType.WITH_DECORATION) {
                     double random = Math.random();
                     /* random factor */
-                    if (Double.compare(random, density) < 1.0)
-                        insertPatternToList(decorativeElementCommands, renderedCommands, commandThis.getDestinationPoint(), anglePrev);
+                    if (Double.compare(random, density) < 1.0) {
+                        List<SvgPathCommand> decoCommands = new ArrayList<>();
+                        insertPatternToList(decorativeElementCommands, decoCommands, commandThis.getDestinationPoint(), anglePrev);
+                        boolean notCollide = decoCommands.stream().map(a -> info.getRegionFile().getBoundary().insideRegion(a.getDestinationPoint())).reduce((a, b) -> a && b).get();
+                        if (notCollide)
+                            renderedCommands.addAll(decoCommands);
+                    }
                 }
                 renderedCommands.add(new SvgPathCommand(pointLeft, SvgPathCommand.CommandType.LINE_TO));
             } else {

@@ -13,6 +13,7 @@ public class TreeNode<T> {
    private List<TreeNode<T>> children;
     private CircleBound boundingCircle;
     private RectangleBound boundingRectangle;
+    private ConvexHullBound convexHullBound;
 
    public TreeNode(T data, List<Vertex<T>> neighbors) {
        this.data = data;
@@ -24,6 +25,14 @@ public class TreeNode<T> {
         this.data = data;
         this.children = new ArrayList<>();
         this.neighbors = new ArrayList<>();
+    }
+
+    public ConvexHullBound getConvexHullBound() {
+        return convexHullBound;
+    }
+
+    public void setConvexHullBound(ConvexHullBound convexHullBound) {
+        this.convexHullBound = convexHullBound;
     }
 
     public RectangleBound getBoundingRectangle() {

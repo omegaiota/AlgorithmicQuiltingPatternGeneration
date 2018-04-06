@@ -17,25 +17,6 @@ public class Vertex<T> {
         this.weight = new ArrayList<>();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Vertex)) return false;
-
-        Vertex<?> vertex = (Vertex<?>) o;
-
-        if (data != null ? !data.equals(vertex.data) : vertex.data != null) return false;
-        if (neighbors != null ? !neighbors.equals(vertex.neighbors) : vertex.neighbors != null) return false;
-        return weight != null ? weight.equals(vertex.weight) : vertex.weight == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = data != null ? data.hashCode() : 0;
-        result = 31 * result + (weight != null ? weight.hashCode() : 0);
-        return result;
-    }
-
     public void connect(Vertex<T> otherNode) {
         if (otherNode == null)
             return;
@@ -73,12 +54,6 @@ public class Vertex<T> {
             returnStr += neighbor.data.toString();
         return returnStr;
     }
-
-    public boolean equals(Vertex<T> other) {
-        return data.equals(other.data);
-    }
-
-
 
 
 

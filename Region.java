@@ -13,7 +13,7 @@ public class Region {
         this.boundary = boundary;
     }
 
-    public List<Point> getBoundary() {
+    public List<Point> getPoints() {
         return boundary;
     }
 
@@ -40,6 +40,11 @@ public class Region {
             }
         }
         return result;
+    }
+
+    public double minDist(Point testPoint) {
+        double minDirect = boundary.stream().map(p -> Point.getDistance(p, testPoint)).reduce(5000.0, Double::min);
+        return minDirect;
     }
 
     public List<SvgPathCommand> fitCommandsToRegionDelete(List<SvgPathCommand> commandsOriginal) {

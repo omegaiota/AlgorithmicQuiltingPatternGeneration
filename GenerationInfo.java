@@ -11,6 +11,7 @@ public final class GenerationInfo {
     private SvgFileProcessor skeletonPathFile;
     private SvgFileProcessor decoElementFile;
     private SvgFileProcessor regionFile;
+    private ConvexHullBound regionConvexHull;
     private SvgFileProcessor collisionFile;
     private double pointDistributionDist;
     private TreeNode<Point> spanningTree;
@@ -26,6 +27,12 @@ public final class GenerationInfo {
         skeletonPathFile = null;
         decoElementFile = null;
         linearizeCommands = true;
+    }
+
+    public ConvexHullBound getRegionConvexHull() {
+        if (regionConvexHull == null)
+            regionConvexHull = ConvexHullBound.fromCommands(regionFile.getCommandList());
+        return regionConvexHull;
     }
 
     public List<TreeTraversal.NodeType> getNodeType() {

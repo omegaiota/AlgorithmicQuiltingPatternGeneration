@@ -16,7 +16,7 @@ public class SkeletonPathGenerator {
     public void snakePathGenerator(int rows) {
         Double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE, minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE,
                 height = 0.0;
-        for (Point point : region.getBoundary()) {
+        for (Point point : region.getPoints()) {
             if (Double.compare(point.x, minX) <= 0)
                 minX = point.x;
             if (Double.compare(point.x, maxX) >= 0)

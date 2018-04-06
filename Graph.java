@@ -33,14 +33,22 @@ public class Graph {
          int minCost = 10000;
             Vertex<Point> minVertex = null, parentVertex = null;
             for (Vertex<Point> key : vertexTreeNodeHashMap.keySet()) {
-             assert(toInclude.contains(key) == false);
-             for (int i = 0; i < key.neighborSize(); i++) {
+                assert (!toInclude.contains(key));
+                int index = -1;
+                for (int i = 0; i < key.neighborSize(); i++) {
+
                  if ((key.getWeight().get(i) < minCost) && toInclude.contains(key.getNeighbors().get(i))) {
                      minCost = key.getWeight().get(i);
                      minVertex = key.getNeighbors().get(i);
                      parentVertex = key;
+                     index = i;
                  }
              }
+                if (index != 0 && index != -1) {
+                    System.out.println("size:" + key.neighborSize() + " " + index);
+                    System.out.println(key.getWeight());
+                }
+
          }
          assert(toInclude.size() + vertexTreeNodeHashMap.size() == mVertices.size());
          /* Some vertices might not be connected  */
