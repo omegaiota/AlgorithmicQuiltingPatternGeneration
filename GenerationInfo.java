@@ -19,6 +19,8 @@ public final class GenerationInfo {
     private List<TreeTraversal.NodeType> nodeType;
     private boolean drawBound;
     private double poissonRadius;
+    private double initialLength;
+    private double randomFactor;
     private double decorationSize = 0.0, decorationGap, initialAngle;
     private double decoElmentScalingFactor = 1.0;
     private List<SvgPathCommand> collisionCommands = new ArrayList<>();
@@ -27,6 +29,14 @@ public final class GenerationInfo {
         skeletonPathFile = null;
         decoElementFile = null;
         linearizeCommands = true;
+    }
+
+    public double getInitialLength() {
+        return initialLength;
+    }
+
+    public void setInitialLength(Double initialLength) {
+        this.initialLength = initialLength;
     }
 
     public ConvexHullBound getRegionConvexHull() {
@@ -62,7 +72,6 @@ public final class GenerationInfo {
     public void setCollisionFile(SvgFileProcessor collisionFile) {
         this.collisionFile = collisionFile;
     }
-
 
     public double getDecorationSize() {
         return decorationSize;
@@ -161,5 +170,13 @@ public final class GenerationInfo {
 
     public void setDrawBound(boolean drawBound) {
         this.drawBound = drawBound;
+    }
+
+    public double getRandomFactor() {
+        return randomFactor;
+    }
+
+    public void setRandomFactor(Double randomFactor) {
+        this.randomFactor = randomFactor;
     }
 }

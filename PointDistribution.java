@@ -32,7 +32,7 @@ public final class PointDistribution {
                 strategy = new Triangle();
                 break;
             case VINE:
-                strategy = new VINE();
+                strategy = new TTFTF();
                 break;
             case HEXAGON:
                 strategy = new Hexagon();
@@ -294,7 +294,7 @@ public final class PointDistribution {
 
     private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
-        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0) && boundary.minDist(bottomRight) > dist * 0.5) {
+        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0) && boundary.minDist(bottomRight) > dist * 0.85) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomRight);
             pointGraph.addVertex(newV);
@@ -336,7 +336,7 @@ public final class PointDistribution {
     private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist, boolean add) {
         List<Vertex<Point>> closePoints = regionFree(bottomLeft, 0.005);
 
-        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0) && boundary.minDist(bottomLeft) > dist * 0.5) {
+        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0) && boundary.minDist(bottomLeft) > dist * 0.85) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomLeft);
             pointGraph.addVertex(newV);
@@ -517,61 +517,6 @@ public final class PointDistribution {
         @Override
         public void generate(Point start) {
             squareToTriangle(null, start, 0, disLen);
-        }
-    }
-
-    final class VINE implements Distribution {
-
-        @Override
-        public void generate(Point start) {
-//            squareToTriangle(null, start, 0, disLen * 2);
-            genVine(null, start, 0, disLen, Math.toRadians(30), false, 0);
-        }
-
-        private void genVine(Vertex<Point> parent, Point curr, double angle, double dist, double leafAngle, boolean isLeaf, int vineLen) {
-            List<Vertex<Point>> closePoints = regionFree(curr, isLeaf ? disLen - 0.005 : 1);
-            if ((closePoints.size() == 0) && (boundary.insideRegion(curr))) {
-                double newDist = disLen;
-                Vertex<Point> newV = new Vertex<>(curr);
-                pointGraph.addVertex(newV);
-                points.add(curr);
-                if (parent != null)
-                    newV.connect(parent);
-
-                /* generate two leaves*/
-                if (!isLeaf) {
-                    Point extendedParentCurr;
-                    if (parent != null)
-                        extendedParentCurr = Point.intermediatePointWithLen(parent.getData(), curr, disLen * 2);
-                    else
-                        extendedParentCurr = new Point(curr.x + disLen, curr.y).rotateAroundCenter(curr, angle);
-                    Point leaf1 = extendedParentCurr.rotateAroundCenter(curr, leafAngle);
-                    Point leaf2 = extendedParentCurr.rotateAroundCenter(curr, -1 * leafAngle);
-//                double newAngle = (angle + currentAngle + Math.PI);
-                    genVine(newV, leaf1, angle + leafAngle, dist, leafAngle, true, vineLen + 1);
-                    genVine(newV, leaf2, angle - leafAngle, dist, leafAngle, true, vineLen + 1);
-                    /* continue on current branch */
-                    if (vineLen < 5)
-                        genVine(newV, extendedParentCurr, angle, dist, leafAngle, false, vineLen + 1);
-                    /* branch out*/
-//                    if (vineLen == 3)
-                    if (parent != null)
-                        if (Math.random() < 0.3)
-                            genVine(newV, Point.intermediatePointWithLen(parent.getData(), curr, disLen * 3).rotateAroundCenter(curr, Math.toRadians(60)), (angle + Math.toRadians(60)) % (2 * Math.PI), dist, leafAngle, false, vineLen + 1);
-//                    if (vineLen == 2)
-                    if (parent != null)
-                        if (Math.random() < 0.3)
-                            genVine(newV, Point.intermediatePointWithLen(parent.getData(), curr, disLen * 3).rotateAroundCenter(curr, Math.toRadians(300)), (angle + Math.toRadians(300)) % (2 * Math.PI), dist, leafAngle, false, vineLen + 1);
-
-                }
-
-            }
-
-            try {
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 

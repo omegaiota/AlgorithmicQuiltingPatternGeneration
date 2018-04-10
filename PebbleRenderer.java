@@ -78,11 +78,13 @@ public final class PebbleRenderer extends PatternRenderer {
 //            processTree(treeRoot);
 //        }
         double dist = Point.getDistance(treeRoot.getData(), treeRoot.getChildren().get(0).getData());
-        for (TreeNode<Point> firstChildren : treeRoot.getChildren()) {
-            if (Double.compare((Point.getDistance(treeRoot.getData(), firstChildren.getData())), dist) < 0)
-                dist = Point.getDistance(treeRoot.getData(), firstChildren.getData());
-        }
-        dist = dist * 0.7;
+//        for (TreeNode<Point> firstChildren : treeRoot.getChildren()) {
+//            if (Double.compare((Point.getDistance(treeRoot.getData(), firstChildren.getData())), dist) < 0)
+//                dist = Point.getDistance(treeRoot.getData(), firstChildren.getData());
+//        }
+        dist = info.getPointDistributionDist();
+        dist = dist * info.getInitialLength();
+
         System.out.println("Command distance is" + dist);
 
         /* Order children tobe counterclockwise*/
@@ -95,7 +97,9 @@ public final class PebbleRenderer extends PatternRenderer {
 
         // first determination loop, make sure each pebble collidesWith one pebble
         pebbleRenderDetermineRadii(treeRoot, determinedBounds);
-
+        double RANDFAC = info.getRandomFactor();
+//        RANDFAC = 0.99;
+        pebbleRandomize(treeRoot, RANDFAC);
         if (optimizePebble) {
             outputCurrent("stage0");
 
@@ -125,28 +129,42 @@ public final class PebbleRenderer extends PatternRenderer {
 
     }
 
-    /* add leaf nodes*/
-    private void processTree(TreeNode<Point> currTreeNode) {
-        TreeNode<Point> parent = currTreeNode.getParent();
-        double len = 0;
-        if (parent != null) {
-            Point parentPoint = parent.getData(), thisPoint = currTreeNode.getData();
+    private void pebbleRandomize(TreeNode<Point> treeRoot, double randfac) {
+        double fac = Math.random();
+        double r = treeRoot.getBoundingCircle().getRadii();
 
-            TreeNode<Point> lastAddedNode = parent;
-            for (int i = 0; i < Point.getDistance(parentPoint, thisPoint) / info.getPointDistributionDist(); i++) {
-                Point branchPoint = Point.intermediatePointWithLen(parentPoint, thisPoint, info.getPointDistributionDist() * i);
-                TreeNode<Point> branchNode = new TreeNode<>(branchPoint, new ArrayList<>());
-                branchNode.setParent(lastAddedNode);
-                branchNode.addChild(currTreeNode);
-                lastAddedNode.removeChild(currTreeNode);
-                lastAddedNode.addChild(branchNode);
-                lastAddedNode = branchNode;
-
-            }
+        if (r > info.getPointDistributionDist() * 0.5 * 0.3 && fac > randfac) {
+            fac = Math.random() * 0.4 + 0.3;
+            treeRoot.getBoundingCircle().setRadii(fac * r);
         }
-        for (TreeNode<Point> child : currTreeNode.getChildren())
-            processTree(child);
+
+        for (TreeNode<Point> child : treeRoot.getChildren()) {
+            pebbleRandomize(child, randfac);
+        }
     }
+//
+//    /* add leaf nodes*/
+//    private void processTree(TreeNode<Point> currTreeNode) {
+//        TreeNode<Point> parent = currTreeNode.getParent();
+//        double len = 0;
+//        if (parent != null) {
+//            Point parentPoint = parent.getData(), thisPoint = currTreeNode.getData();
+//
+//            TreeNode<Point> lastAddedNode = parent;
+//            for (int i = 0; i < Point.getDistance(parentPoint, thisPoint) / info.getPointDistributionDist(); i++) {
+//                Point branchPoint = Point.intermediatePointWithLen(parentPoint, thisPoint, info.getPointDistributionDist() * i);
+//                TreeNode<Point> branchNode = new TreeNode<>(branchPoint, new ArrayList<>());
+//                branchNode.setParent(lastAddedNode);
+//                branchNode.addChild(currTreeNode);
+//                lastAddedNode.removeChild(currTreeNode);
+//                lastAddedNode.addChild(branchNode);
+//                lastAddedNode = branchNode;
+//
+//            }
+//        }
+//        for (TreeNode<Point> child : currTreeNode.getChildren())
+//            processTree(child);
+//    }
 
     public void outputCurrent(String name) {
         pebbleRenderDraw(treeRoot, 0);
@@ -221,6 +239,8 @@ public final class PebbleRenderer extends PatternRenderer {
             double angle2 = Point.getAngle(thisCenter, pebble2);
             double angleBTW = angle1 - angle2;
             double rotationAngle = -1 * angleBTW / 2;
+            Point pebble1ToThis = thisNode.getData().minus(pebble1.add(pebble2).multiply(0.5)).unit();
+
             if (angleBTW < 0)
                 rotationAngle += Math.PI;
             double shiftLen;
@@ -233,6 +253,7 @@ public final class PebbleRenderer extends PatternRenderer {
                     shiftLen = info.getPointDistributionDist() / ITERATION * i;
                     Point newPointAngle = pebble1.rotateAroundCenter(thisCenter, rotationAngle);
                     Point newPoint = Point.intermediatePointWithLen(thisCenter, newPointAngle, shiftLen);
+                    newPoint = thisCenter.add(pebble1ToThis.multiply(shiftLen));
                     double newRadii1 = Point.getDistance(newPoint, pebble1) - r1;
                     double newRadii2 = Point.getDistance(newPoint, pebble2) - r2;
                     double newRadii = Math.min(newRadii1, newRadii2);
@@ -293,7 +314,7 @@ public final class PebbleRenderer extends PatternRenderer {
         if (thisNode.getChildren().size() == 0 && thisNode.getParent() != null) {
             // leafnode, adjust position
             double shiftLen;
-            int ITERATION = 100;
+            int ITERATION = 500;
             TreeNode<Point> parent = thisNode.getParent();
             double thisParentDist = Point.getDistance(thisNode.getParent().getData(), thisNode.getData());
             double thisRadii = thisNode.getBoundingCircle().getRadii();
@@ -301,28 +322,31 @@ public final class PebbleRenderer extends PatternRenderer {
             Point bestCenter = thisNode.getBoundingCircle().getCenter();
             double bestRadii = thisRadii;
             boolean isValid;
+            Point parentToThis = bestCenter.minus(parent.getBoundingCircle().getCenter()).unit();
             for (int i = 1; i < ITERATION; i++) {
                 isValid = true;
                 shiftLen = (dist / (double) ITERATION) * i;
-                Point newCenter = Point.intermediatePointWithLen(thisNode.getParent().getData(), thisNode.getData(), thisParentDist + shiftLen);
+//                Point newCenter = Point.intermediatePointWithLen(thisNode.getParent().getData(), thisNode.getData(), thisParentDist + shiftLen);
+                Point newCenter = thisNode.getData().add(parentToThis.multiply(shiftLen));
                 tempRadii = thisRadii + shiftLen;
                 for (CircleBound b : determinedBounds) {
                     boolean isSelf = thisNode.getData() == b.getCenter();
                     boolean isParent = thisNode.getParent().getData() == b.getCenter();
 //                    assert Point.getDistance(thisNode.getParent().getData(), newCenter) > thisParentDist;
-                    if ((!isSelf) && (!isParent) && Double.compare(Point.getDistance(b.getCenter(), newCenter) - (b.getRadii() + tempRadii), -0.05) < 0) {
+                    if ((!isSelf) && (!isParent) && (Point.getDistance(b.getCenter(), newCenter) - (b.getRadii() + tempRadii) + 0.01 < 0)) {
                         isValid = false;
                         break;
                     }
                 }
 
                 if (isValid) {
+
                     if (tempRadii > bestRadii && tempRadii < dist) {
                         bestRadii = tempRadii;
                         bestCenter = newCenter;
                     }
                 } else {
-                    break;
+//                    break;
                 }
             }
             if (bestCenter != thisNode.getBoundingCircle().getCenter()) {
@@ -603,16 +627,16 @@ public final class PebbleRenderer extends PatternRenderer {
                 double newRadii = segmentDist / 2.0;
                 Point childToParent = parentP.minus(childP).unit();
                 Point middlePoint = childP.add(childToParent.multiply(child.getBoundingCircle().getRadii() + newRadii));
-//                Point middlePoint = Point.intermediatePointWithLen(thisNode.getData(), child.getData(), newRadii + thisNode.getBoundingCircle().getRadii());
                 for (CircleBound b : determinedBounds) {
                     newRadii = Double.min(newRadii, Point.getDistance(b.getCenter(), middlePoint) - b.getRadii());
                 }
                 TreeNode<Point> midTreeNode = new TreeNode<>(middlePoint, new ArrayList<>());
                 midTreeNode.setParent(thisNode);
                 midTreeNode.addChild(child);
+                midTreeNode.setBoundingCircle(new CircleBound(newRadii, midTreeNode.getData()));
                 thisNode.removeChild(child);
                 thisNode.addChild(midTreeNode);
-                midTreeNode.setBoundingCircle(new CircleBound(newRadii, midTreeNode.getData()));
+                child.setParent(midTreeNode);
                 determinedBounds.add(midTreeNode.getBoundingCircle());
             }
 
@@ -661,8 +685,12 @@ public final class PebbleRenderer extends PatternRenderer {
 //
 //            }
             adjustedRadii = Double.min(adjustedRadii, minDistTobound);
-            if (adjustedRadii > info.getPointDistributionDist() * 0.3)
-                adjustedRadii *= Math.random() > 0.7 ? 0.6 : 1;
+//            double randomFactor = 0.7;
+//            if (Math.random() > randomFactor ) {
+//                adjustedRadii *= randomFactor;
+//            }
+//            if (adjustedRadii > info.getPointDistributionDist() * 0.3)
+//                adjustedRadii *= Math.random() > 0.7? 0.6: 1;
             child.setBoundingCircle(new CircleBound(adjustedRadii, child.getData()));
             pebbleRenderDetermineRadii(child, determinedBounds);
         }

@@ -1,7 +1,9 @@
 package jackiequiltpatterndeterminaiton;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,28 +27,28 @@ public class TreeTraversal {
     }
 
     public static void treeOrdering(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
+//        PrintWriter writer = SvgFileProcessor.writeHeader("treeAngles", 750, 750);
+        recurseOrder(treeNode, parentNode, null);
+//        writer.println("  </g>");
+//        writer.println("</svg>");
+//        writer.close();
+    }
+
+    private static void recurseOrder(TreeNode<Point> treeNode, TreeNode<Point> parentNode, PrintWriter writer) {
         //no filling
+        Point parent = treeNode.getData();
         List<TreeNode<Point>> children = treeNode.getChildren();
         TreeNode<Point>[] childArray = children.toArray(new TreeNode[children.size()]);
-        for (int i = 0; i < childArray.length; i++) {
-            for (int j = i + 1; j < childArray.length; j++) {
-                double angleParent = (parentNode == null) ? 0 : Point.getAngle(treeNode.getData(), parentNode.getData());
-                double angle1 = Point.getAngle(treeNode.getData(), childArray[i].getData()) - angleParent;
-                double angle2 = Point.getAngle(treeNode.getData(), childArray[j].getData()) - angleParent;
-                if (angle1 < 0)
-                    angle1 += Math.PI * 2;
-                if (angle2 < 0)
-                    angle2 += Math.PI * 2;
-                if (angle1 < angle2) {
-                    Collections.swap(children, i, j);
-                }
-            }
-        }
+        double angleParent = (parentNode == null) ? 0 : Point.getAngle(treeNode.getData(), parentNode.getData());
+        Collections.sort(children, Comparator.comparingDouble(i -> (Point.getAngle(parent, i.getData()) + Math.PI * 2 - angleParent) % (Math.PI * 2))
+        );
+        Collections.reverse(children);
         treeNode.setChildren(children);
         for (TreeNode<Point> child : childArray) {
-            treeOrdering(child, treeNode);
+            recurseOrder(child, treeNode, writer);
         }
     }
+
 
     public List<NodeType> getNodeLabel() {
         return nodeLabel;
@@ -82,6 +84,7 @@ public class TreeTraversal {
 
         }
     }
+
 
     public List<SvgPathCommand> getSquiggleCommands() {
         return squiggleCommands;

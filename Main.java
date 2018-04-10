@@ -398,7 +398,7 @@ public class Main extends Application {
                             new Point(regionFile.getMaxPoint().x, 0),
                             new Point(0, regionFile.getMaxPoint().y), Integer.valueOf(skeletonGenTextField.getText()));
                     skeletonPathCommands = hilbertcurve.patternGeneration();
-                    List<SvgPathCommand> fittedPath = boundary.fitCommandsToRegionTrimToBoundary(skeletonPathCommands);
+                    List<SvgPathCommand> fittedPath = boundary.fitCommandsToRegionTrimToBoundary(skeletonPathCommands, info);
                     skeletonPathCommands = fittedPath;
                     break;
 
@@ -438,10 +438,29 @@ public class Main extends Application {
             /* Tree Structure based rendering */
             skeletonName += skeletonRenderComboBox.getValue().toString();
             skeletonRenderType = (SkeletonRenderType) skeletonRenderComboBox.getValue();
+//            outputAllTreeRendering();
             determineSkeleton();
             SvgFileProcessor.outputSvgCommands(skeletonPathCommands, "generated skeleton paths", info);
 
         });
+    }
+
+    private void outputAllTreeRendering() {
+        PatternRenderer interpolationRenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, decoFileName,
+                renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM, info);
+        interpolationRenderer.toCatmullRom();
+        SvgFileProcessor.outputSvgCommands(interpolationRenderer.getRenderedCommands(), skeletonName + "_catmull_rom_skeleton_" + decoFileName, info);
+
+        PatternRenderer stippleRenderer, fixedWidthRenderer;
+        stippleRenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION, info);
+        fixedWidthRenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION, info);
+        stippleRenderer.fixedWidthFilling(info.getPointDistributionDist() / 3, Double.valueOf(skeletonRenderTextField1.getText()));
+        fixedWidthRenderer.fixedWidthFilling(info.getPointDistributionDist() / 5.0, Double.valueOf(skeletonRenderTextField1.getText()));
+
+
+        stippleRenderer.setRenderedCommands(PatternRenderer.interpolate(stippleRenderer.getRenderedCommands()));
+        SvgFileProcessor.outputSvgCommands(stippleRenderer.getRenderedCommands(), skeletonName + "_stipple_" + decoFileName, info);
+        SvgFileProcessor.outputSvgCommands(fixedWidthRenderer.getRenderedCommands(), skeletonName + "_fixedwidth_" + decoFileName, info);
     }
 
     private void determineSkeleton() {
@@ -547,9 +566,13 @@ public class Main extends Application {
                     }
 
                     SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_catmull_rom_" + decoFileName, info);
+                    SvgFileProcessor.outputSvgCommandsWithBoundary(skeletonrenderer.getRenderedCommands(), skeletonName + "_catmull_rom_visualize_region" + decoFileName, info);
                     break;
                 case FIXED_WIDTH_FILL:
-                    double width = info.getPointDistributionDist() / 5.0;
+                case STIPPLING:
+                    boolean isStippling = skeletonRenderType == STIPPLING;
+                    double width = isStippling ? info.getPointDistributionDist() / 3 : info.getPointDistributionDist() / 5.0;
+
                     switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
                         case "none":
                             skeletonrenderer = new PatternRenderer(skeletonPathCommands, PatternRenderer.RenderType.NO_DECORATION, info);
@@ -565,7 +588,11 @@ public class Main extends Application {
                             skeletonrenderer.fixedWidthFilling(width, Double.valueOf(skeletonRenderTextField1.getText()));
                             break;
                     }
+                    if (isStippling) {
+                        skeletonrenderer.setRenderedCommands(PatternRenderer.interpolate(skeletonrenderer.getRenderedCommands()));
+                    }
                     SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
+                    SvgFileProcessor.outputSvgCommandsWithBoundary(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
                     break;
                 case RECTANGLE:
                     skeletonrenderer = new RectanglePacking(renderedDecoCommands, info,
@@ -587,6 +614,8 @@ public class Main extends Application {
                         } else {
                             skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info,
                                     skeletonRenderType != RECTANGLE && skeletonGenComboBox.getValue().equals(VINE));
+                            info.setRandomFactor(Double.valueOf(skeletonRenderTextField1.getText()));
+                            info.setInitialLength(Double.valueOf(skeletonRenderTextField2.getText()));
                             skeletonrenderer.pebbleFilling();
 
                             SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), skeletonName + "_" + decoFileName, info);
@@ -645,14 +674,14 @@ public class Main extends Application {
                     mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                     /** Combine pattern */
                     mergedPattern.combinePattern();
-                    renderedCommands = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands());
+                    renderedCommands = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands(), info);
                     break;
                 case TILING:
                     double patternHeight = skeletonPathFileProcessor.getHeight() / rows;
                     mergedPattern = new SpinePatternMerger(skeletonName, skeletonPathCommands, renderedDecoElemFileProcessor, true);
                     /** Combine pattern */
                     mergedPattern.tilePattern(patternHeight);
-                    renderedCommands = boundary.fitCommandsToRegionIntelligent(mergedPattern.getCombinedCommands());
+                    renderedCommands = boundary.fitCommandsToRegionTrimToBoundary(mergedPattern.getCombinedCommands(), info);
                     break;
             }
             SvgFileProcessor.outputSvgCommands(renderedCommands, skeletonName + "_" + decoFileName, info);
@@ -734,7 +763,7 @@ public class Main extends Application {
             skeletonRenderComboBox.setValue(NONE);
             if (newSkeletonPathType.isTreeStructure() || newSkeletonPathType == POISSON_DISK) {
                 patternLibraryComboBox.getItems().setAll(endpointList);
-                skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, PEBBLE, RECTANGLE, CATMULL_ROM);
+                skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, PEBBLE, RECTANGLE, CATMULL_ROM, STIPPLING);
             } else if (newSkeletonPathType.equals(SNAKE)) {
                 System.out.println("Snake");
                 skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH, TILING);
@@ -747,6 +776,8 @@ public class Main extends Application {
                 case ECHO:
                 case HILBERT_CURVE:
                 case SNAKE:
+                case HEXAGON:
+                case TRIANGLE_TESSELLATION:
                 case THREE_3_4_3_4_TESSELLATION:
                 case GRID_TESSELLATION:
                 case POISSON_DISK:
@@ -810,7 +841,13 @@ public class Main extends Application {
             } else {
                 skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderFieldLabel1, skeletonRenderTextField1);
             }
-            skeletonRenderFieldLabel1.setText("Decoration Density");
+            if (newSelected.equals(PEBBLE)) {
+                skeletonRenderFieldLabel1.setText("Randomness");
+                skeletonRenderFieldLabel2.setText("Initial Length");
+                skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderFieldLabel1, skeletonRenderTextField1,
+                        skeletonRenderFieldLabel2, skeletonRenderTextField2);
+            } else
+                skeletonRenderFieldLabel1.setText("Decoration Density");
         });
 
 
@@ -894,7 +931,7 @@ public class Main extends Application {
     }
 
     public enum SkeletonRenderType {
-        NONE, FIXED_WIDTH_FILL, PEBBLE, TILING, ALONG_PATH, RECTANGLE, CATMULL_ROM
+        NONE, FIXED_WIDTH_FILL, PEBBLE, TILING, ALONG_PATH, RECTANGLE, CATMULL_ROM, STIPPLING
     }
 
     public enum FileSourceType {

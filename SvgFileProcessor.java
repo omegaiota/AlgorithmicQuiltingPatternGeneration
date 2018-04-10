@@ -43,7 +43,7 @@ public class SvgFileProcessor {
         return outputSvgCommands(outputCommandList, fileName, 750, 750);
     }
 
-    private static PrintWriter writeHeader(String fileName, int width, int height) {
+    public static PrintWriter writeHeader(String fileName, int width, int height) {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
@@ -195,6 +195,35 @@ public class SvgFileProcessor {
         writer.close();
 
 //        return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + "points" + ".svg");
+    }
+
+    public static void outputSvgCommandsWithBoundary(List<SvgPathCommand> renderedCommands, String s, GenerationInfo info) {
+        List<SvgPathCommand> originalCopy = new ArrayList<>(renderedCommands);
+        originalCopy.addAll(info.getRegionFile().getCommandList());
+        outputSvgCommands(originalCopy, s + "visualize_with Bound", 750, 750);
+    }
+
+    public static String outputText(String text, Point p, String color) {
+        int id = (int) (Math.random() * 8000.0 + 1000);
+        String str1 = "         <text\n" +
+                "        xml:space=\"preserve\"\n",
+                colorStr = String.format("        style=\"font-style:normal;font-weight:normal;font-size:12px;line-height:125%%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#%s;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n", color);
+        String xystr = String.format("        x=\"%.4f\"\n" +
+                "        y=\"%.4f\"\n" + "        id=\"text%d\"\n", p.x, p.y, id);
+        String randomstr = "        sodipodi:linespacing=\"125%%\"><tspan\n" +
+                "        sodipodi:role=\"line\"\n";
+
+        String last = String.format(
+                "        id=\"tspan%d\"\n" +
+                        "        x=\"%.4f\"\n" +
+                        "        y=\"%.4f\">%s</tspan></text>\n", id,
+                p.x,
+                p.y,
+                text);
+        String ans = str1 + colorStr + xystr + randomstr + last;
+
+
+        return ans;
     }
 
     public Point getMinPoint() {

@@ -75,51 +75,48 @@ public class PatternRenderer {
         return transformedDecoElmentCommands;
     }
 
-    public void toCatmullRom() {
+    public static List<SvgPathCommand> interpolate(List<SvgPathCommand> original) {
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
-        System.out.println("original:" + skeletonPathCommands.size() + "nodeType:" + info.getNodeType().size());
-
-        assert (skeletonPathCommands.size() == info.getNodeType().size());
-        renderedCommands.add(skeletonPathCommands.get(0));
+        List<SvgPathCommand> interpolated = new ArrayList<>();
+        interpolated.add(original.get(0));
 
 
-        for (int i = 1; i < skeletonPathCommands.size() - 1; i++) {
-            Point p = skeletonPathCommands.get(i).getDestinationPoint();
+        for (int i = 1; i < original.size() - 1; i++) {
+            Point p = original.get(i).getDestinationPoint();
             SvgPathCommand pastRecord = destinationCommandMap.get(p);
 
             if (pastRecord != null) {
-                renderedCommands.add(new SvgPathCommand(pastRecord.getControlPoint2(),
+                interpolated.add(new SvgPathCommand(pastRecord.getControlPoint2(),
                         pastRecord.getControlPoint1(), p, SvgPathCommand.CommandType.CURVE_TO));
                 continue;
             }
 
-            Point p2 = skeletonPathCommands.get(i).getDestinationPoint(),
-                    p1 = skeletonPathCommands.get(i - 1).getDestinationPoint();
+            Point p2 = original.get(i).getDestinationPoint(),
+                    p1 = original.get(i - 1).getDestinationPoint();
             Point p3, p0;
             if (i - 2 < 0)
                 p0 = p1.minus(p2.minus(p1));
             else
-                p0 = skeletonPathCommands.get(i - 2).getDestinationPoint();
-            if (i + 2 > skeletonPathCommands.size() - 1)
+                p0 = original.get(i - 2).getDestinationPoint();
+            if (i + 2 > original.size() - 1)
                 p3 = p2.add(p2.minus(p1));
             else
-                p3 = skeletonPathCommands.get(i + 1).getDestinationPoint();
+                p3 = original.get(i + 1).getDestinationPoint();
             Point c1 = p2.minus(p0).divide(6).add(p1),
                     c2 = p2.minus(p3.minus(p1).divide(6));
             SvgPathCommand newCommand = new SvgPathCommand(c1, c2, p,
                     SvgPathCommand.CommandType.CURVE_TO);
-            renderedCommands.add(newCommand);
+            interpolated.add(newCommand);
             destinationCommandMap.put(p1, newCommand);
 
 
         }
+        interpolated.add(original.get(original.size() - 1));
+        return interpolated;
+    }
 
-
-        renderedCommands.add(skeletonPathCommands.get(skeletonPathCommands.size() - 1));
-        System.out.println("original:" + skeletonPathCommands.size() + "interpolated:" + renderedCommands.size());
-        assert (renderedCommands.size() == skeletonPathCommands.size());
-        assert (renderedCommands.size() == info.getNodeType().size());
-
+    public void toCatmullRom() {
+        renderedCommands = interpolate(skeletonPathCommands);
     }
 
     /**

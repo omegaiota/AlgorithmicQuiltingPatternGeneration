@@ -74,7 +74,7 @@ public class Region {
         return commandsTrimed;
     }
 
-    public List<SvgPathCommand> fitCommandsToRegionTrimToBoundary(List<SvgPathCommand> commandsOriginal) {
+    public List<SvgPathCommand> fitCommandsToRegionTrimToBoundary(List<SvgPathCommand> commandsOriginal, GenerationInfo info) {
         List<SvgPathCommand> commandsTrimed = new ArrayList<>();
         int start = 0;
         while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())))
@@ -102,13 +102,22 @@ public class Region {
 
                 /* Trace the segment of the region boundary*/
                 if (indexToLast <= indexToNext) {
-                    for (int i = indexToLast; i <= indexToNext; i++)
+                    for (int i = indexToLast; i <= indexToNext; i++) {
                         commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+//                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
+                    }
+
                 } else {
-                    for (int i = indexToLast; i < boundary.size(); i++)
+                    for (int i = indexToLast; i < boundary.size(); i++) {
                         commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
-                    for (int i = 0; i <= indexToNext; i++)
+//                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
+
+                    }
+                    for (int i = 0; i <= indexToNext; i++) {
                         commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+//                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
+
+                    }
                 }
 
                 /* Move the tracer to the nearest point on boundary*/

@@ -9,8 +9,6 @@ public final class CircleBound {
     private static final double MULTIPLICATIVE_EPSILON = 1 + 1e-14;
     private double radii;
     private Point center;
-
-
     public CircleBound(double radii, Point center) {
         this.radii = radii;
         this.center = center;
@@ -18,6 +16,10 @@ public final class CircleBound {
 
     public double getRadii() {
         return radii;
+    }
+
+    public void setRadii(double radii) {
+        this.radii = radii;
     }
 
     public Point getCenter() {
