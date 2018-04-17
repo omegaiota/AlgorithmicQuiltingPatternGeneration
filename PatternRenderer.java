@@ -329,14 +329,7 @@ public class PatternRenderer {
                 removedFirst.remove(0);
                 ConvexHullBound thisBound = ConvexHullBound.fromCommands(removedFirst);
 
-//            if (i< 20) {
-//                List<SvgPathCommand> outputBoundWithSkeleton = new ArrayList<>();
-//                outputBoundWithSkeleton.addAll(scaledRotatedDecoComamnds);
-//                outputBoundWithSkeleton.addAll(scaledRotatedCollision);
-//                outputBoundWithSkeleton.addAll(originalSkeletonPath);
-//                SvgFileProcessor.outputSvgCommands(outputBoundWithSkeleton, "no collide collides " +
-//                        i , info);
-//            }
+//
 
             /* Collison Detection / Solving */
                 if (!collides(thisBound, decoBounds, originalPath, scaledRotatedDecoComamnds)) {
@@ -415,7 +408,7 @@ public class PatternRenderer {
         commands.addAll(info.getRegionFile().getCommandList());
         commands.addAll(skeleton);
         commands.addAll(testCommands);
-//        SvgFileProcessor.outputSvgCommands(commands, "testDebug", info);
+        SvgFileProcessor.outputSvgCommands(commands, "testDebug", info);
         if (!(info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getCenter()) &&
                 info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getUpperLeft()) &&
                 info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getLowerRight()) &&

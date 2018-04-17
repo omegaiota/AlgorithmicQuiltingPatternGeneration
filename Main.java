@@ -35,7 +35,7 @@ public class Main extends Application {
     private final Label textFieldLabel = new Label(), patternRenderFieldLabel = new Label("Repetitions"),
             skeletonGenFieldLabel = new Label("Rows"), regionLabel = new Label("Region"),
             regionSelectionLabel = new Label("Select Region"), skeletonLabel = new Label("Skeleton Path"),
-            skeletonGnerationlabel = new Label("Skeleton Path Generation"), patternLabel = new Label("Pattern"),
+            skeletonGnerationlabel = new Label("Point Distribution"), patternLabel = new Label("Decorative Element"),
             patternSelectionLabel = new Label("Select Pattern"), skeletonRenderinglabel = new Label("Skeleton Path Rendering"),
             patternRenderLabel = new Label("Pattern Rendering"), toolLabel = new Label("Tools"),
             svgToPatLabel = new Label(".SVG to .PAT"), quiltingPatternGeneration = new Label("Quilting Pattern Generation"),
@@ -111,9 +111,37 @@ public class Main extends Application {
     }
 
     private void setDefaultValue() {
+        File file = new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/src/resources/Region/8in-hexagon.svg");
+        File collision = new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/src/resources/patterns/endpoints/leaf_2_collision_wobottom.svg");
+        File deco = new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/src/resources/patterns/endpoints/leaf_2.svg");
+        patternLibraryComboBox.setValue("leaf_2");
+        if (file != null) {
+            regionFile = new SvgFileProcessor(file);
+            collisionFile = new SvgFileProcessor(collision);
+            decoElementFile = new SvgFileProcessor(deco);
+            try {
+                /** Process the svg file */
+                try {
+                    regionFile.processSvg();
+                    collisionFile.processSvg();
+                    decoElementFile.processSvg();
+                    info.setDecoElementFile(decoElementFile);
+                    info.setRegionFile(regionFile);
+                    info.setCollisionFile(collisionFile);
+                    regionFile.outputSvgCommands(regionFile.getCommandList(),
+                            "region-" + regionFile.getfFileName(), info);
+                    info.setRegionFile(regionFile);
+                } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
+                    e1.printStackTrace();
+                }
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        }
+
         skeletonGenComboBox.setValue(POISSON_DISK);
         skeletonRenderTextField1.setText("0");
-        skeletonGenTextField.setText("20");
+        skeletonGenTextField.setText("60");
         skeletonRenderComboBox.setValue(CATMULL_ROM);
         patternRenderComboBox.setValue("No Rendering");
         patternFromLibrary.setSelected(true);
@@ -159,7 +187,7 @@ public class Main extends Application {
         patternRenderComboBox.getItems().addAll("Repeat with Rotation", "Echo", "No Rendering");
 
 
-        patternRendering.getChildren().setAll(patternRenderLabel, patternRenderComboBox);
+//        patternRendering.getChildren().setAll(patternRenderLabel, patternRenderComboBox);
         patternColumn.getChildren().addAll(patternLabel, patternSelection, patternRendering, patternPropertyInput);
 
 
@@ -193,6 +221,8 @@ public class Main extends Application {
             fileName = fileName.substring(0, fileName.length() - ".svg".length()); // get rid of .svg
             fileList.add(fileName);
         }
+
+        fileList.sort(String::compareTo);
     }
 
 
@@ -244,7 +274,6 @@ public class Main extends Application {
             File file = fileChooser.showOpenDialog(stage);
             if (file != null) {
                 System.out.println("Loading a pattern....");
-                decoElementFile = new SvgFileProcessor(file);
                 try {
                     /** Process the svg file */
                     try {
@@ -283,8 +312,10 @@ public class Main extends Application {
 
         generateButton.setOnAction((ActionEvent e) -> {
             /* Set Boundary */
-            boundary = regionFile.getBoundary();
-            info.setRegionFile(regionFile);
+            if (boundary == null) {
+
+            }
+
 
             /* Pattern Selection */
             decoFileName = "noDeco";
@@ -528,7 +559,9 @@ public class Main extends Application {
                                             Point firstPoint = skeletonrenderer.getRenderedCommands().get(0).getDestinationPoint();
                                             setsOfNine.add(SvgPathCommand.commandsShift(skeletonrenderer.getRenderedCommands(), new Point(firstPoint.x + 750.0 * (angleMultiplier - 1), firstPoint.y + 750 * gapMultiplier)));
                                             setsOfNineName.add(paramterStr);
-
+                                            List<SvgPathCommand> trimmed;
+//                                            trimmed = boundary.fitCommandsToRegionTrimToBoundary(skeletonrenderer.getRenderedCommands(), info);
+//                                            SvgFileProcessor.outputSvgCommands(trimmed, "trimmed" + paramterStr, info);
 //                                            SvgFileProcessor.outputSvgCommands(skeletonrenderer.getRenderedCommands(), decoFileName + paramterStr, info);
 
                                         }
@@ -539,6 +572,7 @@ public class Main extends Application {
                                     for (List<SvgPathCommand> li : setsOfNine)
                                         flattened.addAll(li);
                                     SvgFileProcessor.outputSvgCommands(flattened, info.getPointDistributionDist() + "_" + decoFileName + "_decoSize_" + decorationSize, 2200, 2200);
+
                                 }
                             }
                         } else {
@@ -625,6 +659,10 @@ public class Main extends Application {
                             regionAddRender.addAll(skeletonrenderer.getRenderedCommands());
                             SvgFileProcessor.outputSvgCommands(skeletonAddRender, "visualize_skeleton_" + skeletonName + decoFileName, info);
                             SvgFileProcessor.outputSvgCommands(regionAddRender, "visualize_region_" + skeletonName + decoFileName, info);
+                            List<SvgPathCommand> trimmed = boundary.fitCommandsToRegionTrimToBoundary(skeletonrenderer.getRenderedCommands(), info);
+                            SvgFileProcessor.outputSvgCommands(trimmed, "trimmed_" + skeletonName + decoFileName, info);
+                            trimmed.addAll(regionFile.getCommandList());
+                            SvgFileProcessor.outputSvgCommands(trimmed, "trimmed_with region" + skeletonName + decoFileName, info);
 
                         }
 
@@ -829,12 +867,12 @@ public class Main extends Application {
 
             if (newSelected.equals(CATMULL_ROM)) {
                 skeletonRenderFieldLabel1.setText("Decoration Size");
-                skeletonRenderTextField1.setText("1.6");
-                skeletonRenderFieldLabel2.setText("Decoration Gap");
-                skeletonRenderTextField2.setText("1.3");
+                skeletonRenderTextField1.setText("3");
+                skeletonRenderFieldLabel2.setText("Gap Length");
+                skeletonRenderTextField2.setText("0.2");
                 skeletonRenderFieldLabel3.setText("Initial Angle");
-                skeletonRenderTextField3.setText("45");
-                skeletonRenderFieldLabel4.setText("load collision");
+                skeletonRenderTextField3.setText("0");
+                skeletonRenderFieldLabel4.setText("Load collision file...");
                 skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderFieldLabel1, skeletonRenderTextField1,
                         skeletonRenderFieldLabel2, skeletonRenderTextField2,
                         skeletonRenderFieldLabel3, skeletonRenderTextField3, skeletonRenderFieldLabel4, loadCollisionGeoButton);
@@ -842,9 +880,10 @@ public class Main extends Application {
                 skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderFieldLabel1, skeletonRenderTextField1);
             }
             if (newSelected.equals(PEBBLE)) {
-                skeletonRenderFieldLabel1.setText("Randomness");
+//                skeletonRenderFieldLabel1.setText("Randomness");
                 skeletonRenderFieldLabel2.setText("Initial Length");
-                skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderFieldLabel1, skeletonRenderTextField1,
+//                skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderFieldLabel1, skeletonRenderTextField1,
+                skeletonRenderPropertyInput.getChildren().setAll(skeletonRenderTextField1,
                         skeletonRenderFieldLabel2, skeletonRenderTextField2);
             } else
                 skeletonRenderFieldLabel1.setText("Decoration Density");

@@ -68,24 +68,28 @@ public final class PointDistribution {
         info.setPoissonRadius(radius);
         int NUM = (int) (area / (radius * radius * 3.5));
         System.out.println("num:" + area);
-
-        while (total < NUM) {
+        int consecutiveFail = 0;
+        while (consecutiveFail < 100) {
+//        while (total < NUM) {
             double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
                     y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
             Point tempPoint = new Point(x, y);
-            boolean isValid = true;
-            for (Point p : points) {
-                if (Point.getDistance(tempPoint, p) < radius) {
-                    isValid = false;
-                    break;
+            if (boundary.insideRegion(tempPoint)) {
+                boolean isValid = true;
+                for (Point p : points) {
+                    if (Point.getDistance(tempPoint, p) < radius) {
+                        isValid = false;
+                        break;
+                    }
                 }
-            }
-            if (isValid) {
-                if (boundary.insideRegion(tempPoint)) {
+                if (isValid) {
+                    consecutiveFail = 0;
                     points.add(tempPoint);
                     total++;
-                }
+                } else
+                    consecutiveFail++;
             }
+
         }
 
 
@@ -292,15 +296,24 @@ public final class PointDistribution {
         }
     }
 
+    private boolean tightgrowInside(Point testP, double d) {
+        for (Point p : boundary.getPoints()) {
+            if (Point.getDistance(testP, p) < 0.7 * d) // hardcode for d =0.7. This func makes sure pebbles never grow outside of boundary
+                return false;
+        }
+        return true;
+    }
+
     private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
-        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0) && boundary.minDist(bottomRight) > dist * 0.85) {
+        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0) && tightgrowInside(bottomRight, dist)) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomRight);
             pointGraph.addVertex(newV);
             points.add(bottomRight);
             if (parent != null)
                 newV.connect(parent);
+
 
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
             Point upperRight = new Point(bottomRight.x, upperLeft.y);
@@ -336,9 +349,10 @@ public final class PointDistribution {
     private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist, boolean add) {
         List<Vertex<Point>> closePoints = regionFree(bottomLeft, 0.005);
 
-        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0) && boundary.minDist(bottomLeft) > dist * 0.85) {
+        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomLeft);
+
             pointGraph.addVertex(newV);
             points.add(bottomLeft);
 
@@ -354,6 +368,7 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
 
             squareToTriangle(newV, top, angle, newDist);
+//            squareToTriangle(newV, bottomRight, angle, newDist);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
         } else {

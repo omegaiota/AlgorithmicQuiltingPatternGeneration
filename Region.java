@@ -101,23 +101,47 @@ public class Region {
                 //commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(lastIn), SvgPathCommand.CommandType.LINE_TO));
 
                 /* Trace the segment of the region boundary*/
-                if (indexToLast <= indexToNext) {
-                    for (int i = indexToLast; i <= indexToNext; i++) {
-                        commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+//                if (indexToLast <= indexToNext) {
+
+                boolean inOrder = indexToLast <= indexToNext;
+                boolean smaller = Math.abs(indexToLast - indexToNext) <= 0.5 * boundary.size();
+                if (inOrder) {
+                    if (smaller) {
+                        for (int i = indexToLast; i <= indexToNext; i++) {
+                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
+                        }
+                    } else {
+                        for (int i = indexToLast; i >= 0; i--) {
+                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+//                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
+
+                        }
+                        for (int i = boundary.size() - 1; i >= indexToNext; i--) {
+                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                        }
                     }
 
                 } else {
-                    for (int i = indexToLast; i < boundary.size(); i++) {
-                        commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                    if (smaller) {
+                        for (int i = indexToLast; i >= indexToNext; i--) {
+                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+//                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
+                        }
+                    } else {
+                        for (int i = indexToLast; i < boundary.size(); i++) {
+                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
 
-                    }
-                    for (int i = 0; i <= indexToNext; i++) {
-                        commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                        }
+                        for (int i = 0; i <= indexToNext; i++) {
+                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
 
+                        }
                     }
+
+
                 }
 
                 /* Move the tracer to the nearest point on boundary*/

@@ -55,6 +55,7 @@ public class TreeNode<T> {
 
     public void addChild(TreeNode<T> child) {
         this.children.add(child);
+        child.setParent(this);
     }
 
     public void removeChild(TreeNode<T> child) {
