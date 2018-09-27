@@ -304,8 +304,6 @@ public class Region {
     }
 
     public Point intersectionPoint(Point srcPoint, Point destPoint) {
-        double distMin = Double.MAX_VALUE;
-        Point ans = boundary.get(0);
         for (int i = 0; i < boundary.size(); i++) {
             Point otherPointOnLine = boundary.get((i + 1) % (boundary.size()));
             if (Point.intersect(srcPoint, destPoint, boundary.get(i), otherPointOnLine)) {

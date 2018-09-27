@@ -299,7 +299,27 @@ public class SvgFileProcessor {
     }
 
     public Point parseString(String commandString, ArrayList<SvgPathCommand> pathCommandList, Point current) {
-        String[] arguments = commandString.split(" ");
+        if (commandString.length() == 0)
+            return new Point();
+        String[] arguments;
+        String[] argumentNew;
+
+        if (commandString.charAt(1) == ' ')
+            arguments = commandString.split(" ");
+        else {
+            //Adobe format
+            if ((commandString.length() > 2) && (commandString.charAt(1) != '-')) {
+                commandString = String.valueOf(commandString.charAt(0)).concat(",").concat(commandString.substring(1));
+            }
+            arguments = commandString.split("(?=-)|,");
+            int pointSet = (arguments.length - 1) / 2;
+            argumentNew = new String[pointSet + 1];
+            argumentNew[0] = arguments[0];
+            for (int i = 0; i < pointSet; i++)
+                argumentNew[i + 1] = arguments[1 + i * 2].concat(",").concat(arguments[2 + i * 2]);
+            arguments = argumentNew;
+        }
+
         if (arguments.length == 0 || arguments[0].length() == 0)
             return new Point();
         char commandChar = arguments[0].toLowerCase().charAt(0);

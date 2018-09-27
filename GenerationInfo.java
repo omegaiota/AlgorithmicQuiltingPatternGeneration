@@ -8,6 +8,7 @@ import java.util.List;
  */
 public final class GenerationInfo {
 
+    public Main.SkeletonRenderType skeletonRenderType;
     private SvgFileProcessor skeletonPathFile;
     private SvgFileProcessor decoElementFile;
     private SvgFileProcessor regionFile;

@@ -69,7 +69,7 @@ public final class PointDistribution {
         int NUM = (int) (area / (radius * radius * 3.5));
         System.out.println("num:" + area);
         int consecutiveFail = 0;
-        while (consecutiveFail < 100) {
+        while (consecutiveFail < 50) {
 //        while (total < NUM) {
             double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
                     y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
@@ -304,15 +304,23 @@ public final class PointDistribution {
         return true;
     }
 
-    private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
+    private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist, boolean consecFail) {
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
-        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0) && tightgrowInside(bottomRight, dist)) {
+        boolean fail = false;
+        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0)) {
             double newDist = dist;
-            Vertex<Point> newV = new Vertex<>(bottomRight);
-            pointGraph.addVertex(newV);
-            points.add(bottomRight);
-            if (parent != null)
-                newV.connect(parent);
+            Vertex<Point> newV = parent;
+            if (tightgrowInside(bottomRight, dist)) {
+                newV = new Vertex<>(bottomRight);
+                pointGraph.addVertex(newV);
+                points.add(bottomRight);
+                if (parent != null)
+                    newV.connect(parent);
+            } else {
+                if (consecFail)
+                    return;
+                fail = true;
+            }
 
 
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
@@ -328,13 +336,13 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(upperRight, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
 
-            triangleToSquare(newV, upperRight, angle + Math.PI / 2, newDist, true);
+            triangleToSquare(newV, upperRight, angle + Math.PI / 2, newDist, true, true);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            triangleToSquare(newV, bottomLeft, angle - Math.PI / 2, newDist, true);
+            triangleToSquare(newV, bottomLeft, angle - Math.PI / 2, newDist, true, true);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
-            triangleToSquare(newV, upperLeft, angle, newDist, false);
+            triangleToSquare(newV, upperLeft, angle, newDist, false, true);
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.MOVE_TO));
 
 
@@ -346,18 +354,24 @@ public final class PointDistribution {
 
     }
 
-    private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist, boolean add) {
+    private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist, boolean add, boolean fail) {
         List<Vertex<Point>> closePoints = regionFree(bottomLeft, 0.005);
-
+        boolean failure = false;
         if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
             double newDist = dist;
-            Vertex<Point> newV = new Vertex<>(bottomLeft);
+            Vertex<Point> newV = parent;
+            if (tightgrowInside(bottomLeft, dist)) {
+                newV = new Vertex<>(bottomLeft);
+                pointGraph.addVertex(newV);
+                points.add(bottomLeft);
+                if (parent != null && add)
+                    newV.connect(parent);
+            } else {
+                if (fail)
+                    return;
+                failure = true;
+            }
 
-            pointGraph.addVertex(newV);
-            points.add(bottomLeft);
-
-            if (parent != null && add)
-                newV.connect(parent);
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
 
             Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
@@ -367,7 +381,7 @@ public final class PointDistribution {
             distributionVisualizationList.add(new SvgPathCommand(top, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
 
-            squareToTriangle(newV, top, angle, newDist);
+            squareToTriangle(newV, top, angle, newDist, failure);
 //            squareToTriangle(newV, bottomRight, angle, newDist);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.MOVE_TO));
@@ -531,7 +545,7 @@ public final class PointDistribution {
     final class TTFTF implements Distribution {
         @Override
         public void generate(Point start) {
-            squareToTriangle(null, start, 0, disLen);
+            squareToTriangle(null, start, 0, disLen, false);
         }
     }
 

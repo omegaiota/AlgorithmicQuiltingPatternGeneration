@@ -46,7 +46,7 @@ public final class PebbleRenderer extends PatternRenderer {
     public void pebbleFilling() {
         pebbleFilling2(true);
 //
-//         using optimized point touching algorithm strategy
+////         using optimized point touching algorithm strategy
 //        if (decoElemFile == null || touchPointIndex.size() < 3) {
 //            // render a pebble, which would be handled in normal pebbleFilling
 //            pebbleFilling2(true);

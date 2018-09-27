@@ -32,8 +32,9 @@ public class ConvexHullBound {
 
     public static ConvexHullBound fromCommands(List<SvgPathCommand> commands) {
         List<Point> points = new ArrayList<>();
-        if (commands == null)
+        if (commands == null || commands.size() == 0)
             return ConvexHullBound.valueOf(new ArrayList<>());
+
         points.add(commands.get(0).getDestinationPoint());
         for (int i = 1; i < commands.size(); i++) {
             if (commands.get(i).getCommandType() == SvgPathCommand.CommandType.CURVE_TO) {
