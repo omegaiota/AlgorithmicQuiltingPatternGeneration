@@ -18,10 +18,10 @@ public class RectanglePacking extends PatternRenderer {
     private boolean leafRenderOnly = false;
 
     public RectanglePacking(List<SvgPathCommand> decoCommands, GenerationInfo info, boolean leafRenderOnly) {
-        super(info.getSpanningTree());
-        this.treeRoot = info.getSpanningTree();
+        super(info.spanningTree);
+        this.treeRoot = info.spanningTree;
         this.decoCommands = decoCommands;
-        this.decoElemFile = info.getDecoElementFile();
+        this.decoElemFile = info.decoElementFile;
         this.info = info;
         this.leafRenderOnly = leafRenderOnly;
         if (decoElemFile != null) {

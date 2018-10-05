@@ -131,11 +131,11 @@ public class ConvexHullBound {
         if (!this.box.collidesWith(other.box))
             return false;
 
-        if (other.region.insideRegion(box.getCenter()))
-            return true;
-
-        if (region.insideRegion(other.box.getCenter()))
-            return true;
+//        if (other.region.insideRegion(box.getCenter()))
+//            return true;
+//
+//        if (region.insideRegion(other.box.getCenter()))
+//            return true;
 
         // Use line line intersection test
         int i, j, p, q;
@@ -151,12 +151,8 @@ public class ConvexHullBound {
 
     public boolean collidesWith(Point A, Point B) {
         // optimization: test with bbox first
-        if (!(box.isInsideBox(A) || box.isInsideBox(B)))
+        if (!box.isInsideBox(A) && !box.isInsideBox(B))
             return false;
-
-        // test if either end is inside
-        if (region.insideRegion(A) || region.insideRegion(B))
-            return true;
 
         // test if cross boundary
         int i, j;

@@ -8,23 +8,29 @@ import java.util.List;
  */
 public final class GenerationInfo {
 
-    public Main.SkeletonRenderType skeletonRenderType;
-    private SvgFileProcessor skeletonPathFile;
-    private SvgFileProcessor decoElementFile;
-    private SvgFileProcessor regionFile;
-    private ConvexHullBound regionConvexHull;
-    private SvgFileProcessor collisionFile;
-    private double pointDistributionDist;
-    private TreeNode<Point> spanningTree;
-    private boolean linearizeCommands;
-    private List<TreeTraversal.NodeType> nodeType;
-    private boolean drawBound;
-    private double poissonRadius;
-    private double initialLength;
-    private double randomFactor;
-    private double decorationSize = 0.0, decorationGap, initialAngle;
-    private double decoElmentScalingFactor = 1.0;
-    private List<SvgPathCommand> collisionCommands = new ArrayList<>();
+    public static final int WANDERER_NEIGHBORHOOD_COLLISION = 2;
+    SvgFileProcessor skeletonPathFile;
+    SvgFileProcessor decoElementFile;
+    SvgFileProcessor regionFile;
+    SvgFileProcessor collisionFile;
+    Main.SkeletonPathType skeletonPathType;
+    Main.SkeletonRenderType skeletonRenderType;
+
+    ConvexHullBound regionConvexHull;
+
+    boolean linearizeCommands;
+    boolean drawBound;
+
+    double pointDistributionDist;
+    double poissonRadius;
+    double initialLength;
+    double randomFactor;
+    double decorationDensity = 0.0;
+    double decorationSize = 0.0, decorationGap, initialAngle;
+    TreeNode<Point> spanningTree;
+    List<TreeTraversal.NodeType> nodeType;
+    List<SvgPathCommand> collisionCommands = new ArrayList<>();
+
     public GenerationInfo() {
         regionFile = null;
         skeletonPathFile = null;
@@ -32,58 +38,10 @@ public final class GenerationInfo {
         linearizeCommands = true;
     }
 
-    public double getInitialLength() {
-        return initialLength;
-    }
-
-    public void setInitialLength(Double initialLength) {
-        this.initialLength = initialLength;
-    }
-
     public ConvexHullBound getRegionConvexHull() {
         if (regionConvexHull == null)
             regionConvexHull = ConvexHullBound.fromCommands(regionFile.getCommandList());
         return regionConvexHull;
-    }
-
-    public List<TreeTraversal.NodeType> getNodeType() {
-        return nodeType;
-    }
-
-    public void setNodeType(List<TreeTraversal.NodeType> nodeType) {
-        this.nodeType = nodeType;
-    }
-
-    public boolean isDrawBound() {
-        return drawBound;
-    }
-
-    public List<SvgPathCommand> getCollisionCommands() {
-        return collisionCommands;
-    }
-
-    public void setCollisionCommands(List<SvgPathCommand> collisionCommands) {
-        this.collisionCommands = collisionCommands;
-    }
-
-    public SvgFileProcessor getCollisionFile() {
-        return collisionFile;
-    }
-
-    public void setCollisionFile(SvgFileProcessor collisionFile) {
-        this.collisionFile = collisionFile;
-    }
-
-    public double getDecorationSize() {
-        return decorationSize;
-    }
-
-    public void setDecorationSize(double decorationSize) {
-        this.decorationSize = decorationSize;
-    }
-
-    public double getDecorationGap() {
-        return decorationGap;
     }
 
     public void setDecorationGap(double decorationGap) {
@@ -93,91 +51,45 @@ public final class GenerationInfo {
             this.decorationGap = decorationGap * this.decorationSize;
     }
 
-    public double getInitialAngle() {
-        return initialAngle;
-    }
-
-    public void setInitialAngle(double initialAngle) {
-        this.initialAngle = initialAngle;
-    }
-
-    public double getDecoElmentScalingFactor() {
-        return decoElmentScalingFactor;
-    }
-
-    public void setDecoElmentScalingFactor(double decoElmentScalingFactor) {
-        this.decoElmentScalingFactor = decoElmentScalingFactor;
-    }
-
-    public double getPoissonRadius() {
-        return poissonRadius;
-    }
-
     public void setPoissonRadius(double poissonRadius) {
         this.poissonRadius = poissonRadius;
     }
 
-    public boolean isLinearizeCommands() {
-        return linearizeCommands;
+    String getParameterString() {
+        String region = "";
+        String skeleton = "";
+        String render = "";
+        String deco = "";
+        String ans = "";
+        String parameter = "";
+        String pointDensity = "";
+        if (regionFile != null)
+            region = regionFile.getfFileName();
+
+        if (decoElementFile != null)
+            deco = decoElementFile.getfFileName();
+        else
+            deco = "NO_DECO";
+
+        if (skeletonPathType != null) {
+            skeleton = skeletonPathType.toString();
+            if (skeletonPathType.isTreeStructure())
+                pointDensity = String.format("pointDensity_%.1f", pointDistributionDist);
+        }
+
+        if (skeletonRenderType != null) {
+            render = skeletonRenderType.toString();
+            switch (skeletonRenderType) {
+                case WANDERER:
+                    parameter = String.format("decoDensity_%.1f_decoSize_%.1f_gapLen_%.1f", decorationDensity, decorationSize, decorationGap);
+            }
+        }
+
+
+        ans = String.format("%s-%s-%s-%s-%s-%s", region, deco, skeleton, render, pointDensity, parameter);
+
+
+        return ans;
     }
 
-    public void setLinearizeCommands(boolean linearizeCommands) {
-        this.linearizeCommands = linearizeCommands;
-    }
-
-    public TreeNode<Point> getSpanningTree() {
-        return spanningTree;
-    }
-
-    public void setSpanningTree(TreeNode<Point> spanningTree) {
-        this.spanningTree = spanningTree;
-    }
-
-    public SvgFileProcessor getSkeletonPathFile() {
-        return skeletonPathFile;
-    }
-
-    public void setSkeletonPathFile(SvgFileProcessor skeletonPathFile) {
-        this.skeletonPathFile = skeletonPathFile;
-    }
-
-    public SvgFileProcessor getDecoElementFile() {
-        return decoElementFile;
-    }
-
-    public void setDecoElementFile(SvgFileProcessor decoElementFile) {
-        this.decoElementFile = decoElementFile;
-    }
-
-    public SvgFileProcessor getRegionFile() {
-        return regionFile;
-    }
-
-    public void setRegionFile(SvgFileProcessor regionFile) {
-        this.regionFile = regionFile;
-    }
-
-    public double getPointDistributionDist() {
-        return pointDistributionDist;
-    }
-
-    public void setPointDistributionDist(double pointDistributionDist) {
-        this.pointDistributionDist = pointDistributionDist;
-    }
-
-    public boolean getDrawBound() {
-        return drawBound;
-    }
-
-    public void setDrawBound(boolean drawBound) {
-        this.drawBound = drawBound;
-    }
-
-    public double getRandomFactor() {
-        return randomFactor;
-    }
-
-    public void setRandomFactor(Double randomFactor) {
-        this.randomFactor = randomFactor;
-    }
 }

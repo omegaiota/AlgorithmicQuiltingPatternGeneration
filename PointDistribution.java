@@ -54,22 +54,22 @@ public final class PointDistribution {
     }
 
     public static List<Point> poissonDiskSamples(GenerationInfo info) {
-        Region boundary = info.getRegionFile().getBoundary();
+        Region boundary = info.regionFile.getBoundary();
         List<Point> points = new ArrayList<>();
         int total = 0;
-        Point minPoint = info.getRegionFile().getMinPoint(), maxPoint = info.getRegionFile().getMaxPoint();
+        Point minPoint = info.regionFile.getMinPoint(), maxPoint = info.regionFile.getMaxPoint();
 
         /* Poisson Disk Sampling*/
         double area = (maxPoint.x - minPoint.x) * (maxPoint.y - minPoint.y);
 //        double radius = Math.sqrt(area / NUM / 4.0);
-        double radius = info.getPointDistributionDist();
+        double radius = info.pointDistributionDist;
         System.out.println("radius:" + radius);
         System.out.println("area:" + area);
         info.setPoissonRadius(radius);
         int NUM = (int) (area / (radius * radius * 3.5));
         System.out.println("num:" + area);
         int consecutiveFail = 0;
-        while (consecutiveFail < 50) {
+        while (consecutiveFail < 1000) {
 //        while (total < NUM) {
             double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
                     y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
@@ -162,10 +162,10 @@ public final class PointDistribution {
     }
 
     private void initialization() {
-        this.disLen = info.getPointDistributionDist();
+        this.disLen = info.pointDistributionDist;
         this.pointGraph = new Graph(disLen);
-        this.boundary = info.getRegionFile().getBoundary();
-        this.regionFileProcessed = info.getRegionFile();
+        this.boundary = info.regionFile.getBoundary();
+        this.regionFileProcessed = info.regionFile;
 
     }
 
@@ -478,7 +478,7 @@ public final class PointDistribution {
 
     public List<SvgPathCommand> toTraversal() {
         toSpanningTree();
-        info.setSpanningTree(spanningTree);
+        info.spanningTree = spanningTree;
         List<SvgPathCommand> commands = this.traverseTree();
         return commands;
     }

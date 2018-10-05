@@ -177,7 +177,7 @@ public class PatternRenderer {
          */
         boolean isBranching = info.skeletonRenderType == Main.SkeletonRenderType.CATMULL_ROM;
         List<SvgPathCommand> skeletonPath = new ArrayList<>(),
-                collisionGeoCommands = info.getCollisionCommands();
+                collisionGeoCommands = info.collisionCommands;
         List<SvgPathCommand> reflectedDecoelmentCommands = SvgPathCommand.reflect(decoElmentCommands),
                 reflectedCollisionGeoCommands = SvgPathCommand.reflect(collisionGeoCommands);
 
@@ -186,14 +186,14 @@ public class PatternRenderer {
 //        double adjustionComparator = info.getDecoElementFile().getHeight() * info.getDecorationSize();
         List<SvgPathCommand> splitted = new ArrayList<>();
         List<SvgPathCommand> originalPath = new ArrayList<>();
-        List<TreeTraversal.NodeType> nodeType = new ArrayList<>(info.getNodeType()), splittedNodeType = new ArrayList<>(), beforeSplittedNodeType = new ArrayList<>(info.getNodeType());
+        List<TreeTraversal.NodeType> nodeType = new ArrayList<>(info.nodeType), splittedNodeType = new ArrayList<>(), beforeSplittedNodeType = new ArrayList<>(info.nodeType);
         for (TreeTraversal.NodeType t : nodeType) {
             System.out.println(t);
         }
         originalPath.addAll(renderedCommands);
         boolean adjusted = true;
         boolean isLeft = true;
-        double MAX_LEN = info.getDecorationGap();
+        double MAX_LEN = info.decorationGap;
 
         while (adjusted && renderedCommands.size() > 0) {
             adjusted = false;
@@ -245,7 +245,7 @@ public class PatternRenderer {
 
 
         skeletonPath.addAll(renderedCommands);
-        SvgFileProcessor.outputSvgCommands(skeletonPath, "splitted spline", info);
+        SvgFileProcessor.outputSvgCommands(skeletonPath, "splittedSpline", info);
         nodeType = beforeSplittedNodeType;
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
         List<ConvexHullBound> decoBounds = new ArrayList<>();
@@ -309,7 +309,7 @@ public class PatternRenderer {
                             prevDest);
 
 
-                final double INITIAL_ANGLE = Math.toRadians(info.getInitialAngle());
+                final double INITIAL_ANGLE = Math.toRadians(info.initialAngle);
                 double SIGN = 1;
 
                 if (isLeft)
@@ -337,13 +337,13 @@ public class PatternRenderer {
 //
 
             /* Collison Detection / Solving */
-                boolean collides = isBranching ? collides(thisBound, decoBounds, originalPath, scaledRotatedDecoComamnds) : thisBound.collidesWith(decoBounds);
+                boolean collides = collides(thisBound, decoBounds, skeletonPath, isBranching, i);
                 if (!collides) {
                     boolean neighborhoodClear = true;
                     if (!isBranching) {
                         // wanderer
                         double dist = shortestDist(thisBound, decoBounds);
-                        if (dist < 70)
+                        if (dist < info.decorationDensity)
                             neighborhoodClear = false;
                     }
                     if (neighborhoodClear) {
@@ -365,7 +365,7 @@ public class PatternRenderer {
                         while (proportion > MINIMUM_SIZE && !resolved) {
                             proportion *= 0.9;
                     /* Collision Solving Strategy 1, shrink to 50% and test again */
-                            for (double testAngle = info.getInitialAngle(); testAngle < 60.0; testAngle += 10.0) {
+                            for (double testAngle = info.initialAngle; testAngle < 60.0; testAngle += 10.0) {
                                 // don't want to rotate leaf node
                                 double radianToRotate = isLeafNode ? 0 : (Math.toRadians(testAngle) - INITIAL_ANGLE) * SIGN;
                                 List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands, null, p, radianToRotate),
@@ -373,7 +373,7 @@ public class PatternRenderer {
                                 List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision);
                                 removedFirstC.remove(0);
                                 thisBound = ConvexHullBound.fromCommands(removedFirstC);
-                                if (!collides(thisBound, decoBounds, originalPath, scaledRotatedDecoComamnds)) {
+                                if (!collides(thisBound, decoBounds, originalPath, true, i)) {
                                     decoBounds.add(thisBound);
                                     if (preprocessing == 0)
                                         leafNodeIndexCommandsMap.put(i, rotated);
@@ -419,37 +419,61 @@ public class PatternRenderer {
     }
 
     private boolean collides(ConvexHullBound testBound, List<ConvexHullBound> bounds, List<SvgPathCommand> skeleton,
-                             List<SvgPathCommand> testCommands) {
+                             boolean testLocalNeighborhood, int currentSplineIndex) {
+        boolean DEBUG_OUTPUT = true;
+        if (DEBUG_OUTPUT) {
+            System.out.println("\nSkeleton size:" + skeleton.size());
+            System.out.println("Bounds size:" + bounds.size());
+            System.out.println("Region size:" + bounds.size());
+        }
 
         // collision detection with convex hulls
         if (testBound.collidesWith(bounds)) {
-            System.out.println("collides bounds");
+            if (DEBUG_OUTPUT)
+                System.out.println("collides bounds");
             return true;
 
         }
 
-        if (!(info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getCenter()) &&
-                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getUpperLeft()) &&
-                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getLowerRight()) &&
-                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getLowerLeft()) &&
-                info.getRegionFile().getBoundary().insideRegion(testBound.getBox().getUpperRight()))
+        if (!(info.regionFile.getBoundary().insideRegion(testBound.getBox().getCenter()) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getUpperLeft()) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getLowerRight()) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getLowerLeft()) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getUpperRight()))
                 ) {
-            return true;
+            if (DEBUG_OUTPUT)
+                System.out.println("Not inside region");
+//            return true;
         }
 
-        System.out.println("Skeleton size:" + skeleton.size());
-        System.out.println("Bounds size:" + bounds.size());
-        System.out.println("Region size:" + bounds.size());
+
         // collision detection with skeleton
         for (int i = 1; i < skeleton.size(); i++) {
             Point start = skeleton.get(i - 1).getDestinationPoint(),
                     c1 = skeleton.get(i).getControlPoint1(),
                     c2 = skeleton.get(i).getControlPoint2(),
                     end = skeleton.get(i).getDestinationPoint();
-            if (Spline.collidesWith(start, c1, c2, end, testBound))
-                return true;
-        }
+            if (Spline.collidesWith(start, c1, c2, end, testBound)) {
+                if (!testLocalNeighborhood) {
+                    if (Math.abs(currentSplineIndex - i) > GenerationInfo.WANDERER_NEIGHBORHOOD_COLLISION) { //collision outside neighborhood
+                        if (DEBUG_OUTPUT)
+                            System.out.println("Collision at skeleton:" + i + " when trying to insert at" + currentSplineIndex);
+                        return true;
+                    } else { //nearby spline, count collision percentage
+                        if (i == currentSplineIndex && Spline.collideAt(start, c1, c2, end, testBound, 0.2)) {
+                            return true;
+                        } else if (i + 1 == currentSplineIndex && Spline.collideAt(start, c1, c2, end, testBound, 0.8)) {
+                            return true;
+                        }
 
+                    }
+
+                } else
+                    return true;
+            }
+        }
+        if (DEBUG_OUTPUT)
+            System.out.println("Insertion success");
         return false;
     }
 
@@ -492,7 +516,7 @@ public class PatternRenderer {
                     if (Double.compare(random, density) < 1.0) {
                         List<SvgPathCommand> decoCommands = new ArrayList<>();
                         insertPatternToList(decorativeElementCommands, decoCommands, commandThis.getDestinationPoint(), anglePrev);
-                        boolean notCollide = decoCommands.stream().map(a -> info.getRegionFile().getBoundary().insideRegion(a.getDestinationPoint())).reduce((a, b) -> a && b).get();
+                        boolean notCollide = decoCommands.stream().map(a -> info.regionFile.getBoundary().insideRegion(a.getDestinationPoint())).reduce((a, b) -> a && b).get();
                         if (notCollide)
                             renderedCommands.addAll(decoCommands);
                     }

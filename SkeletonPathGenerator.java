@@ -7,13 +7,15 @@ import java.util.List;
  * Created by JacquelineLi on 7/27/17.
  */
 public class SkeletonPathGenerator {
-    Region region;
+    GenerationInfo info;
     List<SvgPathCommand> skeletonPath = new ArrayList<>();
-    public SkeletonPathGenerator(Region region) {
-        this.region = region;
+
+    public SkeletonPathGenerator(GenerationInfo info) {
+        this.info = info;
     }
 
     public void snakePathGenerator(int rows) {
+        Region region = info.regionFile.getBoundary();
         Double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE, minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE,
                 height = 0.0;
         for (Point point : region.getPoints()) {

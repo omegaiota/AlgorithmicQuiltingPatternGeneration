@@ -40,10 +40,12 @@ public class SvgFileProcessor {
     }
 
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, GenerationInfo info) {
-        return outputSvgCommands(outputCommandList, fileName, 750, 750);
+        double width = Double.max(750, info.regionFile.getWidth() + 20);
+        double height = Double.max(750, info.regionFile.getHeight() + 20);
+        return outputSvgCommands(outputCommandList, info.getParameterString() + "--" + fileName, width, height);
     }
 
-    public static PrintWriter writeHeader(String fileName, int width, int height) {
+    public static PrintWriter writeHeader(String fileName, double width, double height) {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
@@ -62,8 +64,8 @@ public class SvgFileProcessor {
         writer.println("   xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\"");
 //            writer.println("   width=\"210mm\"");
 //            writer.println("   height=\"210mm\">");
-        writer.println(String.format("   width=\"%dpx\"", width));
-        writer.println(String.format("   height=\"%dpx\">", height));
+        writer.println(String.format("   width=\"%dpx\"", (int) width));
+        writer.println(String.format("   height=\"%dpx\">", (int) height));
 //            writer.println("   width=\"750px\"");
 //            writer.println("   height=\"750px\">");
         writer.println("   <g");
@@ -76,7 +78,7 @@ public class SvgFileProcessor {
     }
 
 
-    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, int width, int height) {
+    public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, double width, double height) {
         PrintWriter writer = writeHeader(fileName, width, height);
         writer.println("    <path");
         writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
@@ -185,7 +187,9 @@ public class SvgFileProcessor {
     }
 
     public static void outputPoints(List<Point> points, GenerationInfo info) {
-        PrintWriter writer = writeHeader("points", 750, 750);
+        int width = (int) Double.max(info.regionFile.getWidth(), 750);
+        int height = (int) Double.max(info.regionFile.getHeight(), 750);
+        PrintWriter writer = writeHeader("points", width, height);
         for (Point p : points) {
             writer.print(p.toSvgCode());
         }
@@ -199,8 +203,8 @@ public class SvgFileProcessor {
 
     public static void outputSvgCommandsWithBoundary(List<SvgPathCommand> renderedCommands, String s, GenerationInfo info) {
         List<SvgPathCommand> originalCopy = new ArrayList<>(renderedCommands);
-        originalCopy.addAll(info.getRegionFile().getCommandList());
-        outputSvgCommands(originalCopy, s + "visualize_with Bound", 750, 750);
+        originalCopy.addAll(info.regionFile.getCommandList());
+        outputSvgCommands(originalCopy, s + "visualize_with Bound", info);
     }
 
     public static String outputText(String text, Point p, String color) {

@@ -15,7 +15,6 @@ import static jackiequiltpatterndeterminaiton.TreeTraversal.NodeType.OUT;
  * Created by JacquelineLi on 6/27/17.
  */
 public class TreeTraversal {
-    public static AtomicInteger counter = new AtomicInteger(0);
     List<SvgPathCommand> renderedCommands = new ArrayList<>();
     List<SvgPathCommand> squiggleCommands = new ArrayList<>();
     List<NodeType> nodeLabel = new ArrayList<>();

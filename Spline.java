@@ -89,9 +89,17 @@ public class Spline {
         return start.multiply(k0).add(c1.multiply(k1)).add(c2.multiply(k2)).add(end.multiply(k3));
     }
 
+    public static boolean collideAt(Point start, Point c1, Point c2, Point end, ConvexHullBound bound, double t) {
+        Point A = evaluate(start, c1, c2, end, t), B = (t < 0.98) ? evaluate(start, c1, c2, end, t + 0.01) : end;
+        // line line intersection
+        if (bound.collidesWith(A, B)) {
+            return true;
+        }
+
+        return false;
+
+    }
     public static boolean collidesWith(Point start, Point c1, Point c2, Point end, ConvexHullBound bound) {
-
-
         // optimization: test bbox collisions first, if boxes don't collide early out
         RectangleBound lineBox = RectangleBound.valueOf(start, end);
         if (!lineBox.collidesWith(bound.getBox()))
