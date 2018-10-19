@@ -256,6 +256,7 @@ public class PatternRenderer {
         for (int preprocessing = 0; preprocessing < 2; preprocessing++) {
             assert (skeletonPath.size() == n);
             System.out.println("map size:" + leafNodeIndexCommandsMap.size());
+            int prevInsert = -1;
             for (int i = n - 1; i >= 0; i--) {
 
                 Point p = skeletonPath.get(i).getDestinationPoint();
@@ -343,7 +344,7 @@ public class PatternRenderer {
                     if (!isBranching) {
                         // wanderer
                         double dist = shortestDist(thisBound, decoBounds);
-                        if (dist < info.decorationDensity)
+                        if (dist < info.decorationDensity * 0.9)
                             neighborhoodClear = false;
                     }
                     if (neighborhoodClear) {
@@ -351,8 +352,48 @@ public class PatternRenderer {
                         isLeft = !isLeft;
                         if (preprocessing == 0)
                             leafNodeIndexCommandsMap.put(i, scaledRotatedDecoComamnds);
-                        else
+                        else {
+//                            if (prevInsert != -1) {
+//                                Point sum1 = new Point(0,0);
+//                                int num = (prevInsert - 2) - (i + 2) + 1;
+//                                if (num > 0) {
+//                                    int quarter = i + 1 + num / 4;
+//                                    int threequarter = i + 1 + num  * 3 / 4;
+//                                    skeletonPath.get(i + 2).setControlPoint1(skeletonPath.get(quarter).getDestinationPoint());
+//                                    skeletonPath.get(i + 2).setControlPoint2(skeletonPath.get(threequarter).getDestinationPoint());
+//                                }
+//
+//                                int total = 0;
+//                                for (int j = prevInsert - 2; j >= i + 2; j--) {
+////                                    SvgPathCommand c = skeletonPath.get(j);
+////                                    Point pp = c.getControlPoint1().add(c.getControlPoint2()).divide(2);
+////                                    c.setControlPoint2(pp);
+////                                    c.setControlPoint1(pp);
+////                                    sum1 = sum1.add(c.getDestinationPoint());
+////                                    total += 1;
+//                                    skeletonPath.remove(j);
+//                                }
+//
+////                                skeletonPath.get(i).setControlPoint1(sum1.divide(total));
+////                                sum1 = new Point(0,0);
+////                                total = 0;
+////                                for (int j = half - 1; j >= i + 1; j--) {
+////                                    SvgPathCommand c = skeletonPath.get(j);
+////                                    Point pp = c.getControlPoint1().add(c.getControlPoint2()).divide(2);
+////                                    c.setControlPoint2(pp);
+////                                    c.setControlPoint1(pp);
+//////                                    sum1 = sum1.add(c.getDestinationPoint());
+//////                                    total+= 1;
+//////                                    skeletonPath.remove(j);
+////                                }
+////                                skeletonPath.get(i).setControlPoint2(sum1.add(skeletonPath.get(i).getControlPoint2()));
+//
+//
+//                            }
+
                             skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
+                            prevInsert = i;
+                        }
                     }
 
                 } else {

@@ -190,6 +190,7 @@ public class SvgFileProcessor {
         int width = (int) Double.max(info.regionFile.getWidth(), 750);
         int height = (int) Double.max(info.regionFile.getHeight(), 750);
         PrintWriter writer = writeHeader("points", width, height);
+        corcordWrite("corcordPoints", points);
         for (Point p : points) {
             writer.print(p.toSvgCode());
         }
@@ -199,6 +200,23 @@ public class SvgFileProcessor {
         writer.close();
 
 //        return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + "points" + ".svg");
+    }
+
+    private static void corcordWrite(String name, List<Point> points) {
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter("./out/" + name + ".txt", "UTF-8");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        writer.println(points.size());
+        for (Point p : points) {
+            writer.println(String.format("%.2f %.2f", p.x, p.y));
+        }
+
+        writer.close();
     }
 
     public static void outputSvgCommandsWithBoundary(List<SvgPathCommand> renderedCommands, String s, GenerationInfo info) {
@@ -245,6 +263,25 @@ public class SvgFileProcessor {
         }
         Region boundaryRegion = new Region(destList);
         return  boundaryRegion;
+    }
+
+    public List<Point> processConcordePoints() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+        FileInputStream fis = new FileInputStream(fSvgFile);
+
+        //Construct BufferedReader from InputStreamReader
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        List<Point> pointList = new ArrayList<>();
+
+        String line = null;
+        while ((line = br.readLine()) != null) {
+            System.out.println(line);
+            String[] pathElemArray = line.split(" ");
+            pointList.add(new Point(Double.valueOf(pathElemArray[0]), Double.valueOf(pathElemArray[1])));
+        }
+
+
+        return pointList;
+
     }
 
     public void processSvg() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
@@ -527,5 +564,23 @@ public class SvgFileProcessor {
 
 
         return new Pair<>(bound, new ArrayList<>());
+    }
+
+    public List<SvgPathCommand> processCommand(List<Point> points) throws XPathExpressionException, ParserConfigurationException, IOException, SAXException {
+        FileInputStream fis = new FileInputStream(fSvgFile);
+
+        //Construct BufferedReader from InputStreamReader
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        List<SvgPathCommand> commandList = new ArrayList<>();
+
+        String line = null;
+        while ((line = br.readLine()) != null) {
+            String[] pathElemArray = line.split(" ");
+            commandList.add(new SvgPathCommand(points.get(Integer.valueOf(pathElemArray[1]))));
+        }
+
+        commandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
+        commandList.add(new SvgPathCommand(commandList.get(0).getDestinationPoint()));
+        return commandList;
     }
 }
