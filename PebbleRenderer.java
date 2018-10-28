@@ -10,7 +10,7 @@ import java.util.*;
 public final class PebbleRenderer extends PatternRenderer {
     private List<SvgPathCommand> renderedCommands = new ArrayList<>(),
             decoCommands;
-    private SvgFileProcessor decoElemFile = null;
+    private SVGElement decoElemFile = null;
     private CircleBound decoCommandsBound = null;
     private List<Integer> touchPointIndex = null;
     private TreeNode<Point> treeRoot;
@@ -68,7 +68,7 @@ public final class PebbleRenderer extends PatternRenderer {
 //            treeRoot = info.getSpanningTree();
 //            pebbleFilling2(false);
 //            traversalCommands.addAll(renderedCommands);
-//            SvgFileProcessor.outputSvgCommands(traversalCommands, "withTree", info);
+//            SVGElement.outputSvgCommands(traversalCommands, "withTree", info);
 //        }
 
     }
@@ -118,7 +118,7 @@ public final class PebbleRenderer extends PatternRenderer {
 
             info.drawBound = false;
             pebbleRenderDraw(treeRoot, 0);
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "withBound", info);
+            SVGElement.outputSvgCommands(renderedCommands, "withBound", info);
             renderedCommands.clear();
 
 
@@ -127,13 +127,13 @@ public final class PebbleRenderer extends PatternRenderer {
 
             renderedCommands.clear();
             pebbleRenderDraw(treeRoot, 0);
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "pebble", info);
+            SVGElement.outputSvgCommands(renderedCommands, "pebble", info);
 
             decoCommands = decoCommandsCopy;
             renderedCommands.clear();
             info.drawBound = false;
             pebbleRenderDraw(treeRoot, 0);
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "noBound", info);
+            SVGElement.outputSvgCommands(renderedCommands, "noBound", info);
         } else {
             outputCurrent("stage0");
             renderedCommands.add(new SvgPathCommand(new Point(treeRoot.getData().x + dist, treeRoot.getData().y), SvgPathCommand.CommandType.MOVE_TO));
@@ -186,7 +186,7 @@ public final class PebbleRenderer extends PatternRenderer {
 
     public void outputCurrent(String name) {
         pebbleRenderDraw(treeRoot, 0);
-        SvgFileProcessor.outputSvgCommands(renderedCommands, name, info);
+        SVGElement.outputSvgCommands(renderedCommands, name, info);
         renderedCommands.clear();
     }
 
@@ -393,7 +393,7 @@ public final class PebbleRenderer extends PatternRenderer {
         Point startDrawingPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
         renderedCommands.add(new SvgPathCommand(startDrawingPoint, SvgPathCommand.CommandType.LINE_TO));
         if (DEBUG) {
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "test", info);
+            SVGElement.outputSvgCommands(renderedCommands, "test", info);
         }
 
         // Insert a kissing primitive instead of a pebble
@@ -403,7 +403,7 @@ public final class PebbleRenderer extends PatternRenderer {
             double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
             PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     decoCommands.get(0).getDestinationPoint()),
-                    scaledCommands, startDrawingPoint, Math.toRadians(angle));
+                    scaledCommands, startDrawingPoint, Math.toRadians(angle), false);
             if (DRAW_BOUND)
                 renderedCommands.addAll(scaledCommands);
 //            printMapping(scaledCommands, primitiveCentroid);
@@ -452,7 +452,7 @@ public final class PebbleRenderer extends PatternRenderer {
                 double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
                 PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                         decoCommands.get(0).getDestinationPoint()),
-                        scaledCommands, startDrawingPoint, Math.toRadians(angle));
+                        scaledCommands, startDrawingPoint, Math.toRadians(angle), false);
                 renderedCommands.addAll(scaledCommands);
             }
 
@@ -486,7 +486,7 @@ public final class PebbleRenderer extends PatternRenderer {
         Point primitiveCentroid = thisNode.getData();
         renderedCommands.add(new SvgPathCommand(startDrawingPoint, SvgPathCommand.CommandType.LINE_TO));
         if (DEBUG) {
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "test", info);
+            SVGElement.outputSvgCommands(renderedCommands, "test", info);
         }
         // Insert a kissing primitive instead of a pebble
         List<SvgPathCommand> scaledCommands = new ArrayList<>();
@@ -495,7 +495,7 @@ public final class PebbleRenderer extends PatternRenderer {
             double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
             PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     decoCommands.get(0).getDestinationPoint()),
-                    scaledCommands, startDrawingPoint, Math.toRadians(angle));
+                    scaledCommands, startDrawingPoint, Math.toRadians(angle), false);
             if (DRAW_BOUND)
                 renderedCommands.addAll(scaledCommands);
             printMapping(scaledCommands, primitiveCentroid);
@@ -535,7 +535,7 @@ public final class PebbleRenderer extends PatternRenderer {
             }
             renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // render bubble
             if (DEBUG) {
-                SvgFileProcessor.outputSvgCommands(renderedCommands, "test", info);
+                SVGElement.outputSvgCommands(renderedCommands, "test", info);
             }
             for (int j = currentAngle; j < currentAngle + gap; j++) {
                 int searchAngle = j % 360;
@@ -549,7 +549,7 @@ public final class PebbleRenderer extends PatternRenderer {
                     cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
                 }
                 if (DEBUG) {
-                    SvgFileProcessor.outputSvgCommands(renderedCommands, "test", info);
+                    SVGElement.outputSvgCommands(renderedCommands, "test", info);
                 }
                 if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
                     renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
@@ -569,7 +569,7 @@ public final class PebbleRenderer extends PatternRenderer {
         }
         renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
         if (DEBUG) {
-            SvgFileProcessor.outputSvgCommands(renderedCommands, "test", info);
+            SVGElement.outputSvgCommands(renderedCommands, "test", info);
         }
 
     }

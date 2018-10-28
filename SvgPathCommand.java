@@ -19,7 +19,7 @@ public class SvgPathCommand {
     static {
         squiggleList = new ArrayList<>(new ArrayList<>());
         for (File tileFile : squiggleLibrary.listFiles()) {
-            SvgFileProcessor sguiggleFile = new SvgFileProcessor(tileFile);
+            SVGElement sguiggleFile = new SVGElement(tileFile);
             try {
                 sguiggleFile.processSvg();
                 squiggleList.add(sguiggleFile.getCommandList());

@@ -9,10 +9,10 @@ import java.util.List;
 public final class GenerationInfo {
 
     public static final int WANDERER_NEIGHBORHOOD_COLLISION = 2;
-    SvgFileProcessor skeletonPathFile;
-    SvgFileProcessor decoElementFile;
-    SvgFileProcessor regionFile;
-    SvgFileProcessor collisionFile;
+    SVGElement skeletonPathFile;
+    SVGElement decoElementFile;
+    SVGElement regionFile;
+    SVGElement collisionFile;
     Main.SkeletonPathType skeletonPathType;
     Main.SkeletonRenderType skeletonRenderType;
 

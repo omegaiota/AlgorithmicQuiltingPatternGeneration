@@ -10,7 +10,7 @@ import java.util.*;
 public class RectanglePacking extends PatternRenderer {
     private List<SvgPathCommand> renderedCommands = new ArrayList<>(),
             decoCommands;
-    private SvgFileProcessor decoElemFile = null;
+    private SVGElement decoElemFile = null;
     private CircleBound decoCommandsBound = null;
     private List<Integer> touchPointIndex = null;
     private TreeNode<Point> treeRoot;

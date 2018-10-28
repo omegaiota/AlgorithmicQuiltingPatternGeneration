@@ -7,7 +7,7 @@ import java.util.*;
  */
 public final class PointDistribution {
     private Distribution strategy = new Grid();
-    private SvgFileProcessor regionFileProcessed;
+    private SVGElement regionFileProcessed;
     private ArrayList<SvgPathCommand> distributionVisualizationList = new ArrayList<>();
     private RenderType type;
     private Region boundary;
@@ -473,7 +473,7 @@ public final class PointDistribution {
     public void outputDistribution() {
         distributionVisualizationList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
         distributionVisualizationList.addAll(regionFileProcessed.getCommandList());
-        SvgFileProcessor.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type, info);
+        SVGElement.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type, info);
     }
 
     public List<SvgPathCommand> toTraversal() {

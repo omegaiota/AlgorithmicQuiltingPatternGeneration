@@ -26,7 +26,7 @@ public class TreeTraversal {
     }
 
     public static void treeOrdering(TreeNode<Point> treeNode, TreeNode<Point> parentNode) {
-//        PrintWriter writer = SvgFileProcessor.writeHeader("treeAngles", 750, 750);
+//        PrintWriter writer = SVGElement.writeHeader("treeAngles", 750, 750);
         recurseOrder(treeNode, parentNode, null);
 //        writer.println("  </g>");
 //        writer.println("</svg>");

@@ -18,23 +18,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 
 /**
  * Created by JacquelineLi on 6/12/17.
  */
-public class SvgFileProcessor {
-    private Path fFilePath;
+public class SVGElement {
     private String fFileName;
     private File fSvgFile;
-    private NodeList pathNodeList;
     private Point minPoint = new Point(10000, 10000), maxPoint = new Point(-10000, -10000);
     private double width = -1, height = -1, patternHeight = -1, widthRight = -1;
     private List<SvgPathCommand> commandLists = new ArrayList<>();
 
-    public SvgFileProcessor(File importFile) {
-        this.fFilePath = Paths.get(importFile.getPath());
+    public SVGElement(File importFile) {
         this.fFileName = importFile.getName();
         this.fSvgFile = importFile;
     }
@@ -294,7 +290,7 @@ public class SvgFileProcessor {
         XPathFactory xpf = XPathFactory.newInstance();
         XPath xpath = xpf.newXPath();
         XPathExpression expression = xpath.compile(xpathExpression);
-        pathNodeList = (NodeList) expression.evaluate(document, XPathConstants.NODESET);
+        NodeList pathNodeList = (NodeList) expression.evaluate(document, XPathConstants.NODESET);
 
         for (int i = 0; i < pathNodeList.getLength(); i++) {
             ArrayList<SvgPathCommand> aCommandList = new ArrayList<>();
@@ -526,7 +522,7 @@ public class SvgFileProcessor {
 
     @Override
     public String toString() {
-        return "SvgFileProcessor{" +
+        return "SVGElement{" +
                 "commandLists=" + commandLists.iterator().toString() +
                 '}';
     }
@@ -551,7 +547,7 @@ public class SvgFileProcessor {
             newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
             commandLists.clear();
             PatternRenderer.insertPatternToList(newCommandList, commandLists, newCommandList.get(0).getDestinationPoint(),
-                    -1 * Point.getAngle(bound.getCenter(), pointList.get(first)));
+                    -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false);
             CircleBound newBound = SmallestEnclosingCircle.makeCircle(
                     getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList()));
             touchIndex = Arrays.stream(touchIndex).map(i -> (i - first + pointList.size()) % pointList.size()).toArray();

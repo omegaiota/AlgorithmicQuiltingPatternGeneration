@@ -13,10 +13,10 @@ public class SpinePatternMerger {
 
     private List<SvgPathCommand> combinedCommands = new ArrayList<>();
     private String spineName, patternName;
-    private SvgFileProcessor spineFileProcessed = null, patternFileProcessed = null;
+    private SVGElement spineFileProcessed = null, patternFileProcessed = null;
     private boolean rotationOn = true;
 
-    public SpinePatternMerger(String spineName, List<SvgPathCommand> spineCommands, SvgFileProcessor patternFile, boolean rotation) {
+    public SpinePatternMerger(String spineName, List<SvgPathCommand> spineCommands, SVGElement patternFile, boolean rotation) {
         this.spineCommands = spineCommands;
         this.patternCommands = patternFile.getCommandList();
         this.spineName = spineName;
