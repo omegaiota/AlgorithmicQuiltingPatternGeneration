@@ -51,19 +51,23 @@ public class PatternRenderer {
      * @param insertionPoint        point to which commands need to be translated to
      * @param rotationAngleInRadian angle(specified in radian) that the transformed commands will be rotated
      * @param skipFirst
+     * @param skipLast
      * @return
      */
     public static List<SvgPathCommand> insertPatternToList(List<SvgPathCommand> patternCommands,
                                                            List<SvgPathCommand> destination,
-                                                           Point insertionPoint, double rotationAngleInRadian, boolean skipFirst) {
-        if (patternCommands.size() == 0)
-            return new ArrayList<>();
+                                                           Point insertionPoint, double rotationAngleInRadian, boolean skipFirst, boolean skipLast) {
+
         List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
-        Point patternPoint = patternCommands.get(0).getDestinationPoint();
+        if (patternCommands.size() == 0)
+            return transformedDecoElmentCommands;
+        Point firstPoint = patternCommands.get(0).getDestinationPoint();
         SvgPathCommand newCommand;
         int first = skipFirst ? 1 : 0;
         for (int j = first; j < patternCommands.size(); j++) {
-            newCommand = new SvgPathCommand(patternCommands.get(j), patternPoint, insertionPoint, rotationAngleInRadian);
+            if (skipLast && j == patternCommands.size() - 1)
+                continue;
+            newCommand = new SvgPathCommand(patternCommands.get(j), firstPoint, insertionPoint, rotationAngleInRadian);
             if (j == 0)
                 newCommand.setCommandType(SvgPathCommand.CommandType.LINE_TO);
             transformedDecoElmentCommands.add(newCommand);
@@ -144,7 +148,7 @@ public class PatternRenderer {
                     renderedCommands.get(i).getControlPoint2(),
                     renderedCommands.get(i).getDestinationPoint());
             List<SvgPathCommand> renderedcommands = PatternRenderer.insertPatternToList(decoElmentCommands,
-                    null, p, anglePrev, false);
+                    null, p, anglePrev, false, false);
             RectangleBound thisBound = RectangleBound.getBoundingBox(renderedcommands);
             boolean collides = false;
 
@@ -330,9 +334,9 @@ public class PatternRenderer {
                 else
                     anglePrev += Math.PI * 0.5;
                 List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(originalCommandToUse,
-                        null, p, anglePrev, false);
+                        null, p, anglePrev, false, false);
                 List<SvgPathCommand> scaledRotatedCollision = PatternRenderer.insertPatternToList(originalCollisionCommandToUse,
-                        null, p, anglePrev, false);
+                        null, p, anglePrev, false, false);
                 List<SvgPathCommand> removedFirst = new ArrayList<>(scaledRotatedCollision);
                 removedFirst.remove(0);
                 ConvexHullBound thisBound = ConvexHullBound.fromCommands(removedFirst);
@@ -411,8 +415,8 @@ public class PatternRenderer {
                             for (double testAngle = info.initialAngle; testAngle < 60.0; testAngle += 10.0) {
                                 // don't want to rotate leaf node
                                 double radianToRotate = isLeafNode ? 0 : (Math.toRadians(testAngle) - INITIAL_ANGLE) * SIGN;
-                                List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands, null, p, radianToRotate, false),
-                                        rotatedCollision = PatternRenderer.insertPatternToList(copyCollisionCommands, null, p, radianToRotate, false);
+                                List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands, null, p, radianToRotate, false, false),
+                                        rotatedCollision = PatternRenderer.insertPatternToList(copyCollisionCommands, null, p, radianToRotate, false, false);
                                 List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision);
                                 removedFirstC.remove(0);
                                 thisBound = ConvexHullBound.fromCommands(removedFirstC);
@@ -558,7 +562,7 @@ public class PatternRenderer {
                     /* random factor */
                     if (Double.compare(random, density) < 1.0) {
                         List<SvgPathCommand> decoCommands = new ArrayList<>();
-                        insertPatternToList(decorativeElementCommands, decoCommands, commandThis.getDestinationPoint(), anglePrev, false);
+                        insertPatternToList(decorativeElementCommands, decoCommands, commandThis.getDestinationPoint(), anglePrev, false, false);
                         boolean notCollide = decoCommands.stream().map(a -> info.regionFile.getBoundary().insideRegion(a.getDestinationPoint())).reduce((a, b) -> a && b).get();
                         if (notCollide)
                             renderedCommands.addAll(decoCommands);

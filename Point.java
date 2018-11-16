@@ -348,7 +348,7 @@ public class Point implements Comparable<Point> {
 
     public String toSvgCode() {
         String space = "    ";
-        String st = String.format("%s<circle\n%s    style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-opacity:1\"\n    ", space, space);
+        String st = String.format("%s<circle\n%s    style=\"fill:#FF0000;fill-opacity:1;stroke:#000000;stroke-opacity:1\"\n    ", space, space);
         int pathId = (int) (Math.random() * 9999) + 1000;
         st = st.concat(String.format("%sid=\"path%d\"\n%s    cx=\"%.4f\"\n%s    cy=\"%.4f\"\n%s    r=\"2\"  />\n",
                 space,

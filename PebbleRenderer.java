@@ -403,7 +403,7 @@ public final class PebbleRenderer extends PatternRenderer {
             double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
             PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     decoCommands.get(0).getDestinationPoint()),
-                    scaledCommands, startDrawingPoint, Math.toRadians(angle), false);
+                    scaledCommands, startDrawingPoint, Math.toRadians(angle), false, false);
             if (DRAW_BOUND)
                 renderedCommands.addAll(scaledCommands);
 //            printMapping(scaledCommands, primitiveCentroid);
@@ -452,7 +452,7 @@ public final class PebbleRenderer extends PatternRenderer {
                 double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
                 PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                         decoCommands.get(0).getDestinationPoint()),
-                        scaledCommands, startDrawingPoint, Math.toRadians(angle), false);
+                        scaledCommands, startDrawingPoint, Math.toRadians(angle), false, false);
                 renderedCommands.addAll(scaledCommands);
             }
 
@@ -495,7 +495,7 @@ public final class PebbleRenderer extends PatternRenderer {
             double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
             PatternRenderer.insertPatternToList(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     decoCommands.get(0).getDestinationPoint()),
-                    scaledCommands, startDrawingPoint, Math.toRadians(angle), false);
+                    scaledCommands, startDrawingPoint, Math.toRadians(angle), false, false);
             if (DRAW_BOUND)
                 renderedCommands.addAll(scaledCommands);
             printMapping(scaledCommands, primitiveCentroid);

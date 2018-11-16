@@ -162,6 +162,16 @@ public class SvgPathCommand {
         return SvgPathCommand.commandsScaling(returnList, newDist / squiggleDist, parentNodeData);
     }
 
+
+    public static List<Point> toPoints(List<SvgPathCommand> decoElmentCommands) {
+        List<Point> ans = new ArrayList<>();
+        for (SvgPathCommand c : decoElmentCommands) {
+            ans.add(c.getDestinationPoint());
+        }
+        return ans;
+    }
+
+
     /**
      * Reflect command with respect to y axis
      *
@@ -186,6 +196,23 @@ public class SvgPathCommand {
 
         reflected = SvgPathCommand.commandsShift(reflected, decoElmentCommands.get(0).destinationPoint);
         return reflected;
+    }
+
+    public static SvgPathCommand catmullRomSegment(SvgPathCommand prevprevCommand, SvgPathCommand prevCommand, SvgPathCommand thisCommand, SvgPathCommand nextCommand) {
+        Point p2 = thisCommand.getDestinationPoint(),
+                p1 = prevCommand.getDestinationPoint();
+        Point p3, p0;
+        if (prevprevCommand == null)
+            p0 = p1.minus(p2.minus(p1));
+        else
+            p0 = prevprevCommand.getDestinationPoint();
+        if (nextCommand == null)
+            p3 = p2.add(p2.minus(p1));
+        else
+            p3 = nextCommand.getDestinationPoint();
+        Point c1 = p2.minus(p0).divide(6).add(p1),
+                c2 = p2.minus(p3.minus(p1).divide(6));
+        return (new SvgPathCommand(c1, c2, p2, SvgPathCommand.CommandType.CURVE_TO));
     }
 
     public void setLineTo() {

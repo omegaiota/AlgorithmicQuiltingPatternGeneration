@@ -11,8 +11,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,6 +33,48 @@ public class SVGElement {
         this.fSvgFile = importFile;
     }
 
+    public static File outputSvgCommandsAndPoints(List<SvgPathCommand> outputCommandList, List<Point> points, String fileName, GenerationInfo info) {
+        int width = (int) Double.max(info.regionFile.getWidth(), 750);
+        int height = (int) Double.max(info.regionFile.getHeight(), 750);
+        PrintWriter writer = writeHeader(fileName, width, height);
+//        corcordWrite("corcordPoints", points);
+        for (Point p : points) {
+            writer.print(p.toSvgCode());
+        }
+
+//        writer.println("  </g>");
+//        writer.println("</svg>");
+
+        writer.println("    <path");
+        writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
+        writer.print("    d=\"");
+        // First command needs to be moved to
+        for (int i = 0; i < outputCommandList.size(); i++) {
+            if (i == 0) {
+                writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
+            }
+            SvgPathCommand command = outputCommandList.get(i);
+
+            // Change moveTo to lineTo so that path will be one stitch
+            writer.print(command.toSvgCode());
+
+
+            //commented out this for generating set of 81 results
+//                if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
+//                    writer.print(new SvgPathCommand(command, SvgPathCommand.CommandType.LINE_TO).toSvgCode());
+//                } else
+//                    writer.print(command.toSvgCode());
+        }
+        writer.println("\"");
+        writer.println("       id=\"path3342\"\n");
+        writer.println("       inkscape:connector-curvature=\"0\" />");
+        writer.println("  </g>");
+        writer.println("</svg>");
+        writer.close();
+        return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + fileName + ".svg");
+
+    }
+
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, GenerationInfo info) {
         double width = Double.max(750, info.regionFile.getWidth() + 20);
         double height = Double.max(750, info.regionFile.getHeight() + 20);
@@ -44,7 +84,7 @@ public class SVGElement {
     public static PrintWriter writeHeader(String fileName, double width, double height) {
         PrintWriter writer = null;
         try {
-            writer = new PrintWriter("./out/" + fileName + ".svg", "UTF-8");
+            writer = new PrintWriter("./out/" + fileName + Main.seedNum + ".svg", "UTF-8");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (UnsupportedEncodingException e) {
@@ -72,7 +112,6 @@ public class SVGElement {
         writer.println("");
         return writer;
     }
-
 
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, double width, double height) {
         PrintWriter writer = writeHeader(fileName, width, height);
@@ -242,6 +281,10 @@ public class SVGElement {
 
 
         return ans;
+    }
+
+    public void setCommandLists(List<SvgPathCommand> commandLists) {
+        this.commandLists = commandLists;
     }
 
     public Point getMinPoint() {
@@ -547,7 +590,7 @@ public class SVGElement {
             newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
             commandLists.clear();
             PatternRenderer.insertPatternToList(newCommandList, commandLists, newCommandList.get(0).getDestinationPoint(),
-                    -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false);
+                    -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false, false);
             CircleBound newBound = SmallestEnclosingCircle.makeCircle(
                     getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList()));
             touchIndex = Arrays.stream(touchIndex).map(i -> (i - first + pointList.size()) % pointList.size()).toArray();
