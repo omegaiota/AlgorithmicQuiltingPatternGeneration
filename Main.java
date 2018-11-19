@@ -115,7 +115,7 @@ public class Main extends Application {
         File dir = new File(folder);
         File[] collisions = dir.listFiles((dir1, name) -> name.contains(patternName) && name.contains("collision") && name.contains("set"));
         File[] patternFiles = dir.listFiles((dir1, name) -> name.contains(patternName) && name.contains("set") && !name.contains("collision"));
-        assert (collisions.length == patternFiles.length);
+//        assert (collisions.length == patternFiles.length);
 
         if (collisions.length == 1) {
             collisionFile = new SVGElement(collisions[0]);
@@ -124,6 +124,8 @@ public class Main extends Application {
             System.out.println("collision file not found");
         }
 
+        decoElements.clear();
+        decoElementsCollision.clear();
         for (File pattern : patternFiles) {
             decoElements.add(new SVGElement(pattern));
         }
@@ -663,10 +665,10 @@ public class Main extends Application {
 
 
         // calculate decoElementAnd Angle
-        Map<SVGElement, SVGElement> decoElemCollisionMap = new HashMap<>();
-        for (int i = 0; i < decoElements.size(); i++) {
-            decoElemCollisionMap.put(decoElements.get(i), decoElementsCollision.get(i));
-        }
+//        Map<SVGElement, SVGElement> decoElemCollisionMap = new HashMap<>();
+//        for (int i = 0; i < decoElements.size(); i++) {
+//            decoElemCollisionMap.put(decoElements.get(i), decoElementsCollision.get(i));
+//        }
         Map<SVGElement, Double> decoElementAngleMap = getDecoElmentAndAngleMap();
         System.out.println("Mymap:");
         System.out.println(decoElementAngleMap);
@@ -705,16 +707,20 @@ public class Main extends Application {
 
             SVGElement insertDeco = bestDeco(betweenAngle, decoElementAngleMap);
             List<SvgPathCommand> strippedDecoCommands = insertDeco.getCommandList().subList(1, insertDeco.getCommandList().size() - 1);
-            List<SvgPathCommand> rotatedCommands = PatternRenderer.insertPatternToList(insertDeco.getCommandList(), null, insertDeco.getCommandList().get(0).getDestinationPoint(), rotation, false, false);
-            List<SvgPathCommand> rotatedCollisionCommands = PatternRenderer.insertPatternToList(decoElemCollisionMap.get(insertDeco).getCommandList(), null, insertDeco.getCommandList().get(0).getDestinationPoint(), rotation, false, false);
-             /* insertion point calc */
-            Point startPoint = rotatedCommands.get(1).getDestinationPoint(); // skipped first
+            List<SvgPathCommand> rotatedCommands = PatternRenderer.insertPatternToList(strippedDecoCommands, null, strippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
+//            List<SvgPathCommand> rotatedCollisionCommands = PatternRenderer.insertPatternToList(decoElemCollisionMap.get(insertDeco).getCommandList(), null, decoElemCollisionMap.get(insertDeco).getCommandList().get(0).getDestinationPoint(), rotation, false, false);
 
-            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCollisionCommands)).getBox().getCenter();
+
+             /* insertion point calc */
+            Point startPoint = rotatedCommands.get(0).getDestinationPoint(); // skipped first
+
+//            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCollisionCommands)).getBox().getCenter();
+            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCommands)).getBox().getCenter();
 
             Point insertPoint = thisPoint.add(startPoint.minus(centerPoint));
+//            Point insertPoint = thisPoint;
 //            Point insertPoint = thisPoint.add(startPoint.minus(rotatedCommands.get(rotatedCommands.size() - 1).getDestinationPoint()).multiply(0.5));
-            List<SvgPathCommand> translated = PatternRenderer.insertPatternToList(rotatedCommands, null, insertPoint, 0, true, true);
+            List<SvgPathCommand> translated = PatternRenderer.insertPatternToList(rotatedCommands, null, insertPoint, 0, false, false);
 //            skeletonPathCommands.remove(i);
 //            skeletonPathCommands.remove(i+1);
 //            skeletonPathCommands.set(i, SvgPathCommand.catmullRomSegment(translated.get(translated.size() - 3), translated.get(translated.size() - 2), translated.get(translated.size() - 1), skeletonPathCommands.get(i)  ) ) ;
