@@ -1,12 +1,9 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -20,11 +17,14 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static jackiequiltpatterndeterminaiton.Main.SkeletonPathType.*;
-import static jackiequiltpatterndeterminaiton.Main.SkeletonRenderType.*;
+import static jackiealgorithmicquilting.Main.SkeletonPathType.*;
+import static jackiealgorithmicquilting.Main.SkeletonRenderType.*;
 
 public class Main extends Application {
     /* Constant */
@@ -100,6 +100,7 @@ public class Main extends Application {
     private List<SVGElement> decoElementsCollision = new ArrayList<>();
     private List<SvgPathCommand> renderedDecoCommands = new ArrayList<>(), skeletonPathCommands = new ArrayList<>(),
             skeletonCopy = new ArrayList<>();
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -152,6 +153,7 @@ public class Main extends Application {
         }
 
     }
+
     private void setDefaultValue() {
         String patternName = "wanderer-whistle";
 //        String patternName = "wanderer-flower2";
@@ -629,35 +631,6 @@ public class Main extends Application {
         });
     }
 
-    private void toWandererVersion1(List<SvgPathCommand> commands) {
-        //add random points to make commands look prettier
-        quadraplePoints(commands, false);
-        skeletonPathCommands = commands;
-
-        PatternRenderer interpolationRenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, "",
-                renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM, info);
-        interpolationRenderer.toCatmullRom();
-        skeletonPathCommands = interpolationRenderer.getRenderedCommands();
-        SVGElement.outputSvgCommands(skeletonPathCommands, "Skeleton path", info);
-        renderedDecoCommands = decoElementFile.getCommandList();
-        normalizeDecoElement();
-        setBranchingParameter();
-
-        collisionCommands = SvgPathCommand.commandsScaling(collisionCommands,
-                info.decorationSize,
-                collisionCommands.get(0).getDestinationPoint());
-        renderedDecoCommands = SvgPathCommand.commandsScaling(renderedDecoCommands,
-                info.decorationSize,
-                renderedDecoCommands.get(0).getDestinationPoint());
-//                        Point firstToLast = renderedDecoCommands.get(0).getDestinationPoint().minus(renderedDecoCommands.get(renderedDecoCommands.size() - 1).getDestinationPoint());
-
-        for (int i = skeletonPathCommands.size() - 3; i >= 2; i -= 3) {
-            Point insertPoint = skeletonPathCommands.get(i - 1).getDestinationPoint();
-            //Point insertPoint2 = insertPoint.add(firstToLast.multiply(0.5));
-            skeletonPathCommands.addAll(i, PatternRenderer.insertPatternToList(renderedDecoCommands,
-                    null, insertPoint, Math.random() * Math.PI, true, false));
-        }
-    }
 
     private Map<SVGElement, Double> getDecoElmentAndAngleMap() {
         Map<SVGElement, Double> decoElementAngleMap = new HashMap<>(); // angle is in radians
@@ -679,74 +652,6 @@ public class Main extends Application {
         }
         return decoElementAngleMap;
     }
-
-//    private void toWandererVersion2(List<SvgPathCommand> commands) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException {
-//        //add random points to make commands look prettier
-//        loadWandererDefault();
-//        quadraplePoints(commands, true);
-//        skeletonPathCommands = commands;
-//
-//
-//        // calculate decoElementAnd Angle
-////        Map<SVGElement, SVGElement> decoElemCollisionMap = new HashMap<>();
-////        for (int i = 0; i < decoElements.size(); i++) {
-////            decoElemCollisionMap.put(decoElements.get(i), decoElementsCollision.get(i));
-////        }
-//        Map<SVGElement, Double> decoElementAngleMap = getDecoElmentAndAngleMap();
-//        System.out.println("Mymap:");
-//        System.out.println(decoElementAngleMap);
-//        PatternRenderer interpolationRenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, "",
-//                renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM, info);
-//        interpolationRenderer.toCatmullRom();
-//        skeletonPathCommands = interpolationRenderer.getRenderedCommands();
-//        SVGElement.outputSvgCommands(skeletonPathCommands, "Skeleton path", info);
-//        renderedDecoCommands = decoElementFile.getCommandList();
-//        normalizeDecoElement();
-//        for (SVGElement f : decoElements) {
-//            f.setCommandLists(normalizeDecoElement(f));
-//        }
-//        setBranchingParameter();
-//
-//        collisionCommands = SvgPathCommand.commandsScaling(collisionCommands,
-//                info.decorationSize,
-//                collisionCommands.get(0).getDestinationPoint());
-//        SVGElement.outputSvgCommands(skeletonPathCommands, "Without deco", info);
-//
-//        for (SVGElement f : decoElements) {
-//            f.setCommandLists(SvgPathCommand.commandsScaling(f.getCommandList(), info.decorationSize, f.getCommandList().get(0).getDestinationPoint()));
-//        }
-//
-//        for (int i = skeletonPathCommands.size() - 3; i >= 2; i -= 3) {
-//            Point prevPoint = skeletonPathCommands.get(i - 2).getDestinationPoint();
-//            Point thisPoint = skeletonPathCommands.get(i - 1).getDestinationPoint();
-//            Point nextPoint = skeletonPathCommands.get(i).getDestinationPoint();
-//            Double between =  Math.abs(Point.getAngle(thisPoint, prevPoint) - Point.getAngle(thisPoint, nextPoint));
-//
-//            Vector2D nextVec = new Vector2D(thisPoint, nextPoint).unit();
-//            Vector2D prevVec = new Vector2D(thisPoint, prevPoint).unit();
-//            double betweenAngle = Vector2D.getAngle(nextVec, prevVec);
-//            if (between > Math.PI)
-//                between = Math.PI * 2 - between;
-//            double rotation = prevVec.getAngle() + Math.PI * 1.5 + betweenAngle * 0.5;
-////            if (between < 0)
-////                rotation += Math.PI;
-//
-//            SVGElement insertDeco = bestDeco(between, decoElementAngleMap);
-//            List<SvgPathCommand> strippedDecoCommands = insertDeco.getCommandList().subList(1, insertDeco.getCommandList().size() - 1);
-//            List<SvgPathCommand> rotatedCommands = PatternRenderer.insertPatternToList(strippedDecoCommands, null, strippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
-////            List<SvgPathCommand> rotatedCollisionCommands = PatternRenderer.insertPatternToList(decoElemCollisionMap.get(insertDeco).getCommandList(), null, decoElemCollisionMap.get(insertDeco).getCommandList().get(0).getDestinationPoint(), rotation, false, false);
-//
-//
-//             /* insertion point calc */
-//            Point startPoint = rotatedCommands.get(0).getDestinationPoint(); // skipped first
-//
-//            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCommands)).getBox().getCenter();
-//
-//            Point insertPoint = thisPoint.add(startPoint.minus(centerPoint));
-//           List<SvgPathCommand> translated = PatternRenderer.insertPatternToList(rotatedCommands, null, insertPoint, 0, false, false);
-//            skeletonPathCommands.addAll(i, translated.subList(0, translated.size() - 1));
-//        }
-//    }
 
     private void toWandererVersion3(List<SvgPathCommand> commands) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException {
         //add random points to make commands look prettier
@@ -1132,26 +1037,26 @@ public class Main extends Application {
                     List<List<SvgPathCommand>> setsOfNine = new ArrayList<>();
                     info.drawBound = false;
                     if (info.spanningTree == null) {
-                        } else {
-                            skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info,
-                                    skeletonRenderType != RECTANGLE && skeletonGenComboBox.getValue().equals(VINE));
+                    } else {
+                        skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info,
+                                skeletonRenderType != RECTANGLE && skeletonGenComboBox.getValue().equals(VINE));
                         info.randomFactor = Double.valueOf(skeletonRenderTextField1.getText());
                         info.initialLength = Double.valueOf(skeletonRenderTextField2.getText());
-                            skeletonrenderer.pebbleFilling();
+                        skeletonrenderer.pebbleFilling();
 
                         SVGElement.outputSvgCommands(skeletonrenderer.getRenderedCommands(), "", info);
-                            List<SvgPathCommand> skeletonAddRender = new ArrayList<>(skeletonCopy),
-                                    regionAddRender = new ArrayList<>(regionFile.getCommandList());
-                            skeletonAddRender.addAll(skeletonrenderer.getRenderedCommands());
-                            regionAddRender.addAll(skeletonrenderer.getRenderedCommands());
+                        List<SvgPathCommand> skeletonAddRender = new ArrayList<>(skeletonCopy),
+                                regionAddRender = new ArrayList<>(regionFile.getCommandList());
+                        skeletonAddRender.addAll(skeletonrenderer.getRenderedCommands());
+                        regionAddRender.addAll(skeletonrenderer.getRenderedCommands());
                         SVGElement.outputSvgCommands(skeletonAddRender, "visualize_skeleton_", info);
                         SVGElement.outputSvgCommands(regionAddRender, "visualize_region_", info);
-                            List<SvgPathCommand> trimmed = boundary.fitCommandsToRegionTrimToBoundary(skeletonrenderer.getRenderedCommands(), info);
+                        List<SvgPathCommand> trimmed = boundary.fitCommandsToRegionTrimToBoundary(skeletonrenderer.getRenderedCommands(), info);
                         SVGElement.outputSvgCommands(trimmed, "trimmed_", info);
-                            trimmed.addAll(regionFile.getCommandList());
+                        trimmed.addAll(regionFile.getCommandList());
                         SVGElement.outputSvgCommands(trimmed, "trimmed_with region", info);
 
-                        }
+                    }
 
                     break;
                 case NONE:
@@ -1238,6 +1143,7 @@ public class Main extends Application {
         info.setDecorationGap(Double.valueOf(skeletonRenderTextField2.getText()) * 10);
         info.initialAngle = Double.valueOf(skeletonRenderTextField3.getText());
     }
+
     private void setUpFont() {
         Label[] functionLabels = {textFieldLabel, regionSelectionLabel, skeletonGnerationlabel, skeletonRenderinglabel,
                 patternLabel, svgToPatLabel, skeletonGenFieldLabel, skeletonRenderFieldLabel1, skeletonRenderFieldLabel2, skeletonRenderFieldLabel3,

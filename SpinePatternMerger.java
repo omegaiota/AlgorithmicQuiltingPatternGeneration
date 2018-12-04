@@ -1,4 +1,4 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +12,12 @@ public class SpinePatternMerger {
 
 
     private List<SvgPathCommand> combinedCommands = new ArrayList<>();
-    private String spineName, patternName;
     private SVGElement spineFileProcessed = null, patternFileProcessed = null;
     private boolean rotationOn = true;
 
     public SpinePatternMerger(String spineName, List<SvgPathCommand> spineCommands, SVGElement patternFile, boolean rotation) {
         this.spineCommands = spineCommands;
         this.patternCommands = patternFile.getCommandList();
-        this.spineName = spineName;
-        this.patternName = patternFile.getfFileName();
         this.patternFileProcessed = patternFile;
         this.rotationOn = rotation;
     }

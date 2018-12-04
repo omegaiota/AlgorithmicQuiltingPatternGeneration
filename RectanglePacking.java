@@ -1,4 +1,4 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 import javafx.util.Pair;
 

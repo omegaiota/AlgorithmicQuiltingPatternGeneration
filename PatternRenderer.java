@@ -1,4 +1,4 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 import java.io.File;
 import java.util.*;

@@ -1,4 +1,4 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 /**
  * Created by JacquelineLi on 10/28/18.

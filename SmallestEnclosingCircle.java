@@ -1,4 +1,4 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 /*
  * Smallest enclosing circle - Library (Java)
@@ -22,7 +22,6 @@ package jackiequiltpatterndeterminaiton;
  */
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;

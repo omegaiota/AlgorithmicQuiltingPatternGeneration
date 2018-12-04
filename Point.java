@@ -1,6 +1,5 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
-import java.util.Comparator;
 import java.util.List;
 
 /**

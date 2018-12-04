@@ -1,4 +1,4 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 import javafx.geometry.Side;
 import javafx.scene.chart.NumberAxis;
@@ -8,8 +8,8 @@ import javafx.scene.layout.Pane;
  * Created by JacquelineLi on 12/3/18.
  */
 public class Axes extends Pane {
-    private NumberAxis xAxis;
-    private NumberAxis yAxis;
+    private final NumberAxis xAxis;
+    private final NumberAxis yAxis;
 
     public Axes(int width, int height,
                 double xLow, double xHi, double xTickUnit,
@@ -34,19 +34,4 @@ public class Axes extends Pane {
         getChildren().setAll(xAxis, yAxis);
     }
 
-    public NumberAxis getXAxis() {
-        return xAxis;
-    }
-
-    public NumberAxis getYAxis() {
-        return yAxis;
-    }
-
-    public void setxAxis(NumberAxis xAxis) {
-        this.xAxis = xAxis;
-    }
-
-    public void setyAxis(NumberAxis yAxis) {
-        this.yAxis = yAxis;
-    }
 }

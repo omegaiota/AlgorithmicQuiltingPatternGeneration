@@ -1,8 +1,6 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
@@ -10,7 +8,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
 import javafx.stage.Stage;
 
-import javax.swing.*;
 import java.util.List;
 
 /**
@@ -57,22 +54,21 @@ public class Visualizer extends Application {
             SvgPathCommand currCommand = commandList.get(i);
             Point currPoint = currCommand.getDestinationPoint();
 
-
             switch (currCommand.getCommandType()) {
                 case LINE_TO:
                     path.getElements().add(new LineTo(currPoint.x, currPoint.y));
                     break;
                 case CURVE_TO:
                     path.getElements().add(new CubicCurveTo(
-                            currCommand.getControlPoint1().x, currCommand.getControlPoint1().y,
-                            currCommand.getControlPoint2().x, currCommand.getControlPoint2().y,
-                            currCommand.getDestinationPoint().x, currCommand.getDestinationPoint().y));
+                            currCommand.getControlPoint1().x, currCommand.getControlPoint1().y, // c1
+                            currCommand.getControlPoint2().x, currCommand.getControlPoint2().y, // c2
+                            currPoint.x, currPoint.y));
                     break;
                 case MOVE_TO:
                     path.getElements().add(new MoveTo(currPoint.x, currPoint.y));
                 default:
                 case DEFAULT:
-                    System.out.println("???");
+                    System.out.println("Not sure of command type:" + i);
 
             }
         }
@@ -101,54 +97,5 @@ public class Visualizer extends Application {
         return layout;
     }
 
-//    public void addCommandsPlot(List<SvgPathCommand> commandList) {
-//        List<Point> allP = SvgPathCommand.toPoints(commandList);
-//        RectangleBound bound =  RectangleBound.valueOf(allP);
-//        Axes axes = new Axes(
-//                400, 400,
-//                bound.getLeft(), bound.getRight(), 5,
-//                bound.getDown(), bound.getUp(), 5
-//        );
-//        //path
-//        Path path = new Path();
-//        path.setStroke(Color.ORANGE.deriveColor(0, 1, 1, 0.6));
-//        path.setStrokeWidth(1);
-//        path.setClip(
-//                new Rectangle(
-//                        0, 0,
-//                        axes.getPrefWidth(),
-//                        axes.getPrefHeight()
-//                )
-//        );
-//
-//        path.getElements().add(new MoveTo(commandList.get(0).getDestinationPoint().x,
-//                commandList.get(0).getDestinationPoint().y));
-//
-//        for (int i = 1; i < commandList.size(); i++) {
-//            SvgPathCommand currCommand = commandList.get(i);
-//            Point currPoint = currCommand.getDestinationPoint();
-//
-//
-//            switch (currCommand.getCommandType()) {
-//                case LINE_TO:
-//                    path.getElements().add(new LineTo(currPoint.x, currPoint.y));
-//                    break;
-//                case CURVE_TO:
-//                    path.getElements().add(new CubicCurveTo(currCommand.getControlPoint1().x, currCommand.getControlPoint1().y,
-//                            currCommand.getControlPoint2().x, currCommand.getControlPoint2().y,
-//                            currCommand.getDestinationPoint().x, currCommand.getDestinationPoint().y));
-//                    break;
-//                case MOVE_TO:
-//                    path.getElements().add(new MoveTo(currPoint.x, currPoint.y));
-//                    default:
-//                case DEFAULT:
-//                    System.out.println("???");
-//
-//            }
-//        }
-//        Plot myPlot = new Plot(path, axes);
-//        myPane.getChildren().addAll(myPlot);
-//
-//    }
 
 }

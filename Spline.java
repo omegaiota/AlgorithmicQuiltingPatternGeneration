@@ -1,6 +1,4 @@
-package jackiequiltpatterndeterminaiton;
-
-import javafx.geometry.BoundingBox;
+package jackiealgorithmicquilting;
 
 import java.util.ArrayList;
 import java.util.List;

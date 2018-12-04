@@ -1,11 +1,7 @@
-package jackiequiltpatterndeterminaiton;
+package jackiealgorithmicquilting;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.DoubleUnaryOperator;
 
 /**
  * Created by JacquelineLi on 2/12/18.
@@ -23,11 +19,12 @@ public class ConvexHullBound {
     }
 
     private static int orientation(Point p, Point q, Point r) {
+        final int COLINEAR = 0, CW = 1, CCW = 2;
         double val = (q.y - p.y) * (r.x - q.x) -
                 (q.x - p.x) * (r.y - q.y);
 
-        if (val == 0) return 0;  // colinear
-        return (val > 0) ? 1 : 2; // clock or counterclock wise
+        if (val == 0) return COLINEAR;  // colinear
+        return (val > 0) ? CW : CCW; // clock or counterclock wise
     }
 
     public static ConvexHullBound fromCommands(List<SvgPathCommand> commands) {
