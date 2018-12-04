@@ -15,6 +15,7 @@ public final class GenerationInfo {
     SVGElement collisionFile;
     public PointDistribution distribute;
     Main.SkeletonPathType skeletonPathType;
+
     Main.SkeletonRenderType skeletonRenderType;
 
     ConvexHullBound regionConvexHull;
