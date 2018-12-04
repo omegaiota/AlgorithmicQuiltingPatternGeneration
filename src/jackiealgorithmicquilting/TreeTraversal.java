@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -6,9 +6,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import static jackiealgorithmicquilting.TreeTraversal.NodeType.IN;
-import static jackiealgorithmicquilting.TreeTraversal.NodeType.LEAF;
-import static jackiealgorithmicquilting.TreeTraversal.NodeType.OUT;
+import static src.jackiealgorithmicquilting.TreeTraversal.NodeType.IN;
+import static src.jackiealgorithmicquilting.TreeTraversal.NodeType.LEAF;
+import static src.jackiealgorithmicquilting.TreeTraversal.NodeType.OUT;
 
 /**
  * Created by JacquelineLi on 6/27/17.

@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 /*
  * Smallest enclosing circle - Library (Java)

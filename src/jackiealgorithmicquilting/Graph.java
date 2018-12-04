@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 import java.util.ArrayList;
 import java.util.HashMap;

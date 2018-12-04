@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 import java.util.*;
 
@@ -473,7 +473,7 @@ public final class PointDistribution {
     public void outputDistribution() {
         distributionVisualizationList.add(new SvgPathCommand(new Point(0, 0), SvgPathCommand.CommandType.MOVE_TO));
         distributionVisualizationList.addAll(regionFileProcessed.getCommandList());
-        SVGElement.outputSvgCommands(distributionVisualizationList, "distribution-" + regionFileProcessed.getfFileName() + "-" + type, info);
+        SVGElement.outputPoints(points, info);
     }
 
     public List<SvgPathCommand> toTraversal() {

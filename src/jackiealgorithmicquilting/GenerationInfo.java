@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +13,7 @@ public final class GenerationInfo {
     SVGElement decoElementFile;
     SVGElement regionFile;
     SVGElement collisionFile;
+    public PointDistribution distribute;
     Main.SkeletonPathType skeletonPathType;
     Main.SkeletonRenderType skeletonRenderType;
 
@@ -30,6 +31,7 @@ public final class GenerationInfo {
     TreeNode<Point> spanningTree;
     List<TreeTraversal.NodeType> nodeType;
     List<SvgPathCommand> collisionCommands = new ArrayList<>();
+    public List<SvgPathCommand> skeletonPathCommands = new ArrayList<>();
 
     public GenerationInfo() {
         regionFile = null;

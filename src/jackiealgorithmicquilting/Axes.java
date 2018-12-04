@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 import javafx.geometry.Side;
 import javafx.scene.chart.NumberAxis;

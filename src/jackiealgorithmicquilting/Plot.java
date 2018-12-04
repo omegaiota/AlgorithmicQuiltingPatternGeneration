@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;

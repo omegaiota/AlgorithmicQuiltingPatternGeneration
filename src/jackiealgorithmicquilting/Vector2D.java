@@ -1,4 +1,4 @@
-package jackiealgorithmicquilting;
+package src.jackiealgorithmicquilting;
 
 /**
  * Created by JacquelineLi on 10/28/18.
