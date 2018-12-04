@@ -104,6 +104,17 @@ public class SvgPathCommand {
         this.commandType = commandType;
     }
 
+    public static List<SvgPathCommand> reverseCommands(List<SvgPathCommand> l) {
+        List<SvgPathCommand> output = new ArrayList<>();
+        output.add(new SvgPathCommand(l.get(l.size() - 1).getDestinationPoint(), CommandType.MOVE_TO));
+        for (int i = l.size() - 1; i >= 1; i--) {
+            SvgPathCommand c = l.get(i);
+            output.add(new SvgPathCommand(c.getControlPoint2(), c.getControlPoint1(), l.get(i - 1).getDestinationPoint(), c.getCommandType()));
+        }
+
+        return output;
+    }
+
     public static SvgPathCommand commandFromShiftAndRotate(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double angle) {
         SvgPathCommand copy = new SvgPathCommand(oldCommand);
         copy.setDestinationPoint(copy.getDestinationPoint().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));

@@ -25,10 +25,14 @@ public class Vector2D {
     /**
      * @param A
      * @param B
-     * @return the angle between the two vector in radius. value is from 0 to pi
+     * @return the signed angle between the two vector in radius. value is from 0 to pi
      */
     static double getAngle(Vector2D A, Vector2D B) {
-        return Math.acos(A.dotProduct(B) / (A.getLength() * B.getLength()));
+        double angle = Math.atan2(B.y, B.x) - Math.atan2(A.y, A.x);
+        if (angle < 0)
+            angle += Math.PI * 2;
+        return angle;
+//        return Math.acos(A.dotProduct(B) / (A.getLength() * B.getLength()));
     }
 
     Vector2D add(Vector2D B) {
@@ -61,6 +65,14 @@ public class Vector2D {
 
     double getAngle() {
         return Math.atan2(y, x);
+    }
+
+    double getAngleV2() {
+        Vector2D vector1 = new Vector2D(1.0, 0.0);
+        Vector2D vector2 = this;
+
+//        return Math.atan2(y, x);
+        return Math.atan2(vector2.y, vector2.x) - Math.atan2(vector1.y, vector1.x);
     }
 
 }

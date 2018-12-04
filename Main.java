@@ -109,8 +109,9 @@ public class Main extends Application {
     }
 
     private void loadWandererDefault() throws ParserConfigurationException, SAXException, XPathExpressionException, IOException {
-        String patternName = "wanderer-dizzy";
-//        String patternName = "wanderer-whistle";
+//        String patternName = "wanderer-dizzy";
+//        String patternName = "wanderer-mixed";
+        String patternName = "wanderer-whistle";
         String folder = "/Users/JacquelineLi/IdeaProjects/svgProcessor/src/resources/patterns/endpoints/set/";
         File dir = new File(folder);
         File[] collisions = dir.listFiles((dir1, name) -> name.contains(patternName) && name.contains("collision") && name.contains("set"));
@@ -137,10 +138,13 @@ public class Main extends Application {
 
         for (SVGElement f : decoElements) {
             f.processSvg();
+            if (f.getCommandList().get(0).getDestinationPoint().x > f.getCommandList().get(f.getCommandList().size() - 1).getDestinationPoint().x)
+                f.setCommandLists(SvgPathCommand.reverseCommands(f.getCommandList()));
         }
 
         for (SVGElement f : decoElementsCollision) {
             f.processSvg();
+
         }
 
     }
@@ -348,10 +352,11 @@ public class Main extends Application {
                 try {
                     /** Process the svg file */
                     try {
-
+                        seedNum = (int) (Math.random() * 10000);
                         commands = orderFile.processCommand(points);
 //                        toWandererVersion1(commands);
-                        toWandererVersion2(commands);
+//                        toWandererVersion2(commands);
+                        toWandererVersion3(commands);
                         SVGElement.outputSvgCommands(skeletonPathCommands, "Added Skeleton path", info);
                         SVGElement.outputPoints(points, info);
                         SVGElement.outputSvgCommandsAndPoints(skeletonPathCommands, points, "pointsAndCommand", info);
@@ -644,25 +649,95 @@ public class Main extends Application {
             SvgPathCommand firstCommand = deco.getCommandList().get(1);
             SvgPathCommand lastCommand = deco.getCommandList().get(deco.getCommandList().size() - 1);
             Point startStart = deco.getCommandList().get(0).getDestinationPoint();
-            Point startEnd = Spline.evaluate(startStart, firstCommand.getControlPoint1(), firstCommand.getControlPoint2(), firstCommand.getDestinationPoint(), 0.05);
+            Point startEnd = firstCommand.isLineTo() ? firstCommand.getDestinationPoint() : Spline.evaluate(startStart, firstCommand.getControlPoint1(), firstCommand.getControlPoint2(), firstCommand.getDestinationPoint(), 0.2);
             Vector2D startVector = new Vector2D(startStart, startEnd);
 
             Point endStart = lastCommand.getDestinationPoint();
-            Point endEnd = Spline.evaluate(deco.getCommandList().get(deco.getCommandList().size() - 2).getDestinationPoint(), lastCommand.getControlPoint1(), lastCommand.getControlPoint2(), endStart, 0.95);
+            Point endEnd = lastCommand.isLineTo() ? lastCommand.getDestinationPoint() : Spline.evaluate(deco.getCommandList().get(deco.getCommandList().size() - 2).getDestinationPoint(), lastCommand.getControlPoint1(), lastCommand.getControlPoint2(), endStart, 0.8);
             Vector2D endVector = new Vector2D(endStart, endEnd);
 
             double angle = Vector2D.getAngle(startVector, endVector);
+            if (angle > Math.PI)
+                angle = Math.PI * 2 - angle;
             decoElementAngleMap.put(deco, angle);
         }
         return decoElementAngleMap;
     }
 
-    private void toWandererVersion2(List<SvgPathCommand> commands) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException {
-        //add random points to make commands look prettier
-        loadWandererDefault();
-        quadraplePoints(commands, true);
-        skeletonPathCommands = commands;
+//    private void toWandererVersion2(List<SvgPathCommand> commands) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException {
+//        //add random points to make commands look prettier
+//        loadWandererDefault();
+//        quadraplePoints(commands, true);
+//        skeletonPathCommands = commands;
+//
+//
+//        // calculate decoElementAnd Angle
+////        Map<SVGElement, SVGElement> decoElemCollisionMap = new HashMap<>();
+////        for (int i = 0; i < decoElements.size(); i++) {
+////            decoElemCollisionMap.put(decoElements.get(i), decoElementsCollision.get(i));
+////        }
+//        Map<SVGElement, Double> decoElementAngleMap = getDecoElmentAndAngleMap();
+//        System.out.println("Mymap:");
+//        System.out.println(decoElementAngleMap);
+//        PatternRenderer interpolationRenderer = new PatternRenderer(regionFile.getfFileName(), skeletonPathCommands, "",
+//                renderedDecoCommands, PatternRenderer.RenderType.CATMULL_ROM, info);
+//        interpolationRenderer.toCatmullRom();
+//        skeletonPathCommands = interpolationRenderer.getRenderedCommands();
+//        SVGElement.outputSvgCommands(skeletonPathCommands, "Skeleton path", info);
+//        renderedDecoCommands = decoElementFile.getCommandList();
+//        normalizeDecoElement();
+//        for (SVGElement f : decoElements) {
+//            f.setCommandLists(normalizeDecoElement(f));
+//        }
+//        setBranchingParameter();
+//
+//        collisionCommands = SvgPathCommand.commandsScaling(collisionCommands,
+//                info.decorationSize,
+//                collisionCommands.get(0).getDestinationPoint());
+//        SVGElement.outputSvgCommands(skeletonPathCommands, "Without deco", info);
+//
+//        for (SVGElement f : decoElements) {
+//            f.setCommandLists(SvgPathCommand.commandsScaling(f.getCommandList(), info.decorationSize, f.getCommandList().get(0).getDestinationPoint()));
+//        }
+//
+//        for (int i = skeletonPathCommands.size() - 3; i >= 2; i -= 3) {
+//            Point prevPoint = skeletonPathCommands.get(i - 2).getDestinationPoint();
+//            Point thisPoint = skeletonPathCommands.get(i - 1).getDestinationPoint();
+//            Point nextPoint = skeletonPathCommands.get(i).getDestinationPoint();
+//            Double between =  Math.abs(Point.getAngle(thisPoint, prevPoint) - Point.getAngle(thisPoint, nextPoint));
+//
+//            Vector2D nextVec = new Vector2D(thisPoint, nextPoint).unit();
+//            Vector2D prevVec = new Vector2D(thisPoint, prevPoint).unit();
+//            double betweenAngle = Vector2D.getAngle(nextVec, prevVec);
+//            if (between > Math.PI)
+//                between = Math.PI * 2 - between;
+//            double rotation = prevVec.getAngle() + Math.PI * 1.5 + betweenAngle * 0.5;
+////            if (between < 0)
+////                rotation += Math.PI;
+//
+//            SVGElement insertDeco = bestDeco(between, decoElementAngleMap);
+//            List<SvgPathCommand> strippedDecoCommands = insertDeco.getCommandList().subList(1, insertDeco.getCommandList().size() - 1);
+//            List<SvgPathCommand> rotatedCommands = PatternRenderer.insertPatternToList(strippedDecoCommands, null, strippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
+////            List<SvgPathCommand> rotatedCollisionCommands = PatternRenderer.insertPatternToList(decoElemCollisionMap.get(insertDeco).getCommandList(), null, decoElemCollisionMap.get(insertDeco).getCommandList().get(0).getDestinationPoint(), rotation, false, false);
+//
+//
+//             /* insertion point calc */
+//            Point startPoint = rotatedCommands.get(0).getDestinationPoint(); // skipped first
+//
+//            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCommands)).getBox().getCenter();
+//
+//            Point insertPoint = thisPoint.add(startPoint.minus(centerPoint));
+//           List<SvgPathCommand> translated = PatternRenderer.insertPatternToList(rotatedCommands, null, insertPoint, 0, false, false);
+//            skeletonPathCommands.addAll(i, translated.subList(0, translated.size() - 1));
+//        }
+//    }
 
+    private void toWandererVersion3(List<SvgPathCommand> commands) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException {
+        //add random points to make commands look prettier
+        String output = "";
+        loadWandererDefault();
+        skeletonPathCommands = commands;
+        List<SvgPathCommand> outputCommands = new ArrayList<>();
 
         // calculate decoElementAnd Angle
 //        Map<SVGElement, SVGElement> decoElemCollisionMap = new HashMap<>();
@@ -693,45 +768,121 @@ public class Main extends Application {
             f.setCommandLists(SvgPathCommand.commandsScaling(f.getCommandList(), info.decorationSize, f.getCommandList().get(0).getDestinationPoint()));
         }
 
-        for (int i = skeletonPathCommands.size() - 3; i >= 2; i -= 3) {
-            Point prevPoint = skeletonPathCommands.get(i - 2).getDestinationPoint();
-            Point thisPoint = skeletonPathCommands.get(i - 1).getDestinationPoint();
-            Point nextPoint = skeletonPathCommands.get(i).getDestinationPoint();
-            Double between = Point.getAngle(thisPoint, prevPoint) - Point.getAngle(thisPoint, nextPoint);
+        Point prevDecoFirstConnect = new Point();
+        Point prevDecoSecondConnect = new Point();
+
+        List<Point> allDestionation = new ArrayList<>();
+        List<Point> allFirstControl = new ArrayList<>();
+        List<Point> allSecondControl = new ArrayList<>();
+        for (int i = skeletonPathCommands.size() - 1; i >= 1; i--) {
+            boolean isLast = i == skeletonPathCommands.size() - 1;
+            Point prevPoint = isLast ? skeletonPathCommands.get(i).getDestinationPoint() : skeletonPathCommands.get(i + 1).getDestinationPoint();
+            Point thisPoint = skeletonPathCommands.get(i).getDestinationPoint();
+            Point nextPoint = skeletonPathCommands.get(i - 1).getDestinationPoint();
+            Double between = Math.abs(Point.getAngle(thisPoint, prevPoint) - Point.getAngle(thisPoint, nextPoint));
             Vector2D nextVec = new Vector2D(thisPoint, nextPoint).unit();
             Vector2D prevVec = new Vector2D(thisPoint, prevPoint).unit();
             double betweenAngle = Vector2D.getAngle(nextVec, prevVec);
-            double rotation = prevVec.getAngle() + Math.PI * 1.5 + betweenAngle * 0.5;
-//            if (between < 0)
-//                rotation += Math.PI;
+            double rotation = nextVec.add(prevVec).getAngle() - Math.PI * 0.5;
+            while (rotation > Math.PI * 2.0)
+                rotation -= Math.PI * 2.0;
+            while (rotation < 0)
+                rotation += Math.PI * 2.0;
+            if (between > Math.PI)
+                between = Math.PI * 2 - between;
+            SVGElement insertDeco = bestDeco(between, decoElementAngleMap);
+            output += SVGElement.outputText(String.format("%.1f-%s-%.1f", between / Math.PI * 180, insertDeco.getfFileName(), decoElementAngleMap.get(insertDeco) / Math.PI * 180), thisPoint, "FF0000");
 
-            SVGElement insertDeco = bestDeco(betweenAngle, decoElementAngleMap);
-            List<SvgPathCommand> strippedDecoCommands = insertDeco.getCommandList().subList(1, insertDeco.getCommandList().size() - 1);
-            List<SvgPathCommand> rotatedCommands = PatternRenderer.insertPatternToList(strippedDecoCommands, null, strippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
-//            List<SvgPathCommand> rotatedCollisionCommands = PatternRenderer.insertPatternToList(decoElemCollisionMap.get(insertDeco).getCommandList(), null, decoElemCollisionMap.get(insertDeco).getCommandList().get(0).getDestinationPoint(), rotation, false, false);
+            List<SvgPathCommand> nonStrippedDecoCommands = insertDeco.getCommandList();
+
+            List<SvgPathCommand> nonStrippedRotated = PatternRenderer.insertPatternToList(nonStrippedDecoCommands, null, nonStrippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
 
 
              /* insertion point calc */
-            Point startPoint = rotatedCommands.get(0).getDestinationPoint(); // skipped first
-
-//            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCollisionCommands)).getBox().getCenter();
-            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(rotatedCommands)).getBox().getCenter();
+            Point startPoint = nonStrippedRotated.get(1).getDestinationPoint(); // skipped first
+            List<SvgPathCommand> strippedRotatedCommands = nonStrippedRotated.subList(1, nonStrippedRotated.size() - 1);
+            strippedRotatedCommands.get(0).setCommandType(SvgPathCommand.CommandType.LINE_TO);
+            strippedRotatedCommands.get(strippedRotatedCommands.size() - 1).setCommandType(SvgPathCommand.CommandType.LINE_TO);
+            Point centerPoint = new ConvexHullBound(SvgPathCommand.toPoints(strippedRotatedCommands)).getBox().getCenter(); // skip first and last
 
             Point insertPoint = thisPoint.add(startPoint.minus(centerPoint));
-//            Point insertPoint = thisPoint;
-//            Point insertPoint = thisPoint.add(startPoint.minus(rotatedCommands.get(rotatedCommands.size() - 1).getDestinationPoint()).multiply(0.5));
-            List<SvgPathCommand> translated = PatternRenderer.insertPatternToList(rotatedCommands, null, insertPoint, 0, false, false);
-//            skeletonPathCommands.remove(i);
-//            skeletonPathCommands.remove(i+1);
-//            skeletonPathCommands.set(i, SvgPathCommand.catmullRomSegment(translated.get(translated.size() - 3), translated.get(translated.size() - 2), translated.get(translated.size() - 1), skeletonPathCommands.get(i)  ) ) ;
-            skeletonPathCommands.addAll(i, translated.subList(0, translated.size() - 1));
+            List<SvgPathCommand> nonStrippedTranslated = PatternRenderer.insertPatternToList(nonStrippedRotated, null, insertPoint.add(nonStrippedRotated.get(0).getDestinationPoint().minus(nonStrippedRotated.get(1).getDestinationPoint())), 0, false, false);
+            List<SvgPathCommand> strippedTranslated = PatternRenderer.insertPatternToList(strippedRotatedCommands, null, insertPoint, 0, false, false);
+
+            if (Point.getDistance(nonStrippedTranslated.get(0).getDestinationPoint(), nextPoint) >
+                    Point.getDistance(nonStrippedTranslated.get(nonStrippedTranslated.size() - 1).getDestinationPoint(), nextPoint)) {
+                strippedTranslated = SvgPathCommand.reverseCommands(strippedTranslated);
+                nonStrippedTranslated = SvgPathCommand.reverseCommands(nonStrippedTranslated);
+                strippedRotatedCommands = SvgPathCommand.reverseCommands(strippedRotatedCommands);
+                nonStrippedRotated = SvgPathCommand.reverseCommands(nonStrippedRotated);
+
+            }
+            double len = 50;
+
+
+            //scale the tangents at connecting points
+            Point prevDecoFirstVector = new Point(prevDecoFirstConnect.minus(prevDecoSecondConnect)).unit();
+            prevDecoFirstConnect = prevDecoSecondConnect.add(prevDecoFirstVector.multiply(Point.getDistance(thisPoint, prevPoint) * 0.33));
+
+
+            Point thisDecoLastConnect = nonStrippedTranslated.get(nonStrippedTranslated.size() - 1).getDestinationPoint();
+            Point thisDecoSecondLastConnect = nonStrippedTranslated.get(nonStrippedTranslated.size() - 2).getDestinationPoint();
+            Point thisDecoLastVector = new Point(thisDecoLastConnect.minus(thisDecoSecondLastConnect)).unit();
+            thisDecoLastConnect = thisDecoSecondLastConnect.add(thisDecoLastVector.multiply(Point.getDistance(thisPoint, prevPoint) * 0.33));
+
+            Point firstControl = thisDecoLastConnect;
+            Point secondControl = prevDecoFirstConnect;
+
+            allFirstControl.add(firstControl);
+            allSecondControl.add(secondControl);
+            SvgPathCommand trainsitionCommand = new SvgPathCommand(firstControl, secondControl, prevDecoSecondConnect, SvgPathCommand.CommandType.CURVE_TO);
+
+            prevDecoFirstConnect = nonStrippedTranslated.get(0).getDestinationPoint();
+            prevDecoSecondConnect = strippedTranslated.get(0).getDestinationPoint(); //destination
+            allDestionation.add(prevDecoSecondConnect);
+
+
+            if (!isLast) {
+                outputCommands.add(0, trainsitionCommand);
+                outputCommands.addAll(0, strippedTranslated);
+                SVGElement.outputSvgCommands(strippedTranslated, "strippedTranslated", info);
+                SVGElement.outputSvgCommands(nonStrippedTranslated, "nonstrippedTranslated", info);
+                SVGElement.outputSvgCommands(strippedRotatedCommands, "strippedRotated", info);
+                SVGElement.outputSvgCommands(nonStrippedRotated, "nonStrippedRotated", info);
+                System.out.println("wtf");
+
+            }
+
+//            SVGElement.outputSvgCommands(outputCommands, "developinPath", info);
+
         }
+        System.out.println(output);
+        skeletonPathCommands = outputCommands;
+        SVGElement.outputPoints(allDestionation, info, "allDestionation");
+        SVGElement.outputPoints(allFirstControl, info, "allFirstControl");
+        SVGElement.outputPoints(allSecondControl, info, "allSecondControl");
+        List<Point> allControl = new ArrayList<>(allFirstControl);
+        allControl.addAll(allSecondControl);
+        SVGElement.outputSvgCommands(skeletonPathCommands, "beforeStrip", info);
+        SVGElement.outputSvgCommandsAndPoints(skeletonPathCommands, allControl, "commandsWithControlPoints", info);
+        SVGElement.outputSvgCommandsAndPointsAndText(skeletonPathCommands, output, allControl, "commandsWithControlPointsAndAngle", info);
+//        int currN = skeletonPathCommands.size();
+//        for (int i = 0; i < currN; i++) {
+//            skeletonPathCommands.add(new SvgPathCommand(skeletonPathCommands.get(i).getControlPoint1(), SvgPathCommand.CommandType.LINE_TO));
+//            skeletonPathCommands.add(new SvgPathCommand(skeletonPathCommands.get(i).getControlPoint2(), SvgPathCommand.CommandType.LINE_TO));
+//            skeletonPathCommands.add(new SvgPathCommand(skeletonPathCommands.get(i).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
+//        }
     }
 
     private SVGElement bestDeco(double betweenAngle, Map<SVGElement, Double> decoElementAngleMap) {
         SVGElement bestDeco = decoElements.get(0);
+        while (betweenAngle < 0)
+            betweenAngle += Math.PI * 2;
+        while (betweenAngle > Math.PI * 2)
+            betweenAngle -= Math.PI * 2;
+
         for (SVGElement e : decoElements) {
-            if (Math.abs(decoElementAngleMap.get(e) - betweenAngle) < Math.abs(decoElementAngleMap.get(bestDeco) - betweenAngle))
+            if (Math.abs(decoElementAngleMap.get(e) - betweenAngle) > Math.abs(decoElementAngleMap.get(bestDeco) - betweenAngle))
                 bestDeco = e;
         }
 

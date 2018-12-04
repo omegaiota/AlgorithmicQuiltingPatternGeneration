@@ -33,17 +33,44 @@ public class SVGElement {
         this.fSvgFile = importFile;
     }
 
-    public static File outputSvgCommandsAndPoints(List<SvgPathCommand> outputCommandList, List<Point> points, String fileName, GenerationInfo info) {
+    public static File outputSvgCommandsAndPointsAndText(List<SvgPathCommand> outputCommandList, String text, List<Point> points, String fileName, GenerationInfo info) {
         int width = (int) Double.max(info.regionFile.getWidth(), 750);
         int height = (int) Double.max(info.regionFile.getHeight(), 750);
         PrintWriter writer = writeHeader(fileName, width, height);
-//        corcordWrite("corcordPoints", points);
         for (Point p : points) {
             writer.print(p.toSvgCode());
         }
 
-//        writer.println("  </g>");
-//        writer.println("</svg>");
+        writer.println(text);
+        writer.println("    <path");
+        writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
+        writer.print("    d=\"");
+        // First command needs to be moved to
+        for (int i = 0; i < outputCommandList.size(); i++) {
+            if (i == 0) {
+                writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
+            }
+            SvgPathCommand command = outputCommandList.get(i);
+
+            // Change moveTo to lineTo so that path will be one stitch
+            writer.print(command.toSvgCode());
+        }
+        writer.println("\"");
+        writer.println("       id=\"path3342\"\n");
+        writer.println("       inkscape:connector-curvature=\"0\" />");
+        writer.println("  </g>");
+        writer.println("</svg>");
+        writer.close();
+        return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + fileName + ".svg");
+
+    }
+    public static File outputSvgCommandsAndPoints(List<SvgPathCommand> outputCommandList, List<Point> points, String fileName, GenerationInfo info) {
+        int width = (int) Double.max(info.regionFile.getWidth(), 750);
+        int height = (int) Double.max(info.regionFile.getHeight(), 750);
+        PrintWriter writer = writeHeader(fileName, width, height);
+        for (Point p : points) {
+            writer.print(p.toSvgCode());
+        }
 
         writer.println("    <path");
         writer.println("       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"");
@@ -57,13 +84,6 @@ public class SVGElement {
 
             // Change moveTo to lineTo so that path will be one stitch
             writer.print(command.toSvgCode());
-
-
-            //commented out this for generating set of 81 results
-//                if ((command.getCommandType() == SvgPathCommand.CommandType.MOVE_TO) && (i != 0)) {
-//                    writer.print(new SvgPathCommand(command, SvgPathCommand.CommandType.LINE_TO).toSvgCode());
-//                } else
-//                    writer.print(command.toSvgCode());
         }
         writer.println("\"");
         writer.println("       id=\"path3342\"\n");
@@ -84,6 +104,7 @@ public class SVGElement {
     public static PrintWriter writeHeader(String fileName, double width, double height) {
         PrintWriter writer = null;
         try {
+
             writer = new PrintWriter("./out/" + fileName + Main.seedNum + ".svg", "UTF-8");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -221,10 +242,10 @@ public class SVGElement {
 
     }
 
-    public static void outputPoints(List<Point> points, GenerationInfo info) {
+    public static void outputPoints(List<Point> points, GenerationInfo info, String name) {
         int width = (int) Double.max(info.regionFile.getWidth(), 750);
         int height = (int) Double.max(info.regionFile.getHeight(), 750);
-        PrintWriter writer = writeHeader("points", width, height);
+        PrintWriter writer = writeHeader(name, width, height);
         corcordWrite("corcordPoints", points);
         for (Point p : points) {
             writer.print(p.toSvgCode());
@@ -233,6 +254,11 @@ public class SVGElement {
         writer.println("  </g>");
         writer.println("</svg>");
         writer.close();
+
+    }
+
+    public static void outputPoints(List<Point> points, GenerationInfo info) {
+        outputPoints(points, info, "points");
 
 //        return new File("/Users/JacquelineLi/IdeaProjects/svgProcessor/out/" + "points" + ".svg");
     }
