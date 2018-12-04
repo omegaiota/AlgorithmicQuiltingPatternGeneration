@@ -2,13 +2,14 @@ package jackiequiltpatterndeterminaiton;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
@@ -61,7 +62,9 @@ public class Main extends Application {
             patternPropertyInput = new VBox(columnItemBundleSpacing), svgToPat = new VBox(columnItemBundleSpacing),
             skeletonGenPropertyInput = new VBox(columnItemBundleSpacing), skeletonRenderPropertyInput = new VBox(columnItemBundleSpacing),
             patternSelection = new VBox(columnItemBundleSpacing);
+    private VBox layouts = new VBox(5);
     private HBox menu = new HBox(15), patternSourceBox = new HBox(2), fileSourceBox = new HBox(2);
+    private Pane visualizationPane = new StackPane();
     //ComboBox
     private ComboBox skeletonGenComboBox = new ComboBox(), skeletonRenderComboBox = new ComboBox(),
             patternLibraryComboBox = new ComboBox(), patternRenderComboBox = new ComboBox();
@@ -95,7 +98,8 @@ public class Main extends Application {
     private SVGElement skeletonPathFileProcessor = null, renderedDecoElemFileProcessor = null, collisionFile = null;
     private List<SVGElement> decoElements = new ArrayList<>();
     private List<SVGElement> decoElementsCollision = new ArrayList<>();
-    private List<SvgPathCommand> renderedDecoCommands = new ArrayList<>(), skeletonPathCommands = new ArrayList<>(), skeletonCopy = new ArrayList<>();
+    private List<SvgPathCommand> renderedDecoCommands = new ArrayList<>(), skeletonPathCommands = new ArrayList<>(),
+            skeletonCopy = new ArrayList<>();
     public static void main(String[] args) {
         launch(args);
     }
@@ -267,13 +271,20 @@ public class Main extends Application {
         //svgToPat
         svgToPat.getChildren().addAll(svgToPatLabel, loadSvgFileButton, loadConcrdePoints);
         toolColumn.getChildren().addAll(toolLabel, svgToPat);
+//        toolColumn.setPrefWidth(40);
+//        skeletonColumn.setPrefWidth(40);
+
         menu.getChildren().addAll(regionColumn, skeletonColumn, patternColumn, toolColumn);
 
-        layout.setCenter(menu);
+        layouts.getChildren().addAll(menu);
+
+        layout.setCenter(layouts);
         layout.setBottom(generateButton);
         layout.setTop(quiltingPatternGeneration);
 
-        layout.setPadding(new Insets(30, 100, 280, 100));
+        layout.setPadding(new Insets(30, 5, 30, 5));
+//        layout.setPrefWidth(2000);
+        layout.setPrefHeight(1000);
         BorderPane.setAlignment(generateButton, Pos.BOTTOM_CENTER);
         BorderPane.setAlignment(quiltingPatternGeneration, Pos.TOP_CENTER);
         BorderPane.setMargin(generateButton, new Insets(10, 8, 8, 8));
@@ -357,10 +368,20 @@ public class Main extends Application {
 //                        toWandererVersion1(commands);
 //                        toWandererVersion2(commands);
                         toWandererVersion3(commands);
+                        Visualizer.addCommandsPlot(skeletonPathCommands, visualizationPane);
+                        Stage menuStage = new Stage();
+                        ScrollPane newPane = new ScrollPane();
+                        newPane.setContent(Visualizer.addCommandsPlot(skeletonPathCommands));
+                        newPane.setPrefWidth(visualizationPane.getPrefWidth());
+                        newPane.setPrefHeight(visualizationPane.getPrefHeight());
+                        menuStage.setScene(new Scene(newPane, Color.rgb(35, 39, 50)));
+                        menuStage.setHeight(visualizationPane.getPrefHeight());
+                        menuStage.setWidth(visualizationPane.getPrefWidth());
+                        menuStage.show();
+
                         SVGElement.outputSvgCommands(skeletonPathCommands, "Added Skeleton path", info);
                         SVGElement.outputPoints(points, info);
                         SVGElement.outputSvgCommandsAndPoints(skeletonPathCommands, points, "pointsAndCommand", info);
-
 
                     } catch (ParserConfigurationException | SAXException e1) {
                         e1.printStackTrace();
@@ -439,8 +460,8 @@ public class Main extends Application {
         });
 
         generateButton.setOnAction((ActionEvent e) -> {
-
             /* Set Boundary */
+
             if (boundary == null) {
 
             }
@@ -500,11 +521,6 @@ public class Main extends Application {
             /* Skeleton Path Generation */
             PointDistribution distribute = null;
             File skeletonPathFile = null;
-//            skeletonName = regionFile.getfFileName();
-
-
-//            skeletonName += skeletonGenComboBox.getValue().toString();
-
 
             if (skeletonPathType.isTessellation()) {
                 info.pointDistributionDist = Double.valueOf(skeletonGenTextField.getText());
@@ -768,8 +784,9 @@ public class Main extends Application {
             f.setCommandLists(SvgPathCommand.commandsScaling(f.getCommandList(), info.decorationSize, f.getCommandList().get(0).getDestinationPoint()));
         }
 
-        Point prevDecoFirstConnect = new Point();
-        Point prevDecoSecondConnect = new Point();
+        Point secondControlPoint = new Point();
+        Point prevDecoSecondPoint = new Point();
+        Point prevDecoFirstPoint = new Point();
 
         List<Point> allDestionation = new ArrayList<>();
         List<Point> allFirstControl = new ArrayList<>();
@@ -817,34 +834,35 @@ public class Main extends Application {
                 nonStrippedRotated = SvgPathCommand.reverseCommands(nonStrippedRotated);
 
             }
-            double len = 50;
+            double len = 0.7;
 
 
             //scale the tangents at connecting points
-            Point prevDecoFirstVector = new Point(prevDecoFirstConnect.minus(prevDecoSecondConnect)).unit();
-            prevDecoFirstConnect = prevDecoSecondConnect.add(prevDecoFirstVector.multiply(Point.getDistance(thisPoint, prevPoint) * 0.33));
+            Point prevDecoFirstVector = new Point(secondControlPoint.minus(prevDecoSecondPoint)).unit();
+            secondControlPoint = prevDecoSecondPoint.add(prevDecoFirstVector.multiply(Point.getDistance(thisPoint, prevPoint) * len));
 
 
-            Point thisDecoLastConnect = nonStrippedTranslated.get(nonStrippedTranslated.size() - 1).getDestinationPoint();
+            Point firstControlPoint = nonStrippedTranslated.get(nonStrippedTranslated.size() - 1).getDestinationPoint();
             Point thisDecoSecondLastConnect = nonStrippedTranslated.get(nonStrippedTranslated.size() - 2).getDestinationPoint();
-            Point thisDecoLastVector = new Point(thisDecoLastConnect.minus(thisDecoSecondLastConnect)).unit();
-            thisDecoLastConnect = thisDecoSecondLastConnect.add(thisDecoLastVector.multiply(Point.getDistance(thisPoint, prevPoint) * 0.33));
+            Point thisDecoLastVector = new Point(firstControlPoint.minus(thisDecoSecondLastConnect)).unit();
+            firstControlPoint = thisDecoSecondLastConnect.add(thisDecoLastVector.multiply(Point.getDistance(thisPoint, prevPoint) * len));
 
-            Point firstControl = thisDecoLastConnect;
-            Point secondControl = prevDecoFirstConnect;
 
-            allFirstControl.add(firstControl);
-            allSecondControl.add(secondControl);
-            SvgPathCommand trainsitionCommand = new SvgPathCommand(firstControl, secondControl, prevDecoSecondConnect, SvgPathCommand.CommandType.CURVE_TO);
+            allFirstControl.add(firstControlPoint);
+            allSecondControl.add(secondControlPoint);
+//            SvgPathCommand trainsitionCommand = new SvgPathCommand(firstControlPoint, secondControlPoint, prevDecoSecondPoint, SvgPathCommand.CommandType.CURVE_TO);
+            SvgPathCommand trainsitionCommand = new SvgPathCommand(firstControlPoint, secondControlPoint, prevDecoFirstPoint, SvgPathCommand.CommandType.CURVE_TO);
 
-            prevDecoFirstConnect = nonStrippedTranslated.get(0).getDestinationPoint();
-            prevDecoSecondConnect = strippedTranslated.get(0).getDestinationPoint(); //destination
-            allDestionation.add(prevDecoSecondConnect);
+            secondControlPoint = nonStrippedTranslated.get(0).getDestinationPoint();
+            prevDecoFirstPoint = nonStrippedTranslated.get(0).getDestinationPoint();
+            prevDecoSecondPoint = strippedTranslated.get(0).getDestinationPoint(); //destination
+            allDestionation.add(prevDecoSecondPoint);
 
 
             if (!isLast) {
                 outputCommands.add(0, trainsitionCommand);
-                outputCommands.addAll(0, strippedTranslated);
+//                outputCommands.addAll(0, strippedTranslated);
+                outputCommands.addAll(0, nonStrippedTranslated);
                 SVGElement.outputSvgCommands(strippedTranslated, "strippedTranslated", info);
                 SVGElement.outputSvgCommands(nonStrippedTranslated, "nonstrippedTranslated", info);
                 SVGElement.outputSvgCommands(strippedRotatedCommands, "strippedRotated", info);

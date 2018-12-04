@@ -178,6 +178,10 @@ public class SvgPathCommand {
         List<Point> ans = new ArrayList<>();
         for (SvgPathCommand c : decoElmentCommands) {
             ans.add(c.getDestinationPoint());
+            if (c.isCurveTo()) {
+                ans.add(c.getControlPoint1());
+                ans.add(c.getControlPoint2());
+            }
         }
         return ans;
     }
