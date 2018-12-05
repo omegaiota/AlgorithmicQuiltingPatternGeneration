@@ -1,5 +1,9 @@
 package src.jackiealgorithmicquilting;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 /**
@@ -575,6 +579,30 @@ public final class PointDistribution {
             System.out.println("Restriction size:" + angles.size());
             angleRestrictedBFS(null, start, angles, disLen, 0, true);
         }
+    }
+
+    public  static void writeoutToConcorderFormat(List<Point> points, String fileName) {
+        PrintWriter writer = null;
+        try {
+
+            writer = new PrintWriter("./out/" + fileName + ".tsp", "UTF-8");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        writer.println(String.format("NAME : %s\n", fileName) +
+                "COMMENT : Jackie \n" +
+                "TYPE : TSP\n" +
+                String.format("DIMENSION : %d\n", points.size()) +
+                "EDGE_WEIGHT_TYPE : EUC_2D\n" +
+                "NODE_COORD_SECTION");
+        for (int i = 0; i < points.size(); i++) {
+            writer.println(String.format("%d %.3f %.2f", i, points.get(i).x, points.get(i).y));
+        }
+        writer.close();
+
     }
 
 

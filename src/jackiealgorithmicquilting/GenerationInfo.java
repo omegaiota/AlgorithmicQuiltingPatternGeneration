@@ -13,7 +13,8 @@ public final class GenerationInfo {
     SVGElement decoElementFile;
     SVGElement regionFile;
     SVGElement collisionFile;
-    public PointDistribution distribute;
+    public PointDistribution tessellationDistribution;
+    public List<Point> generatedPoints = new ArrayList<>();
     Main.SkeletonPathType skeletonPathType;
 
     Main.SkeletonRenderType skeletonRenderType;
@@ -28,6 +29,8 @@ public final class GenerationInfo {
     double initialLength;
     double randomFactor;
     double decorationDensity = 0.0;
+    public double tangentPercentage;
+
     double decorationSize = 0.0, decorationGap, initialAngle;
     TreeNode<Point> spanningTree;
     List<TreeTraversal.NodeType> nodeType;
@@ -41,13 +44,7 @@ public final class GenerationInfo {
         linearizeCommands = true;
     }
 
-    public ConvexHullBound getRegionConvexHull() {
-        if (regionConvexHull == null)
-            regionConvexHull = ConvexHullBound.fromCommands(regionFile.getCommandList());
-        return regionConvexHull;
-    }
-
-    public void setDecorationGap(double decorationGap) {
+    public void setGapLen(double decorationGap) {
         if (this.decorationSize < 0.01)
             this.decorationGap = decorationGap;
         else
@@ -76,7 +73,7 @@ public final class GenerationInfo {
 
         if (skeletonPathType != null) {
             skeleton = skeletonPathType.toString();
-            if (skeletonPathType.isTreeStructure())
+            if (skeletonPathType.isTreeStructure)
                 pointDensity = String.format("pointDensity_%.1f", pointDistributionDist);
         }
 

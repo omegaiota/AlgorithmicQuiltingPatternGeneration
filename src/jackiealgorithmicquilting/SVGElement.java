@@ -648,4 +648,32 @@ public class SVGElement {
         commandList.add(new SvgPathCommand(commandList.get(0).getDestinationPoint()));
         return commandList;
     }
+
+    public List<SvgPathCommand> processConcordeCommand(List<Point> points) throws XPathExpressionException, ParserConfigurationException, IOException, SAXException {
+        FileInputStream fis = new FileInputStream(fSvgFile);
+
+        //Construct BufferedReader from InputStreamReader
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        List<SvgPathCommand> commandList = new ArrayList<>();
+
+        String line = null;
+        int count = 0;
+        while ((line = br.readLine()) != null) {
+            count++;
+            if (count == 1)
+                continue;
+            String[] pathElemArray = line.split(" ");
+            for (int i = 0; i < pathElemArray.length; i++) {
+                if (Integer.valueOf(pathElemArray[i]) >= points.size()) {
+                    System.out.println(line);
+                    System.out.println(i);
+                }
+                commandList.add(new SvgPathCommand(points.get(Integer.valueOf(pathElemArray[i]))));
+            }
+        }
+
+        commandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
+        commandList.add(new SvgPathCommand(commandList.get(0).getDestinationPoint()));
+        return commandList;
+    }
 }
