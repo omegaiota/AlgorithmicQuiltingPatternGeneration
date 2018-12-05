@@ -1,6 +1,4 @@
 package src.jackiealgorithmicquilting;
-
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -500,8 +498,13 @@ public final class PointDistribution {
     }
 
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE, HEXAGON
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE, HEXAGON;
+        public static RenderType getDefault() {
+           return  THREE_THREE_FOUR_THREE_FOUR;
+        }
     }
+
+
 
     interface Distribution {
         void generate(Point start);

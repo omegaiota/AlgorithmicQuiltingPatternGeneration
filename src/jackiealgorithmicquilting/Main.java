@@ -5,8 +5,18 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
@@ -28,8 +38,19 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static src.jackiealgorithmicquilting.Main.SkeletonPathType.*;
-import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.*;
+import static src.jackiealgorithmicquilting.Main.PrimitiveSource.*;
+import static src.jackiealgorithmicquilting.Main.SkeletonPathType.POISSON_DISK;
+import static src.jackiealgorithmicquilting.Main.SkeletonPathType.SNAKE;
+import static src.jackiealgorithmicquilting.Main.SkeletonPathType.VINE;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.ALONG_PATH;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.CATMULL_ROM;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.FIXED_WIDTH_FILL;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.NONE;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.PEBBLE;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.RECTANGLE;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.STIPPLING;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.TILING;
+import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.WANDERER;
 
 public class Main extends Application {
     /* Constant */
@@ -55,7 +76,7 @@ public class Main extends Application {
             skeletonRenderTextField2 = new TextField(),
             skeletonRenderTextField3 = new TextField(),
             skeletonRenderTextField4 = new TextField();
-    private List<Label> skeletonRenderParamLabels = Arrays.asList(skeletonRenderFieldLabel1,skeletonRenderFieldLabel2, skeletonRenderFieldLabel3, skeletonRenderFieldLabel4);
+    private List<Label> skeletonRenderParamLabels = Arrays.asList(skeletonRenderFieldLabel1, skeletonRenderFieldLabel2, skeletonRenderFieldLabel3, skeletonRenderFieldLabel4);
     private Map<Label, TextField> skeletonRenderLabelTexfieldMap = new HashMap<Label, TextField>() {
         {
             put(skeletonRenderFieldLabel1, skeletonRenderTextField1);
@@ -96,8 +117,6 @@ public class Main extends Application {
             BUTTON_FONT = new Font("Avenir", 10),
             TITLE_FONT = new Font("Luminari", 40);
     private Color labelColor = Color.ORANGE, columnLabelColor = Color.SILVER;
-    private ToggleButton patternFromFile = new ToggleButton("from file"), noPattern = new ToggleButton("none"),
-            patternFromLibrary = new ToggleButton("from library");
     /* Folder */
     private final File TILE_LIB_PATH = new File("./src/resources/patterns/tiles/"),
             ALONG_LIB_PATH = new File("./src/resources/patterns/alongPath/"),
@@ -109,7 +128,7 @@ public class Main extends Application {
 
     private PatternRenderer skeletonrenderer = null;
     private List<SvgPathCommand> collisionCommands = new ArrayList<>();
-    private SVGElement  renderedDecoElemFileProcessor = null, collisionFile = null;
+    private SVGElement renderedDecoElemFileProcessor = null, collisionFile = null;
     private List<SVGElement> decoElements = new ArrayList<>();
     private List<SVGElement> decoElementsCollision = new ArrayList<>();
     private List<SvgPathCommand> renderedDecoCommands = new ArrayList<>(),
@@ -235,7 +254,7 @@ public class Main extends Application {
         patternRenderComboBox.setValue("No Rendering");
 
         * */
-        patternFromLibrary.setSelected(true);
+        PrimitiveSource.FILE.button.setSelected(true);
     }
 
     public BorderPane setLayoutWithGraph(Stage stage) {
@@ -263,8 +282,9 @@ public class Main extends Application {
         /* Pattern selection*/
 
         /*  Toggle group*/
-        patternSourceGroup.getToggles().addAll(patternFromFile, patternFromLibrary, noPattern);
-        patternSourceBox.getChildren().addAll(patternFromFile, patternFromLibrary, noPattern);
+        List<ToggleButton> allToggles = getAllToggleButtons();
+        patternSourceGroup.getToggles().addAll(allToggles);
+        patternSourceBox.getChildren().addAll(allToggles);
         patternSelection.getChildren().addAll(patternSelectionLabel, patternSourceBox, fileSourceBox);
 
         /* initialize pattern library */
@@ -274,9 +294,6 @@ public class Main extends Application {
 
         /* Pattern rendering */
         patternRenderComboBox.getItems().addAll("Repeat with Rotation", "Echo", "No Rendering");
-
-
-//        patternRendering.getChildren().setAll(patternRenderLabel, patternRenderComboBox);
         patternColumn.getChildren().addAll(patternLabel, patternSelection, patternRendering, patternPropertyInput);
 
 
@@ -284,8 +301,7 @@ public class Main extends Application {
         //svgToPat
         svgToPat.getChildren().addAll(svgToPatLabel, loadSvgFileButton, loadConcrdePoints);
         toolColumn.getChildren().addAll(toolLabel, svgToPat);
-//        toolColumn.setPrefWidth(40);
-//        skeletonColumn.setPrefWidth(40);
+
 
         menu.getChildren().addAll(regionColumn, skeletonColumn, patternColumn, toolColumn);
 
@@ -357,9 +373,7 @@ public class Main extends Application {
                     try {
                         points = pointFile.processConcordePoints();
                         SVGElement.outputPat(pointFile.getCommandList(), pointFile.getfFileName());
-                    } catch (ParserConfigurationException | SAXException e1) {
-                        e1.printStackTrace();
-                    } catch (XPathExpressionException e1) {
+                    } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
                         e1.printStackTrace();
                     }
                 } catch (IOException e1) {
@@ -394,9 +408,7 @@ public class Main extends Application {
                         SVGElement.outputPoints(points, info);
                         SVGElement.outputSvgCommandsAndPoints(info.skeletonPathCommands, points, "pointsAndCommand", info);
 
-                    } catch (ParserConfigurationException | SAXException e1) {
-                        e1.printStackTrace();
-                    } catch (XPathExpressionException e1) {
+                    } catch (ParserConfigurationException | SAXException | XPathExpressionException e1) {
                         e1.printStackTrace();
                     }
                 } catch (IOException e1) {
@@ -471,14 +483,14 @@ public class Main extends Application {
 
         generateButton.setOnAction((ActionEvent e) -> {
             seedNum = (int) (Math.random() * 100000);
-
             /* Pattern Selection */
             List<SvgPathCommand> decoCommands = new ArrayList<>();
+            if (decoElementFile != null)
             switch (((ToggleButton) patternSourceGroup.getSelectedToggle()).getText()) {
-                case "from file": case "from library":
-                    decoCommands = decoElementFile.getCommandList();
+                case "None":
                     break;
                 default:
+                    decoCommands = decoElementFile.getCommandList();
                     break;
             }
 
@@ -536,7 +548,7 @@ public class Main extends Application {
             System.out.println("Skeleton Path: Grid Tessellation");
 
                 /* Using tessellation method*/
-            info.tessellationDistribution = new PointDistribution(info.skeletonPathType.getPointDistributionType(), info);
+            info.tessellationDistribution = new PointDistribution(info.skeletonPathType.pointDistributionType, info);
             info.tessellationDistribution.generate();
             info.tessellationDistribution.outputDistribution();
             info.skeletonPathCommands = info.tessellationDistribution.toTraversal();
@@ -688,7 +700,6 @@ public class Main extends Application {
             output += SVGElement.outputText(String.format("%.1f-%s-%.1f", between / Math.PI * 180, insertDeco.getfFileName(), decoElementAngleMap.get(insertDeco) / Math.PI * 180), thisPoint, "FF0000");
 
             List<SvgPathCommand> nonStrippedDecoCommands = insertDeco.getCommandList();
-
             List<SvgPathCommand> nonStrippedRotated = PatternRenderer.insertPatternToList(nonStrippedDecoCommands, null, nonStrippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
 
 
@@ -940,7 +951,7 @@ public class Main extends Application {
                     try {
                         p = Runtime.getRuntime().exec(command);
                         p.waitFor();
-                        File j = new File(concordeSessionName + ".sol") ;
+                        File j = new File(concordeSessionName + ".sol");
                         SVGElement processed = new SVGElement(j);
                         List<SvgPathCommand> concordeTSPPath = processed.processConcordeCommand(info.generatedPoints);
                         SVGElement.outputSvgCommands(concordeTSPPath, "concordePath", info);
@@ -960,15 +971,7 @@ public class Main extends Application {
                         SVGElement.outputPoints(info.generatedPoints, info);
                         SVGElement.outputSvgCommandsAndPoints(info.skeletonPathCommands, info.generatedPoints, "pointsAndCommand", info);
 
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (SAXException e) {
-                        e.printStackTrace();
-                    } catch (XPathExpressionException e) {
-                        e.printStackTrace();
-                    } catch (ParserConfigurationException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
+                    } catch (IOException | SAXException | ParserConfigurationException | XPathExpressionException | InterruptedException e) {
                         e.printStackTrace();
                     }
 
@@ -1122,6 +1125,7 @@ public class Main extends Application {
             SVGElement.outputSvgCommands(renderedCommands, "", info);
         }
     }
+
     private static class StreamGobbler implements Runnable {
         private InputStream inputStream;
         private Consumer<String> consumer;
@@ -1170,7 +1174,7 @@ public class Main extends Application {
                 patternSelectionLabel, patternRenderFieldLabel, patternRenderFieldLabel, patternRenderLabel};
         Label[] columnLabels = {regionLabel, skeletonLabel, patternLabel, toolLabel};
         Button[] functionButtons = {loadRegionButton};
-        ToggleButton[] toggleButtons = {patternFromFile, noPattern, patternFromLibrary};
+        List<ToggleButton> toggleButtons = getAllToggleButtons();
         for (Label label : functionLabels) {
             label.setFont(FUNC_LABEL_FONT);
             label.setTextFill(labelColor);
@@ -1202,12 +1206,9 @@ public class Main extends Application {
             if (new_toggle == null) {
                 fileSourceBox.getChildren().setAll();
             } else {
-                if (patternSourceGroup.getSelectedToggle() == patternFromFile) {
-                    System.out.println("New Pattern Source: Pattern From File ");
+                if (patternSourceGroup.getSelectedToggle() == FILE.button) {
                     fileSourceBox.getChildren().setAll(loadDecoElementButton);
-                }
-
-                if (patternSourceGroup.getSelectedToggle() == patternFromLibrary) {
+                } else if (patternSourceGroup.getSelectedToggle() == LIBRARY.button) {
                     System.out.println("New Pattern Source: Pattern From Library ");
                     fileSourceBox.getChildren().setAll(patternLibraryComboBox);
                     info.skeletonPathType = (SkeletonPathType) skeletonGenComboBox.getValue();
@@ -1221,10 +1222,7 @@ public class Main extends Application {
                     }
 
                     System.out.println(patternLibraryComboBox.getItems().toString());
-                }
-
-                if (patternSourceGroup.getSelectedToggle() == noPattern) {
-                    System.out.println("New Pattern Source: No Pattern");
+                } else {
                     fileSourceBox.getChildren().setAll();
                 }
             }
@@ -1233,7 +1231,7 @@ public class Main extends Application {
         /* Skeleton Generation Listener */
         skeletonGenComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             System.out.println(patternLibraryComboBox.getItems().toString());
-            info.skeletonPathType  = (SkeletonPathType) skeletonGenComboBox.getValue();
+            info.skeletonPathType = (SkeletonPathType) skeletonGenComboBox.getValue();
             System.out.println("Skeleton generation method changed: " + info.skeletonPathType);
             skeletonRenderComboBox.setValue(NONE);
             if (info.skeletonPathType.isTreeStructure || info.skeletonPathType == POISSON_DISK) {
@@ -1275,9 +1273,9 @@ public class Main extends Application {
             }
             System.out.println("Skeleton rendering method changed: " + newSkeletonRenderType);
             if (newSkeletonRenderType.equals(PEBBLE) || newSkeletonRenderType.equals(RECTANGLE)) {
-                patternSourceGroup.selectToggle(noPattern);
+                patternSourceGroup.selectToggle(PrimitiveSource.NONE.button);
             } else {
-                patternSourceGroup.selectToggle(patternFromFile);
+                patternSourceGroup.selectToggle(PrimitiveSource.FILE.button);
             }
 
             if (newSkeletonRenderType.equals(TILING)) {
@@ -1321,29 +1319,22 @@ public class Main extends Application {
     }
 
     public enum SkeletonPathType {
-        GRID_TESS(true, true, "Distribution Len"), TRIANGLE_TESS(true, true, "Distribution Len"),
-        HEXAGON_TESS(true, true, "Distribution Len"), THREE_3_4_3_4_TESS(true, true, "Distribution Len"),
-        POISSON_DISK(false, true, "Distribution Len"), HILBERT_CURVE(false, false, "Level:"),
-        ECHO(false, false, "Repetitions:"), MEDIAL_AXIS(false, false, ""),
-        SNAKE(false, false, "Rows:"), VINE(false, true, "");
+        GRID_TESS(true, true, "Distribution Len", PointDistribution.RenderType.GRID), TRIANGLE_TESS(true, true, "Distribution Len", PointDistribution.RenderType.TRIANGLE),
+        HEXAGON_TESS(true, true, "Distribution Len", PointDistribution.RenderType.HEXAGON), THREE_3_4_3_4_TESS(true, true, "Distribution Len", PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR),
+        POISSON_DISK(false, true, "Distribution Len", PointDistribution.RenderType.getDefault()), HILBERT_CURVE(false, false, "Level:", PointDistribution.RenderType.getDefault()),
+        ECHO(false, false, "Repetitions:", PointDistribution.RenderType.getDefault()), MEDIAL_AXIS(false, false, "", PointDistribution.RenderType.getDefault()),
+        SNAKE(false, false, "Rows:", PointDistribution.RenderType.getDefault()), VINE(false, true, "", PointDistribution.RenderType.VINE);
         public final boolean isTessellation, isTreeStructure;
         public final String parameterLabel;
+        public final PointDistribution.RenderType pointDistributionType;
 
-        SkeletonPathType(boolean isTessellation, boolean isTreeStructure, String parameter) {
+        SkeletonPathType(boolean isTessellation, boolean isTreeStructure, String parameter, PointDistribution.RenderType pointType) {
             this.isTessellation = isTessellation;
             this.isTreeStructure = isTreeStructure;
             this.parameterLabel = parameter;
+            this.pointDistributionType = pointType;
         }
 
-        public PointDistribution.RenderType getPointDistributionType() {
-            switch (this) {
-                case GRID_TESS: return PointDistribution.RenderType.GRID;
-                case VINE: return PointDistribution.RenderType.VINE;
-                case TRIANGLE_TESS: return PointDistribution.RenderType.TRIANGLE;
-                case HEXAGON_TESS: return PointDistribution.RenderType.HEXAGON;
-                default: return PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR;
-            }
-        }
     }
 
     public enum SkeletonRenderType {
@@ -1353,16 +1344,32 @@ public class Main extends Application {
         WANDERER("Deco Size", "3", "Tangent Percentage", "0.3");
 
         public final List<String> typeParameters, parameterDefaultVale;
+
         SkeletonRenderType(String... params) {
             this.typeParameters = new ArrayList<>();
             this.parameterDefaultVale = new ArrayList<>();
             for (int i = 0; i < params.length; i += 2) {
                 typeParameters.add(params[i]);
                 parameterDefaultVale.add(params[i + 1]);
-
             }
         }
 
+    }
+
+    public enum PrimitiveSource {
+        NONE("None"), LIBRARY("Library"), FILE("File");
+        public final String nameLabel;
+        public final ToggleButton button;
+        PrimitiveSource(String label) {
+            this.nameLabel = label;
+            this.button = new ToggleButton();
+            this.button.setText(this.nameLabel);
+
+        }
+
+        public static List<ToggleButton> getAllToggleButtons() {
+          return Arrays.stream(values()).map(i -> i.button).collect(Collectors.toList());
+        }
     }
 
 
