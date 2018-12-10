@@ -9,8 +9,8 @@ import javafx.scene.shape.Rectangle;
  * Created by JacquelineLi on 12/3/18.
  */
 public class Plot extends Pane {
-    public Plot(Path path, Axes axes) {
-        path.setStroke(Color.ORANGE.deriveColor(0, 1, 1, 0.6));
+    public Plot(Path path, Axes axes, String colorStr) {
+        path.setStroke(Color.valueOf(colorStr));
         path.setStrokeWidth(1);
 
         path.setClip(

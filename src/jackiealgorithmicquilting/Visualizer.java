@@ -31,9 +31,9 @@ public class Visualizer extends Application {
         List<Point> allP = SvgPathCommand.toPoints(commandList);
         RectangleBound bound = RectangleBound.valueOf(allP);
         Axes axes = new Axes(
-                (int) bound.getWidth(), (int) bound.getHeight(),
-                bound.getLeft(), bound.getRight(), bound.getWidth() / 5.0,
-                bound.getUp(), bound.getDown(), bound.getHeight() / 5.0
+                (int) (bound.getWidth() + 100), (int) (bound.getHeight() + 100),
+                bound.getLeft() - 50, bound.getRight() + 50, bound.getWidth() / 5.0,
+                bound.getUp() - 50, bound.getDown() + 50, bound.getHeight() / 5.0
         );
         //path
         Path path = new Path();
@@ -49,6 +49,7 @@ public class Visualizer extends Application {
 
         path.getElements().add(new MoveTo(commandList.get(0).getDestinationPoint().x,
                 commandList.get(0).getDestinationPoint().y));
+        myPane.setStyle(("-fx-background-color: rgb(35, 39, 50);"));
 
         for (int i = 1; i < commandList.size(); i++) {
             SvgPathCommand currCommand = commandList.get(i);
@@ -71,12 +72,20 @@ public class Visualizer extends Application {
                     System.out.println("Not sure of command type:" + i);
 
             }
+            if (path.getElements().size()> 10) {
+                Plot newPlot = new Plot(path, axes, "rgb(200,200,70)");
+//                Plot newPlot = new Plot(path, axes, String.format("rgb(%d,%d,70)",(int) (20 + 180 - i * 180.0 / commandList.size()), (int) (20 + i * 180.0 / commandList.size())));
+                myPane.getChildren().addAll(newPlot);
+                path = new Path();
+                path.getElements().add(new MoveTo(currPoint.x, currPoint.y));
+                myPane.setPrefHeight(newPlot.getPrefHeight());
+                myPane.setPrefWidth(newPlot.getPrefWidth());
+            }
         }
-        Plot myPlot = new Plot(path, axes);
-        myPane.getChildren().addAll(myPlot);
+//        Plot myPlot = new Plot(path, axes);
+//        myPane.getChildren().addAll(myPlot);
         myPane.setStyle(("-fx-background-color: rgb(35, 39, 50);"));
-        myPane.setPrefHeight(myPlot.getPrefHeight());
-        myPane.setPrefWidth(myPlot.getPrefWidth());
+
     }
 
     @Override
