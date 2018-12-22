@@ -25,7 +25,7 @@ public class RectanglePacking extends PatternRenderer {
         this.info = info;
         this.leafRenderOnly = leafRenderOnly;
         if (decoElemFile != null) {
-            Pair<CircleBound, List<Integer>> decoElemBound = decoElemFile.getBoundingCircle();
+            Pair<CircleBound, List<Integer>> decoElemBound = decoElemFile.getBoundingCircleAndTouchPointIndex();
             decoCommandsBound = decoElemBound.getKey();
             touchPointIndex = decoElemBound.getValue();
             this.decoCommands = decoElemFile.getCommandList();

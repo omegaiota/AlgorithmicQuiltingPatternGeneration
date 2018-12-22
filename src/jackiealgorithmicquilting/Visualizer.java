@@ -69,6 +69,7 @@ public class Visualizer extends Application {
                     path.getElements().add(new MoveTo(currPoint.x, currPoint.y));
                 default:
                 case DEFAULT:
+                    path.getElements().add(new LineTo(currPoint.x, currPoint.y));
                     System.out.println("Not sure of command type:" + i);
 
             }

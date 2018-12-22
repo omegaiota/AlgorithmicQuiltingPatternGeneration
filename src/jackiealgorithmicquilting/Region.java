@@ -7,66 +7,72 @@ import java.util.List;
  * Created by JacquelineLi on 6/19/17.
  */
 public class Region {
-    private List<Point> boundary = new ArrayList<>();
+    private List<Point> pointList = new ArrayList<>();
 
-    public Region(List<Point> boundary) {
-        this.boundary = boundary;
+    public Region(List<Point> pointList) {
+        this.pointList = pointList;
     }
 
     public List<Point> getPoints() {
-        return boundary;
+        return pointList;
     }
 
-    public double getArea() {
-        double sum = 0.0;
-        for (int i = 0; i < boundary.size(); i++) {
-            Point next = boundary.get(i == boundary.size() - 1 ? 0 : i + 1);
-            sum = sum + (boundary.get(i).x * next.y) - (boundary.get(i).y * next.x);
-        }
-        return 0.5 * sum;
-    }
-    public boolean insideRegion(Point testPoint) {
+
+    public boolean insideRegion(Point testPoint, double minDistToBoundary) {
         int i;
         int j;
-        boolean result = false;
-        if (boundary.size() <= 2)
+        boolean isInside = false;
+        if (pointList.size() <= 2)
             return false;
-        for (i = 0, j = boundary.size() - 1; i <  boundary.size(); j = i++) {
-            Point A = boundary.get(i), B = boundary.get(j);
+        for (i = 0, j = pointList.size() - 1; i <  pointList.size(); j = i++) {
+            Point A = pointList.get(i), B = pointList.get(j);
             if ((A.y > testPoint.y) != (B.y > testPoint.y)
                     && (testPoint.x < (B.x - A.x) * (testPoint.y - A.y)
                     / (B.y - A.y) + A.x)) {
-                result = !result;
+                isInside = !isInside;
             }
         }
-        return result;
+
+        if (isInside) {
+            return (minDist(testPoint) > minDistToBoundary);
+        }
+        return false;
     }
 
     public double minDist(Point testPoint) {
-        double minDirect = boundary.stream().map(p -> Point.getDistance(p, testPoint)).reduce(5000.0, Double::min);
+        double minDirect = pointList.stream().map(p -> Point.getDistance(p, testPoint)).reduce(5000.0, Double::min);
+//        for (int i = 0; i < pointList.size(); i++) {
+//            Point A  = pointList.get(i);
+//            Point B = pointList.get((i + 1) % pointList.size());
+//            double angleA = Math.abs(Vector2D.getAngle( new Vector2D(A, testPoint), new Vector2D(A, B)));
+//            double angleB = Math.abs(Vector2D.getAngle( new Vector2D(B, testPoint), new Vector2D(B, A)));
+////            if (Math.abs(Vector2D.getAngle( new Vector2D(testPoint, A), new Vector2D(testPoint, B))) > Math.PI * 0.5)
+//            if (angleA  < Math.PI * 0.5 && angleB  < Math.PI * 0.5)
+//                minDirect = Double.min(minDirect, Point.perpendicularDist(testPoint, A, B));
+//        }
         return minDirect;
     }
 
     public List<SvgPathCommand> fitCommandsToRegionDelete(List<SvgPathCommand> commandsOriginal) {
         List<SvgPathCommand> commandsTrimed = new ArrayList<>();
         int start = 0;
-        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())) )
+        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint(), 0)) )
             start++;
         if (start >= commandsOriginal.size())
             return commandsTrimed;
         int end = commandsOriginal.size() - 1;
-        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint())))
+        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint(), 0)))
             end--;
         int index = start;
         int outsideStartIndex = -1;
 
         while (index <= end) {
-            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
+            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint(), 0)) {
                 commandsTrimed.add(commandsOriginal.get(index));
                 index++;
             }
             /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
-            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
+            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint(), 0)))
                 index++;
             /* index is the index of the command that's first INSIDe of the region after the outside segment startin gat
             * outside start index*/
@@ -77,12 +83,12 @@ public class Region {
     public List<SvgPathCommand> fitCommandsToRegionTrimToBoundary(List<SvgPathCommand> commandsOriginal, GenerationInfo info) {
         List<SvgPathCommand> commandsTrimed = new ArrayList<>();
         int start = 0;
-        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())))
+        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint(), 0)))
             start++;
         if (start >= commandsOriginal.size())
             return commandsTrimed;
         int end = commandsOriginal.size() - 1;
-        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint())))
+        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint(), 0)))
             end--;
 
         int index = start;
@@ -94,48 +100,48 @@ public class Region {
                 int indexToLast = nearestBoundaryPointIndex(lastIn),
                         indexToNext = nearestBoundaryPointIndex(nextIn);
 
-                /* First line to the nearest point on boundary*/
+                /* First line to the nearest point on pointList*/
                 Point intersectPointLast = intersectionPoint(commandsOriginal.get((outsideStartIndex - 1) % commandsOriginal.size()).getDestinationPoint(),
                         commandsOriginal.get((outsideStartIndex) % commandsOriginal.size()).getDestinationPoint());
                 commandsTrimed.add(new SvgPathCommand(intersectPointLast, SvgPathCommand.CommandType.LINE_TO));
                 //commandsTrimed.add(new SvgPathCommand(nearestBoundaryPoint(lastIn), SvgPathCommand.CommandType.LINE_TO));
 
-                /* Trace the segment of the region boundary*/
+                /* Trace the segment of the region pointList*/
 //                if (indexToLast <= indexToNext) {
 
                 boolean inOrder = indexToLast <= indexToNext;
-                boolean smaller = Math.abs(indexToLast - indexToNext) <= 0.5 * boundary.size();
+                boolean smaller = Math.abs(indexToLast - indexToNext) <= 0.5 * pointList.size();
                 if (inOrder) {
                     if (smaller) {
                         for (int i = indexToLast; i <= indexToNext; i++) {
-                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                            commandsTrimed.add(new SvgPathCommand(pointList.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
                         }
                     } else {
                         for (int i = indexToLast; i >= 0; i--) {
-                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                            commandsTrimed.add(new SvgPathCommand(pointList.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
 
                         }
-                        for (int i = boundary.size() - 1; i >= indexToNext; i--) {
-                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                        for (int i = pointList.size() - 1; i >= indexToNext; i--) {
+                            commandsTrimed.add(new SvgPathCommand(pointList.get(i), SvgPathCommand.CommandType.LINE_TO));
                         }
                     }
 
                 } else {
                     if (smaller) {
                         for (int i = indexToLast; i >= indexToNext; i--) {
-                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                            commandsTrimed.add(new SvgPathCommand(pointList.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
                         }
                     } else {
-                        for (int i = indexToLast; i < boundary.size(); i++) {
-                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                        for (int i = indexToLast; i < pointList.size(); i++) {
+                            commandsTrimed.add(new SvgPathCommand(pointList.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
 
                         }
                         for (int i = 0; i <= indexToNext; i++) {
-                            commandsTrimed.add(new SvgPathCommand(boundary.get(i), SvgPathCommand.CommandType.LINE_TO));
+                            commandsTrimed.add(new SvgPathCommand(pointList.get(i), SvgPathCommand.CommandType.LINE_TO));
 //                        commandsTrimed.add(new SvgPathCommand(info.getRegionFile().getCommandList().get(i)));
 
                         }
@@ -144,19 +150,19 @@ public class Region {
 
                 }
 
-                /* Move the tracer to the nearest point on boundary*/
+                /* Move the tracer to the nearest point on pointList*/
                 Point intersectPointNext = intersectionPoint(commandsOriginal.get((index - 1) % commandsOriginal.size()).getDestinationPoint(),
                         commandsOriginal.get((index) % commandsOriginal.size()).getDestinationPoint());
                 commandsTrimed.add(new SvgPathCommand(intersectPointNext, SvgPathCommand.CommandType.LINE_TO));
             }
 
-            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
+            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint(), 0)) {
                 commandsTrimed.add(commandsOriginal.get(index));
                 index++;
             }
             /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
             outsideStartIndex = index;
-            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
+            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint(), 0)))
                 index++;
             /* index is the index of the command that's first INSIDe of the region after the outside segment startin gat
             * outside start index*/
@@ -167,12 +173,12 @@ public class Region {
     public List<SvgPathCommand> fitCommandsToRegionIntelligent(List<SvgPathCommand> commandsOriginal) {
         List<SvgPathCommand> commandsTrimed = new ArrayList<>();
         int start = 0;
-        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint())))
+        while ((start < commandsOriginal.size()) && (!insideRegion(commandsOriginal.get(start).getDestinationPoint(), 0)))
             start++;
         if (start >= commandsOriginal.size())
             return commandsTrimed;
         int end = commandsOriginal.size() - 1;
-        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint())))
+        while ((end >= 0) && (!insideRegion(commandsOriginal.get(end).getDestinationPoint(), 0)))
             end--;
 
         int index = start;
@@ -217,7 +223,7 @@ public class Region {
                             if ((Point.getDistance(commandsOriginal.get(i).getDestinationPoint(),
                                     commandsOriginal.get(j).getDestinationPoint()) < 3.00)) {
                                 foundObject = true;
-                                if (insideRegion(commandsOriginal.get(i).getDestinationPoint())) {
+                                if (insideRegion(commandsOriginal.get(i).getDestinationPoint(), 0)) {
                                     // object start point is inside the region, shrink
                                     List<SvgPathCommand> shrinkingPortion = new ArrayList<>();
                                     for (int k = i; k <= j; k++)
@@ -231,7 +237,7 @@ public class Region {
                                         shrinkingPortion = SvgPathCommand.commandsScaling(shrinkingPortion, 0.5, commandsOriginal.get(i).getDestinationPoint());
                                         shrinkingDone = true;
                                         for (int k = 0; k < shrinkingPortion.size(); k++) {
-                                            if (!insideRegion(shrinkingPortion.get(k).getDestinationPoint())) {
+                                            if (!insideRegion(shrinkingPortion.get(k).getDestinationPoint(), 0)) {
                                                 shrinkingDone = false;
                                                 break;
                                             }
@@ -261,14 +267,14 @@ public class Region {
 
             }
 
-            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint())) {
+            while ((index <= end) && insideRegion(commandsOriginal.get(index).getDestinationPoint(), 0)) {
                 commandsTrimed.add(commandsOriginal.get(index));
                 index++;
             }
 
             /* outsideStartIndex is the index of the command that's first outside of region of the following segment */
             outsideStartIndex = index;
-            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint())))
+            while ((index <= end) && (!insideRegion(commandsOriginal.get(index).getDestinationPoint(), 0)))
                 index++;
             /* index is the index of the command that's first INSIDe of the region after the outside segment startin gat
             * outside start index*/
@@ -279,9 +285,9 @@ public class Region {
     public int nearestBoundaryPointIndex(Point inputPoint) {
         double distMin = Double.MAX_VALUE;
         int ans = -1;
-        for (int i = 0; i < boundary.size(); i++ ) {
-            if (Double.compare(Point.getDistance(inputPoint, boundary.get(i)), distMin) <= 0) {
-                distMin = Point.getDistance(inputPoint, boundary.get(i));
+        for (int i = 0; i < pointList.size(); i++ ) {
+            if (Double.compare(Point.getDistance(inputPoint, pointList.get(i)), distMin) <= 0) {
+                distMin = Point.getDistance(inputPoint, pointList.get(i));
                 ans = i;
             }
         }
@@ -290,10 +296,10 @@ public class Region {
 
     public Point nearestBoundaryPoint(Point inputPoint) {
         double distMin = Double.MAX_VALUE;
-        Point ans = boundary.get(0);
-        for (int i = 0; i < boundary.size(); i++) {
-            Point otherPointOnLine = (i == boundary.size() - 1) ? boundary.get(0) : boundary.get(i + 1);
-            Point perpendicularFoot = Point.perpendicularFoot(inputPoint, boundary.get(i), otherPointOnLine);
+        Point ans = pointList.get(0);
+        for (int i = 0; i < pointList.size(); i++) {
+            Point otherPointOnLine = (i == pointList.size() - 1) ? pointList.get(0) : pointList.get(i + 1);
+            Point perpendicularFoot = Point.perpendicularFoot(inputPoint, pointList.get(i), otherPointOnLine);
             double testDist = Point.getDistance(inputPoint, perpendicularFoot);
             if (Double.compare(testDist, distMin) <= 0) {
                 ans = perpendicularFoot;
@@ -304,10 +310,10 @@ public class Region {
     }
 
     public Point intersectionPoint(Point srcPoint, Point destPoint) {
-        for (int i = 0; i < boundary.size(); i++) {
-            Point otherPointOnLine = boundary.get((i + 1) % (boundary.size()));
-            if (Point.intersect(srcPoint, destPoint, boundary.get(i), otherPointOnLine)) {
-                return Point.intersectionPoint(srcPoint, destPoint, boundary.get(i), otherPointOnLine);
+        for (int i = 0; i < pointList.size(); i++) {
+            Point otherPointOnLine = pointList.get((i + 1) % (pointList.size()));
+            if (Point.intersect(srcPoint, destPoint, pointList.get(i), otherPointOnLine)) {
+                return Point.intersectionPoint(srcPoint, destPoint, pointList.get(i), otherPointOnLine);
             }
         }
         System.out.println("WARNING: couldn't find segment on region");
@@ -317,8 +323,8 @@ public class Region {
     public List<SvgPathCommand> generateMedialAxis() {
         List<SvgPathCommand> medialAxis = new ArrayList<>();
         List<Point> pointList = new ArrayList<>();
-        pointList.addAll(boundary);
-        pointList.remove(boundary.size() - 1);
+        pointList.addAll(this.pointList);
+        pointList.remove(this.pointList.size() - 1);
         int size = pointList.size();
 
         for (int i = 0; i <= Math.ceil(size / 2.0); i++ ) {
@@ -327,7 +333,7 @@ public class Region {
             Point oppositePoint = pointList.get(otherIndex);
             Point midPoint = Point.intermediatePointWithProportion(thisPoint, oppositePoint, 0.5);
 
-            if (insideRegion(midPoint) || (otherIndex == i))
+            if (insideRegion(midPoint, 0) || (otherIndex == i))
                 medialAxis.add(new SvgPathCommand(midPoint, SvgPathCommand.CommandType.LINE_TO));
         }
 

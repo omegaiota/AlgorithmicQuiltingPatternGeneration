@@ -84,9 +84,9 @@ public class SvgPathCommand {
     /** generate a path command from an old command who is rotated around the center point for angle*/
     public SvgPathCommand(SvgPathCommand oldCommand, Point center, double angle) {
         this.commandType = oldCommand.getCommandType();
-        destinationPoint = oldCommand.getDestinationPoint().rotateAroundCenter(center, angle);
-        controlPoint1 = oldCommand.getControlPoint1().rotateAroundCenter(center, angle);
-        controlPoint2 = oldCommand.getControlPoint2().rotateAroundCenter(center, angle);
+        destinationPoint = oldCommand.getDestinationPoint().rotateAroundCenterWrongVersion(center, angle);
+        controlPoint1 = oldCommand.getControlPoint1().rotateAroundCenterWrongVersion(center, angle);
+        controlPoint2 = oldCommand.getControlPoint2().rotateAroundCenterWrongVersion(center, angle);
     }
 
     /** generate a path command from an old command who scales around center for proportion*/
@@ -144,6 +144,8 @@ public class SvgPathCommand {
         return returnCommands;
     }
 
+
+
     public static List<SvgPathCommand> commandsShift(List<SvgPathCommand> commands, Point newStart) {
         List<SvgPathCommand> returnCommands = new ArrayList<>();
         for (SvgPathCommand command : commands) {
@@ -194,24 +196,37 @@ public class SvgPathCommand {
      * @return
      */
     public static List<SvgPathCommand> reflect(List<SvgPathCommand> decoElmentCommands) {
-        double maxX = decoElmentCommands.stream().map(c -> c.getDestinationPoint().x).reduce(Double.MIN_VALUE, Double::max);
+//        double maxX = decoElmentCommands.stream().map(c -> c.getDestinationPoint().x).reduce(Double.MIN_VALUE, Double::max);
         List<SvgPathCommand> reflected = new ArrayList<>();
         for (SvgPathCommand c : decoElmentCommands) {
-            SvgPathCommand newCommand;
-            if (c.getCommandType() == CommandType.LINE_TO || c.getCommandType() == CommandType.MOVE_TO) {
-                newCommand = new SvgPathCommand(c);
-                newCommand.setDestinationPoint(new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y));
-            } else {
-                newCommand = new SvgPathCommand(new Point(maxX - c.getControlPoint1().x, c.getControlPoint1().y),
-                        new Point(maxX - c.getControlPoint2().x, c.getControlPoint2().y),
-                        new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y), CommandType.CURVE_TO);
-            }
+//            SvgPathCommand newCommand;
+//            if (c.getCommandType() == CommandType.LINE_TO || c.getCommandType() == CommandType.MOVE_TO) {
+//                newCommand = new SvgPathCommand(c);
+//                newCommand.setDestinationPoint(new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y));
+//            } else {
+//                newCommand = new SvgPathCommand(new Point(maxX - c.getControlPoint1().x, c.getControlPoint1().y),
+//                        new Point(maxX - c.getControlPoint2().x, c.getControlPoint2().y),
+//                        new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y), CommandType.CURVE_TO);
+//            }
+            SvgPathCommand newCommand = c.multiplyXBy(-1);
             reflected.add(newCommand);
         }
-
-        reflected = SvgPathCommand.commandsShift(reflected, decoElmentCommands.get(0).destinationPoint);
+//
+//        reflected = SvgPathCommand.commandsShift(reflected, decoElmentCommands.get(0).destinationPoint);
         return reflected;
     }
+
+    private SvgPathCommand multiplyXBy(double scale) {
+        switch (commandType) {
+            case CURVE_TO:
+                return new SvgPathCommand(new Point(controlPoint1.x * scale, controlPoint1.y) ,
+                        new Point(controlPoint2.x * scale, controlPoint2.y),
+                        new Point(destinationPoint.x * scale, destinationPoint.y), CommandType.CURVE_TO);
+            default:
+                return new SvgPathCommand(new Point(destinationPoint.x * scale, destinationPoint.y), commandType);
+        }
+    }
+
 
     public static SvgPathCommand catmullRomSegment(SvgPathCommand prevprevCommand, SvgPathCommand prevCommand, SvgPathCommand thisCommand, SvgPathCommand nextCommand) {
         Point p2 = thisCommand.getDestinationPoint(),
@@ -297,12 +312,30 @@ public class SvgPathCommand {
     public String toSvgCode() {
         if (isMoveTo()) {
             return "M " + destinationPoint.x + "," + destinationPoint.y + " ";
-        } else if (isLineTo()) {
+        } else if (isLineTo() || commandType == CommandType.DEFAULT) {
             return "L " + destinationPoint.x + "," + destinationPoint.y + " ";
         } else if (isCurveTo()) {
             return "C " + controlPoint1.x + "," + controlPoint1.y + " " + controlPoint2.x + "," + controlPoint2.y + " " + destinationPoint.x + "," + destinationPoint.y + " ";
         } else
             return "";
+    }
+
+    public SvgPathCommand translateBy(Point shift) {
+        switch (commandType) {
+            case CURVE_TO:
+                return new SvgPathCommand(controlPoint1.add(shift), controlPoint2.add(shift), destinationPoint.add(shift), CommandType.CURVE_TO);
+            default:
+                return new SvgPathCommand(destinationPoint.add(shift), commandType);
+        }
+    }
+
+    public SvgPathCommand rotateBy(Point center, double degree) {
+        switch (commandType) {
+            case CURVE_TO:
+                return new SvgPathCommand(controlPoint1.rotateAroundCenter(center, degree), controlPoint2.rotateAroundCenter(center, degree), destinationPoint.rotateAroundCenter(center, degree), CommandType.CURVE_TO);
+            default:
+                return new SvgPathCommand(destinationPoint.rotateAroundCenter(center, degree), commandType);
+        }
     }
 
     public enum CommandType {

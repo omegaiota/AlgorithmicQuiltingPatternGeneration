@@ -47,16 +47,14 @@ public class PatternRenderer {
      * If supplied with a destination list, it will insert the transformed commands at the end of the list
      *
      * @param patternCommands       commands that will be transformed
-     * @param destination           list to which transformed commands will be attached to. null if doesn't want attach.
      * @param insertionPoint        point to which commands need to be translated to
      * @param rotationAngleInRadian angle(specified in radian) that the transformed commands will be rotated
      * @param skipFirst
      * @param skipLast
      * @return
      */
-    public static List<SvgPathCommand> insertPatternToList(List<SvgPathCommand> patternCommands,
-                                                           List<SvgPathCommand> destination,
-                                                           Point insertionPoint, double rotationAngleInRadian, boolean skipFirst, boolean skipLast) {
+    public static List<SvgPathCommand> translateAndRotatePattern(List<SvgPathCommand> patternCommands,
+                                                                 Point insertionPoint, double rotationAngleInRadian, boolean skipFirst, boolean skipLast) {
 
         List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
         if (patternCommands.size() == 0)
@@ -73,10 +71,34 @@ public class PatternRenderer {
             transformedDecoElmentCommands.add(newCommand);
         }
 
-        if (destination != null)
-            destination.addAll(transformedDecoElmentCommands);
+//        if (destination != null)
+//            destination.addAll(transformedDecoElmentCommands);
         return transformedDecoElmentCommands;
     }
+
+    public static List<SvgPathCommand> translateCommands(List<SvgPathCommand> patternCommands,
+                                                                 Point newStartPoint) {
+        Point shift = newStartPoint.minus(patternCommands.get(0).getDestinationPoint());
+        List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
+        if (patternCommands.size() == 0)
+            return transformedDecoElmentCommands;
+        for (int j = 0; j < patternCommands.size(); j++) {
+            transformedDecoElmentCommands.add(patternCommands.get(j).translateBy(shift));
+        }
+        return transformedDecoElmentCommands;
+    }
+
+    public static List<SvgPathCommand> rotateCommandsAround(List<SvgPathCommand> patternCommands,
+                                                         Point center, double degree) {
+        List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
+        if (patternCommands.size() == 0)
+            return transformedDecoElmentCommands;
+        for (int j = 0; j < patternCommands.size(); j++) {
+            transformedDecoElmentCommands.add(patternCommands.get(j).rotateBy(center, degree));
+        }
+        return transformedDecoElmentCommands;
+    }
+
 
     public static List<SvgPathCommand> interpolate(List<SvgPathCommand> original) {
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
@@ -123,55 +145,6 @@ public class PatternRenderer {
     }
 
     /**
-     * Adding decorative element to treenodes on a spline tree (Deco Element is a pair)
-     *
-     * @param decoElmentCommands deco element
-     */
-    public void addDecoElmentToSplineTree(List<SvgPathCommand> decoElmentCommands, GenerationInfo info) {
-        /**
-         * I'm assuming that rendered commands is holding the tree skeleton after combined to splines
-         */
-        Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
-        List<RectangleBound> decoBounds = new ArrayList<>();
-        int n = renderedCommands.size();
-
-        for (int i = n - 1; i >= 0; i--) {
-            Point p = renderedCommands.get(i).getDestinationPoint();
-            SvgPathCommand pastRecord = destinationCommandMap.get(p);
-            if (pastRecord != null) {
-                continue;
-            }
-            Point prevDest = renderedCommands.get(i == 0 ? 0 : i - 1).getDestinationPoint();
-//            double anglePrev = Point.getAngle(renderedCommands.get(i == n-1 ? i : i + 1).getDestinationPoint(), p);
-            double anglePrev = Spline.getTangentAngle(prevDest,
-                    renderedCommands.get(i).getControlPoint1(),
-                    renderedCommands.get(i).getControlPoint2(),
-                    renderedCommands.get(i).getDestinationPoint());
-            List<SvgPathCommand> renderedcommands = PatternRenderer.insertPatternToList(decoElmentCommands,
-                    null, p, anglePrev, false, false);
-            RectangleBound thisBound = RectangleBound.getBoundingBox(renderedcommands);
-            boolean collides = false;
-
-            for (RectangleBound b : decoBounds) {
-                if (b.collidesWith(thisBound)) {
-                    collides = true;
-                    break;
-                }
-            }
-            if (!collides) {
-                decoBounds.add(thisBound);
-                renderedCommands.addAll(i + 1, renderedcommands);
-            } else {
-
-                System.out.println("COLLIDES!");
-            }
-
-            destinationCommandMap.put(p, renderedCommands.get(i));
-
-        }
-    }
-
-    /**
      * Adding decorative element to treenodes on a spline tree (Alternating)
      * TODO: refactor this to combine it with non-alternating algorithm since they are largely the same
      *
@@ -184,8 +157,8 @@ public class PatternRenderer {
         boolean isBranching = info.skeletonRenderType == Main.SkeletonRenderType.CATMULL_ROM;
         List<SvgPathCommand> skeletonPath = new ArrayList<>(),
                 collisionGeoCommands = info.collisionCommands;
-        List<SvgPathCommand> reflectedDecoelmentCommands = SvgPathCommand.reflect(decoElmentCommands),
-                reflectedCollisionGeoCommands = SvgPathCommand.reflect(collisionGeoCommands);
+        List<SvgPathCommand> reflectedDecoelmentCommands = SvgPathCommand.reflect(decoElmentCommands);
+        List<SvgPathCommand> reflectedCollisionGeoCommands = SvgPathCommand.reflect(collisionGeoCommands);
 
 
         /* Spline pre-processing : break splines that are too long */
@@ -333,14 +306,16 @@ public class PatternRenderer {
                     anglePrev += INITIAL_ANGLE * SIGN;
                 else
                     anglePrev += Math.PI * 0.5;
-                List<SvgPathCommand> scaledRotatedDecoComamnds = PatternRenderer.insertPatternToList(originalCommandToUse,
-                        null, p, anglePrev, false, false);
-                List<SvgPathCommand> scaledRotatedCollision = PatternRenderer.insertPatternToList(originalCollisionCommandToUse,
-                        null, p, anglePrev, false, false);
-                List<SvgPathCommand> removedFirst = new ArrayList<>(scaledRotatedCollision);
+                Point decoToCollision = originalCollisionCommandToUse.get(0).getDestinationPoint().minus(originalCommandToUse.get(0).getDestinationPoint());
+
+                List<SvgPathCommand> translatedRotatedCommands = rotateCommandsAround(translateCommands(originalCommandToUse, p), p, anglePrev);
+                List<SvgPathCommand> translatedRotatedCollision =rotateCommandsAround(translateCommands(originalCollisionCommandToUse, p.add(decoToCollision) ), p, anglePrev);
+                List<SvgPathCommand> removedFirst = new ArrayList<>(translatedRotatedCollision);
                 removedFirst.remove(0);
                 ConvexHullBound thisBound = ConvexHullBound.fromCommands(removedFirst);
 
+//                List<SvgPathCommand> withCollision = new ArrayList<>(translatedRotatedCommands);
+//                withCollision.addAll(translatedRotatedCollision);
 //
 
             /* Collison Detection / Solving */
@@ -357,56 +332,17 @@ public class PatternRenderer {
                         decoBounds.add(thisBound);
                         isLeft = !isLeft;
                         if (preprocessing == 0)
-                            leafNodeIndexCommandsMap.put(i, scaledRotatedDecoComamnds);
+                            leafNodeIndexCommandsMap.put(i, translatedRotatedCommands);
                         else {
-//                            if (prevInsert != -1) {
-//                                Point sum1 = new Point(0,0);
-//                                int num = (prevInsert - 2) - (i + 2) + 1;
-//                                if (num > 0) {
-//                                    int quarter = i + 1 + num / 4;
-//                                    int threequarter = i + 1 + num  * 3 / 4;
-//                                    skeletonPath.get(i + 2).setControlPoint1(skeletonPath.get(quarter).getDestinationPoint());
-//                                    skeletonPath.get(i + 2).setControlPoint2(skeletonPath.get(threequarter).getDestinationPoint());
-//                                }
-//
-//                                int total = 0;
-//                                for (int j = prevInsert - 2; j >= i + 2; j--) {
-////                                    SvgPathCommand c = skeletonPath.get(j);
-////                                    Point pp = c.getControlPoint1().add(c.getControlPoint2()).divide(2);
-////                                    c.setControlPoint2(pp);
-////                                    c.setControlPoint1(pp);
-////                                    sum1 = sum1.add(c.getDestinationPoint());
-////                                    total += 1;
-//                                    skeletonPath.remove(j);
-//                                }
-//
-////                                skeletonPath.get(i).setControlPoint1(sum1.divide(total));
-////                                sum1 = new Point(0,0);
-////                                total = 0;
-////                                for (int j = half - 1; j >= i + 1; j--) {
-////                                    SvgPathCommand c = skeletonPath.get(j);
-////                                    Point pp = c.getControlPoint1().add(c.getControlPoint2()).divide(2);
-////                                    c.setControlPoint2(pp);
-////                                    c.setControlPoint1(pp);
-//////                                    sum1 = sum1.add(c.getDestinationPoint());
-//////                                    total+= 1;
-//////                                    skeletonPath.remove(j);
-////                                }
-////                                skeletonPath.get(i).setControlPoint2(sum1.add(skeletonPath.get(i).getControlPoint2()));
-//
-//
-//                            }
-
-                            skeletonPath.addAll(i + 1, scaledRotatedDecoComamnds);
-                            prevInsert = i;
+                            skeletonPath.addAll(i + 1, translatedRotatedCommands);
                         }
                     }
 
                 } else {
                     double proportion = 1.0;
                     boolean resolved = false;
-                    List<SvgPathCommand> copyCommands = new ArrayList<>(scaledRotatedDecoComamnds);
-                    List<SvgPathCommand> copyCollisionCommands = new ArrayList<>(scaledRotatedCollision);
+                    List<SvgPathCommand> adjustedScaledCommands = new ArrayList<>(translatedRotatedCommands);
+                    List<SvgPathCommand> adjustedScaledCollision = new ArrayList<>(translatedRotatedCollision);
                     final double MINIMUM_SIZE = isLeafNode ? 0.5 : 0.7;
                     if (isBranching) {
                         while (proportion > MINIMUM_SIZE && !resolved) {
@@ -415,10 +351,11 @@ public class PatternRenderer {
                             for (double testAngle = info.initialAngle; testAngle < 60.0; testAngle += 10.0) {
                                 // don't want to rotate leaf node
                                 double radianToRotate = isLeafNode ? 0 : (Math.toRadians(testAngle) - INITIAL_ANGLE) * SIGN;
-                                List<SvgPathCommand> rotated = PatternRenderer.insertPatternToList(copyCommands, null, p, radianToRotate, false, false),
-                                        rotatedCollision = PatternRenderer.insertPatternToList(copyCollisionCommands, null, p, radianToRotate, false, false);
-                                List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision);
-                                removedFirstC.remove(0);
+                                List<SvgPathCommand> rotated = rotateCommandsAround(adjustedScaledCommands, p, radianToRotate),
+                                        rotatedCollision = rotateCommandsAround(adjustedScaledCollision, p, radianToRotate);
+                                List<SvgPathCommand> removedFirstC = new ArrayList<>(rotatedCollision.subList(1, rotatedCollision.size()));
+                                List<SvgPathCommand> rotatedWithCollision = new ArrayList<>(rotated);
+                                rotatedWithCollision.addAll(rotatedCollision);
                                 thisBound = ConvexHullBound.fromCommands(removedFirstC);
                                 if (!collides(thisBound, decoBounds, originalPath, true, i)) {
                                     decoBounds.add(thisBound);
@@ -434,18 +371,20 @@ public class PatternRenderer {
                                 if (isLeafNode) // early out leaf nodes
                                     break;
                             }
-                            copyCommands = SvgPathCommand.commandsScaling(scaledRotatedDecoComamnds,
-                                    proportion, scaledRotatedDecoComamnds.get(0).getDestinationPoint());
-                            copyCollisionCommands = SvgPathCommand.commandsScaling(scaledRotatedCollision,
-                                    proportion, scaledRotatedCollision.get(0).getDestinationPoint());
+                            adjustedScaledCommands = SvgPathCommand.commandsScaling(translatedRotatedCommands,
+                                    proportion, p );
+                            adjustedScaledCollision = SvgPathCommand.commandsScaling(translatedRotatedCollision,
+                                    proportion, p );
                         }
                         if (preprocessing == 1) {
                             if (lastFailed != i) {
                                 lastFailed = i;
                                 i++;
+//                                isLeft = !isLeft;
+                            } else {
                                 isLeft = !isLeft;
-                            } else
-                                isLeft = !isLeft;
+                            }
+//
                         }
                     }
 
@@ -482,11 +421,11 @@ public class PatternRenderer {
 
         }
 
-        if (!(info.regionFile.getBoundary().insideRegion(testBound.getBox().getCenter()) &&
-                info.regionFile.getBoundary().insideRegion(testBound.getBox().getUpperLeft()) &&
-                info.regionFile.getBoundary().insideRegion(testBound.getBox().getLowerRight()) &&
-                info.regionFile.getBoundary().insideRegion(testBound.getBox().getLowerLeft()) &&
-                info.regionFile.getBoundary().insideRegion(testBound.getBox().getUpperRight()))
+        if (!(info.regionFile.getBoundary().insideRegion(testBound.getBox().getCenter(), 0) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getUpperLeft(), 0) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getLowerRight(), 0) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getLowerLeft(), 0) &&
+                info.regionFile.getBoundary().insideRegion(testBound.getBox().getUpperRight(), 0))
                 ) {
             if (DEBUG_OUTPUT)
                 System.out.println("Not inside region");
@@ -562,8 +501,8 @@ public class PatternRenderer {
                     /* random factor */
                     if (Double.compare(random, density) < 1.0) {
                         List<SvgPathCommand> decoCommands = new ArrayList<>();
-                        insertPatternToList(decorativeElementCommands, decoCommands, commandThis.getDestinationPoint(), anglePrev, false, false);
-                        boolean notCollide = decoCommands.stream().map(a -> info.regionFile.getBoundary().insideRegion(a.getDestinationPoint())).reduce((a, b) -> a && b).get();
+                        decoCommands.addAll(translateAndRotatePattern(decorativeElementCommands, commandThis.getDestinationPoint(), anglePrev, false, false));
+                        boolean notCollide = decoCommands.stream().map(a -> info.regionFile.getBoundary().insideRegion(a.getDestinationPoint(), 0)).reduce((a, b) -> a && b).get();
                         if (notCollide)
                             renderedCommands.addAll(decoCommands);
                     }
@@ -571,7 +510,7 @@ public class PatternRenderer {
                 renderedCommands.add(new SvgPathCommand(pointLeft, SvgPathCommand.CommandType.LINE_TO));
             } else {
             /* endpoint of the angle divider */
-                Point divEnd = new Point(commandNext.getDestinationPoint()).rotateAroundCenter(commandThis.getDestinationPoint(), rotationAngle);
+                Point divEnd = new Point(commandNext.getDestinationPoint()).rotateAroundCenterWrongVersion(commandThis.getDestinationPoint(), rotationAngle);
                 Point divPoint = Point.intermediatePointWithLen(commandThis.getDestinationPoint(), divEnd, width);
                 //renderedCommands.add(skeletonPathCommands.get(i));
                 renderedCommands.add(new SvgPathCommand(divPoint, SvgPathCommand.CommandType.LINE_TO));

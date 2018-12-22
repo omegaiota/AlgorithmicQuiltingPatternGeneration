@@ -98,14 +98,14 @@ public class SVGElement {
     public static File outputSvgCommands(List<SvgPathCommand> outputCommandList, String fileName, GenerationInfo info) {
         double width = Double.max(750, info.regionFile.getWidth() + 20);
         double height = Double.max(750, info.regionFile.getHeight() + 20);
-        return outputSvgCommands(outputCommandList, info.getParameterString() + "--" + fileName, width, height);
+        return outputSvgCommands(outputCommandList, fileName + info.getParameterString() , width, height);
     }
 
     public static PrintWriter writeHeader(String fileName, double width, double height) {
         PrintWriter writer = null;
         try {
 
-            writer = new PrintWriter("./out/" + fileName + Main.seedNum + ".svg", "UTF-8");
+            writer = new PrintWriter("./out/" +  Main.seedNum + fileName + ".svg", "UTF-8");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (UnsupportedEncodingException e) {
@@ -143,11 +143,7 @@ public class SVGElement {
         for (int i = 0; i < outputCommandList.size(); i++) {
             if (i == 0) {
                 writer.print(new SvgPathCommand(outputCommandList.get(0), SvgPathCommand.CommandType.MOVE_TO).toSvgCode());
-            }
-            SvgPathCommand command = outputCommandList.get(i);
-
-            // Change moveTo to lineTo so that path will be one stitch
-            writer.print(command.toSvgCode());
+            } else writer.print(new SvgPathCommand(outputCommandList.get(i)).toSvgCode());
 
 
             //commented out this for generating set of 81 results
@@ -384,7 +380,7 @@ public class SVGElement {
 
     private void processPath(Node pathNode, ArrayList<SvgPathCommand> pathCommandList) {
         String pathStr = pathNode.getNodeValue();
-        String withDelimiter = "(?=[cCmMlLzZ])";
+        String withDelimiter = "(?=[cCmMlLzZVvhH])";
         String[] pathElemArray = pathStr.split(withDelimiter);
         Point current = new Point(0.0, 0.0);
         System.out.println("pathElemArrayLength is" + pathElemArray.length);
@@ -471,6 +467,22 @@ public class SVGElement {
                     destPoint = useAbsCoordinate ? new Point(arguments[i + 2]) : new Point(current, arguments[i + 2]);
                     updateBoundWithPoint(destPoint);
                     pathCommandList.add(new SvgPathCommand(controlPoint1, controlPoint2, destPoint,  SvgPathCommand.CommandType.CURVE_TO));
+                    current = destPoint;
+                }
+                break;
+            case 'v':
+                for (int i = 1; i  < arguments.length; i ++ ) {
+                    destPoint = useAbsCoordinate ? new Point(current.x, arguments[i] ) : new Point(0 , arguments[i] ).add(current);
+                    updateBoundWithPoint(destPoint);
+                    pathCommandList.add( new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
+                    current = destPoint;
+                }
+                break;
+            case 'h':
+                for (int i = 1; i  < arguments.length; i ++ ) {
+                    destPoint = useAbsCoordinate ? new Point(arguments[i], current.y ) : new Point(arguments[i], 0 ).add(current);
+                    updateBoundWithPoint(destPoint);
+                    pathCommandList.add( new SvgPathCommand(destPoint,  SvgPathCommand.CommandType.LINE_TO));
                     current = destPoint;
                 }
                 break;
@@ -596,8 +608,14 @@ public class SVGElement {
                 '}';
     }
 
-    //    public Pair<CircleBound, List<Point>> getBoundingCircle() {
-    public Pair<CircleBound, List<Integer>> getBoundingCircle() {
+    public CircleBound getBoundingCircle() {
+        List<Point> pointList = commandLists.stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList());
+        CircleBound bound = SmallestEnclosingCircle.makeCircle(pointList);
+        return bound;
+    }
+
+
+    public Pair<CircleBound, List<Integer>> getBoundingCircleAndTouchPointIndex() {
         List<Point> pointList = getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList());
         CircleBound bound = SmallestEnclosingCircle.makeCircle(pointList);
         int[] touchIndex = IntStream.range(0,
@@ -615,7 +633,7 @@ public class SVGElement {
             newCommandList.add(new SvgPathCommand(newCommandList.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
             newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
             commandLists.clear();
-            PatternRenderer.insertPatternToList(newCommandList, commandLists, newCommandList.get(0).getDestinationPoint(),
+            PatternRenderer.translateAndRotatePattern(newCommandList, newCommandList.get(0).getDestinationPoint(),
                     -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false, false);
             CircleBound newBound = SmallestEnclosingCircle.makeCircle(
                     getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList()));
@@ -645,7 +663,7 @@ public class SVGElement {
         }
 
         commandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
-        commandList.add(new SvgPathCommand(commandList.get(0).getDestinationPoint()));
+//        commandList.add(new SvgPathCommand(commandList.get(0).getDestinationPoint()));
         return commandList;
     }
 
@@ -668,12 +686,11 @@ public class SVGElement {
                     System.out.println(line);
                     System.out.println(i);
                 }
-                commandList.add(new SvgPathCommand(points.get(Integer.valueOf(pathElemArray[i]))));
+                commandList.add(new SvgPathCommand(points.get(Integer.valueOf(pathElemArray[i])), SvgPathCommand.CommandType.LINE_TO));
             }
         }
 
         commandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
-        commandList.add(new SvgPathCommand(commandList.get(0).getDestinationPoint()));
         return commandList;
     }
 }

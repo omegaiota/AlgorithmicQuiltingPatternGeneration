@@ -190,7 +190,7 @@ public class SpinePatternMerger {
     public void insertPatternToList(List<SvgPathCommand> patternCommands,
                                     List<SvgPathCommand> combinedCommands,
                                     Point insertionPoint, double rotationAngle) {
-        System.out.println("\ncalling insertPatternToList");
+        System.out.println("\ncalling translateAndRotatePattern");
         Point patternPoint = patternCommands.get(0).getDestinationPoint();
         SvgPathCommand newCommand;
         for (int j = 0; j < patternCommands.size(); j++) {

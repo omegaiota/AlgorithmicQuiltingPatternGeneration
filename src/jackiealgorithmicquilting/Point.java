@@ -25,6 +25,16 @@ public class Point implements Comparable<Point> {
         this.y = truncateDouble(Double.parseDouble(coordinateStr[1]), PRECISION);
     }
 
+    public Point(double x, String yStr) {
+        this.x = x;
+        this.y = truncateDouble(Double.parseDouble(yStr), PRECISION);
+    }
+
+    public Point(String xStr, double y) {
+        this.y = y;
+        this.x = truncateDouble(Double.parseDouble(xStr), PRECISION);
+    }
+
     /** constructs a point with relative coordinates*/
     public Point(Point current, double x, double y) {
         this.x = truncateDouble(x + current.x, PRECISION);
@@ -183,12 +193,20 @@ public class Point implements Comparable<Point> {
     public static Point vertOffset(Point dest, Point src, double offset) {
         Point srcRotated = new Point(src);
         if (offset > 0)
-            srcRotated = srcRotated.rotateAroundCenter(dest, Math.PI / 2);
+            srcRotated = srcRotated.rotateAroundCenterWrongVersion(dest, Math.PI / 2);
         else
-            srcRotated = srcRotated.rotateAroundCenter(dest, Math.PI/ 2 * 3);
+            srcRotated = srcRotated.rotateAroundCenterWrongVersion(dest, Math.PI/ 2 * 3);
         return intermediatePointWithLen(dest, srcRotated, Math.abs(offset));
     }
 
+    /** perpendicularFoot: returns the distance between the point P2 such that PP2 is perpendicular to L1L2 and input point
+     *  requires: P is not on L1L2
+     *  ensures: function returns distance **/
+    public static double perpendicularDist(Point P, Point L1, Point L2) {
+        Point foot = perpendicularFoot(P, L1, L2);
+        return getDistance(foot, P);
+
+    }
     /** perpendicularFoot: returns point P2 such that PP2 is perpendicular to L1L2
      *  requires: P is not on L1L2
      *  ensures: function returns P2 **/
@@ -282,9 +300,16 @@ public class Point implements Comparable<Point> {
     /**
      * rotate a point with a radian angle around a central point
      */
-    public Point rotateAroundCenter(Point center, double angle) {
+    public Point rotateAroundCenterWrongVersion(Point center, double angle) {
         return this.minus(center).rotateAroundOrigin(angle).add(center);
     }
+
+    public Point rotateAroundCenter(Point O, double theta) {
+        double newX = Math.cos(theta) * (x-O.x) - Math.sin(theta) * (y-O.y) + O.x;
+        double newY = Math.sin(theta) * (x-O.x) + Math.cos(theta) * (y-O.y) + O.y;
+        return new Point(newX, newY);
+    }
+
 
     /**
      * scale a point around origin

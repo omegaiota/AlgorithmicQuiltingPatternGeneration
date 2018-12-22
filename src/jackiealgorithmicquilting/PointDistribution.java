@@ -39,6 +39,9 @@ public final class PointDistribution {
             case HEXAGON:
                 strategy = new Hexagon();
                 break;
+            case ONEROW:
+                strategy = new OneRow();
+                break;
             case THREE_THREE_FOUR_THREE_FOUR:
             default:
                 strategy = new TTFTF();
@@ -65,32 +68,70 @@ public final class PointDistribution {
         double area = (maxPoint.x - minPoint.x) * (maxPoint.y - minPoint.y);
 //        double radius = Math.sqrt(area / NUM / 4.0);
         double radius = info.pointDistributionDist;
+        double minDist = info.pointDistributionDist / 2;
         System.out.println("radius:" + radius);
         System.out.println("area:" + area);
         info.setPoissonRadius(radius);
         int NUM = (int) (area / (radius * radius * 3.5));
         System.out.println("num:" + area);
         int consecutiveFail = 0;
-        while (consecutiveFail < 1000) {
-//        while (total < NUM) {
-            double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
-                    y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
-            Point tempPoint = new Point(x, y);
-            if (boundary.insideRegion(tempPoint)) {
-                boolean isValid = true;
-                for (Point p : points) {
-                    if (Point.getDistance(tempPoint, p) < radius) {
-                        isValid = false;
-                        break;
+        RectangleBound box = RectangleBound.valueOf(boundary.getPoints());
+        double gridSize = minDist * 2;
+        int xTotal = (int) (box.getWidth() / gridSize);
+        int yTotal = (int) (box.getHeight() / gridSize);
+        int[][] counts = new int[yTotal][xTotal];
+        minDist = 0;
+        while (consecutiveFail < 100) {
+            boolean succeeded = false;
+            for (int yIndex = 0; yIndex < yTotal ; yIndex++) {
+                for (int xIndex = 0; xIndex < xTotal; xIndex++) {
+//                    int trialTotal = (int) ((1 - counts[yIndex][xIndex] * 1.0 / points.size()) * consecutiveFail) + 5;
+                    int trialTotal = 2;
+                    for (int trial = 0; trial < trialTotal; trial++) {
+                        double x = box.getLeft() + xIndex * gridSize;
+                        double y = box.getUp() + yIndex * gridSize;
+                        double x0 = Math.random() * gridSize + x,
+                                y0 = Math.random() * gridSize + y;
+                        Point tempPoint = new Point(x0, y0);
+                        if (boundary.insideRegion(tempPoint, minDist)) {
+                            boolean isValid = true;
+                            for (Point p : points) {
+                                if (Point.getDistance(tempPoint, p) < radius) {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+                            if (isValid) {
+                                counts[yIndex][xIndex]++;
+                                points.add(tempPoint);
+                                total++;
+                                succeeded = true;
+                            }
+                        }
                     }
                 }
-                if (isValid) {
-                    consecutiveFail = 0;
-                    points.add(tempPoint);
-                    total++;
-                } else
-                    consecutiveFail++;
             }
+            if (!succeeded)
+                consecutiveFail++;
+//        while (total < NUM) {
+//            double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
+//                    y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
+//            Point tempPoint = new Point(x, y);
+//            if (boundary.insideRegion(tempPoint, minDist)) {
+//                boolean isValid = true;
+//                for (Point p : points) {
+//                    if (Point.getDistance(tempPoint, p) < radius) {
+//                        isValid = false;
+//                        break;
+//                    }
+//                }
+//                if (isValid) {
+//                    consecutiveFail = 0;
+//                    points.add(tempPoint);
+//                    total++;
+//                } else
+//                    consecutiveFail++;
+//            }
 
         }
 
@@ -159,6 +200,30 @@ public final class PointDistribution {
         }
     }
 
+    public  static void writeoutToConcorderFormat(List<Point> points, String fileName) {
+        PrintWriter writer = null;
+        try {
+
+            writer = new PrintWriter("./out/" + fileName + ".tsp", "UTF-8");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        writer.println(String.format("NAME : %s\n", fileName) +
+                "COMMENT : Jackie \n" +
+                "TYPE : TSP\n" +
+                String.format("DIMENSION : %d\n", points.size()) +
+                "EDGE_WEIGHT_TYPE : EUC_2D\n" +
+                "NODE_COORD_SECTION");
+        for (int i = 0; i < points.size(); i++) {
+            writer.println(String.format("%d %.3f %.2f", i, points.get(i).x, points.get(i).y));
+        }
+        writer.close();
+
+    }
+
     public List<Point> getPoints() {
         return points;
     }
@@ -181,21 +246,19 @@ public final class PointDistribution {
         midX /= boundary.getPoints().size();
         midY /= boundary.getPoints().size();
         Point start = new Point(midX, midY);
-        if (!boundary.insideRegion(start)) {
+        if (!boundary.insideRegion(start, 0)) {
             boolean found = false;
             while (!found) {
                 int i = (int) (Math.random() * allPoints.size()), j = ((int) (Math.random() * allPoints.size()));
                 Point mid = boundary.getPoints().get(i).add(boundary.getPoints().get(j)).multiply(0.5);
-                if (boundary.insideRegion(mid)) {
+                if (boundary.insideRegion(mid, 0)) {
                     start = mid;
                     found = true;
                 }
             }
-
-
         }
         distributionVisualizationList.add(new SvgPathCommand(start, SvgPathCommand.CommandType.MOVE_TO));
-        System.out.println("starting point is inside boundary:" + boundary.insideRegion(start));
+        System.out.println("starting point is inside boundary:" + boundary.insideRegion(start, 0));
         strategy.generate(start);
         toTraversal();
     }
@@ -219,7 +282,7 @@ public final class PointDistribution {
         pointGraph.addVertex(newV);
         Point zeroAnglePoint = new Point(current.x + dist, current.y);
         for (double angle : restriction) {
-            Point newPoint = zeroAnglePoint.rotateAroundCenter(current, currentAngle + angle);
+            Point newPoint = zeroAnglePoint.rotateAroundCenterWrongVersion(current, currentAngle + angle);
             double newAngle = (angle + currentAngle + Math.PI);
             while (newAngle > Math.PI * 2)
                 newAngle -= Math.PI * 2;
@@ -240,16 +303,16 @@ public final class PointDistribution {
             boolean isFree = (closePoints.size() == 0) || (closePoints.size() == 1 && closePoints.get(0) == parent);
             if (pointGraph.getVertices().size() < restriction.size() + 1) {
                 if (parent == pointGraph.getVertices().get(0)) ;
-                System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current) + " regionFreeSize:" + closePoints.size());
+                System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current, 0) + " regionFreeSize:" + closePoints.size());
             }
-            if (boundary.insideRegion(current) && isFree) {
+            if (boundary.insideRegion(current, 0) && isFree) {
                 newV = new Vertex<>(current);
                 pointGraph.addVertex(newV);
                 if (parent != null)
                     newV.connect(parent);
                 zeroAnglePoint = new Point(current.x + dist, current.y);
                 for (double angle : restriction) {
-                    Point newPoint = zeroAnglePoint.rotateAroundCenter(current, currentAngle + angle);
+                    Point newPoint = zeroAnglePoint.rotateAroundCenterWrongVersion(current, currentAngle + angle);
                     double newAngle = (angle + currentAngle + Math.PI);
                     while (newAngle > Math.PI * 2)
                         newAngle -= Math.PI * 2;
@@ -274,7 +337,7 @@ public final class PointDistribution {
 //            if (parent == pointGraph.getVertices().get(0));
 //            System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current) + " regionFreeSize:" + closePoints.size());
 //        }
-        if (boundary.insideRegion(current) && isFree) {
+        if (boundary.insideRegion(current, 0) && isFree) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(current);
             pointGraph.addVertex(newV);
@@ -283,7 +346,7 @@ public final class PointDistribution {
             Point zeroAnglePoint = new Point(current.x + dist, current.y);
             if (continueRecurse) {
                 for (double angle : restriction) {
-                    Point newPoint = zeroAnglePoint.rotateAroundCenter(current, currentAngle + angle);
+                    Point newPoint = zeroAnglePoint.rotateAroundCenterWrongVersion(current, currentAngle + angle);
                     double newAngle = (angle + currentAngle + Math.PI);
                     while (newAngle > Math.PI * 2)
                         newAngle -= Math.PI * 2;
@@ -309,28 +372,28 @@ public final class PointDistribution {
     private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist, boolean consecFail) {
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
         boolean fail = false;
-        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0)) {
+        if (boundary.insideRegion(bottomRight, 0) && ((closePoints).size() == 0)) {
             double newDist = dist;
             Vertex<Point> newV = parent;
-            if (tightgrowInside(bottomRight, dist)) {
+//            if (tightgrowInside(bottomRight, dist / 2.0)) {
                 newV = new Vertex<>(bottomRight);
                 pointGraph.addVertex(newV);
                 points.add(bottomRight);
                 if (parent != null)
                     newV.connect(parent);
-            } else {
-                if (consecFail)
-                    return;
-                fail = true;
-            }
+//            } else {
+//                if (consecFail)
+//                    return;
+//                fail = true;
+//            }
 
 
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
             Point upperRight = new Point(bottomRight.x, upperLeft.y);
             Point bottomLeft = new Point(upperLeft.x, bottomRight.y);
-            upperRight = upperRight.rotateAroundCenter(bottomRight, angle);
-            bottomLeft = bottomLeft.rotateAroundCenter(bottomRight, angle);
-            upperLeft = upperLeft.rotateAroundCenter(bottomRight, angle);
+            upperRight = upperRight.rotateAroundCenterWrongVersion(bottomRight, angle);
+            bottomLeft = bottomLeft.rotateAroundCenterWrongVersion(bottomRight, angle);
+            upperLeft = upperLeft.rotateAroundCenterWrongVersion(bottomRight, angle);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
@@ -359,24 +422,24 @@ public final class PointDistribution {
     private void triangleToSquare(Vertex<Point> parent, Point bottomLeft, double angle, double dist, boolean add, boolean fail) {
         List<Vertex<Point>> closePoints = regionFree(bottomLeft, 0.005);
         boolean failure = false;
-        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
+        if (boundary.insideRegion(bottomLeft, 0) && ((closePoints).size() == 0)) {
             double newDist = dist;
             Vertex<Point> newV = parent;
-            if (tightgrowInside(bottomLeft, dist)) {
+//            if (tightgrowInside(bottomLeft, dist)) {
                 newV = new Vertex<>(bottomLeft);
                 pointGraph.addVertex(newV);
                 points.add(bottomLeft);
                 if (parent != null && add)
                     newV.connect(parent);
-            } else {
-                if (fail)
-                    return;
-                failure = true;
-            }
+//            } else {
+//                if (fail)
+//                    return;
+//                failure = true;
+//            }
 
-            Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
+            Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenterWrongVersion(bottomLeft, angle);
 
-            Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
+            Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenterWrongVersion(bottomLeft, angle);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
@@ -396,7 +459,7 @@ public final class PointDistribution {
 
     private void triangleToTriangle(Vertex<Point> parent, Point bottomLeft, double angle, double dist) {
         List<Vertex<Point>> closePoints = regionFree(bottomLeft, 0.005);
-        if (boundary.insideRegion(bottomLeft) && ((closePoints).size() == 0)) {
+        if (boundary.insideRegion(bottomLeft, 0) && ((closePoints).size() == 0)) {
             double newDist = dist;
             Vertex<Point> newV = new Vertex<>(bottomLeft);
             pointGraph.addVertex(newV);
@@ -404,10 +467,10 @@ public final class PointDistribution {
 
             if (parent != null)
                 newV.connect(parent);
-            Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenter(bottomLeft, angle);
-            Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
+            Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenterWrongVersion(bottomLeft, angle);
+            Point top = new Point(bottomLeft.x + (dist / 2), bottomLeft.y - dist / 2 * (Math.sqrt(3))).rotateAroundCenterWrongVersion(bottomLeft, angle);
             Point upperLeft = top.minus(new Point(dist, 0));
-            Point lowerLeft = new Point(bottomLeft.x - (dist / 2), bottomLeft.y + dist / 2 * (Math.sqrt(3))).rotateAroundCenter(bottomLeft, angle);
+            Point lowerLeft = new Point(bottomLeft.x - (dist / 2), bottomLeft.y + dist / 2 * (Math.sqrt(3))).rotateAroundCenterWrongVersion(bottomLeft, angle);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
@@ -431,7 +494,7 @@ public final class PointDistribution {
     private void squareToSquare(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
         assert (Double.compare(dist, disLen) <= 0);
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
-        if (boundary.insideRegion(bottomRight) && ((closePoints).size() == 0)) {
+        if (boundary.insideRegion(bottomRight, 0) && ((closePoints).size() == 0)) {
             double newDist = disLen;
             Vertex<Point> newV = new Vertex<>(bottomRight);
             pointGraph.addVertex(newV);
@@ -448,9 +511,9 @@ public final class PointDistribution {
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
             Point upperRight = new Point(bottomRight.x, upperLeft.y);
             Point bottomLeft = new Point(upperLeft.x, bottomRight.y);
-            upperRight = upperRight.rotateAroundCenter(bottomRight, angle);
-            bottomLeft = bottomLeft.rotateAroundCenter(bottomRight, angle);
-            upperLeft = upperLeft.rotateAroundCenter(bottomRight, angle);
+            upperRight = upperRight.rotateAroundCenterWrongVersion(bottomRight, angle);
+            bottomLeft = bottomLeft.rotateAroundCenterWrongVersion(bottomRight, angle);
+            upperLeft = upperLeft.rotateAroundCenterWrongVersion(bottomRight, angle);
 
             distributionVisualizationList.add(new SvgPathCommand(bottomRight, SvgPathCommand.CommandType.LINE_TO));
             distributionVisualizationList.add(new SvgPathCommand(bottomLeft, SvgPathCommand.CommandType.LINE_TO));
@@ -497,14 +560,14 @@ public final class PointDistribution {
         return stitchPath;
     }
 
+
+
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE, HEXAGON;
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE, HEXAGON, ONEROW;
         public static RenderType getDefault() {
-           return  THREE_THREE_FOUR_THREE_FOUR;
+            return  THREE_THREE_FOUR_THREE_FOUR;
         }
     }
-
-
 
     interface Distribution {
         void generate(Point start);
@@ -520,7 +583,7 @@ public final class PointDistribution {
 
         private void hexagon(Vertex<Point> parent, Point center, double angle, double dist) {
             List<Vertex<Point>> closePoints = regionFree(center, 0.005);
-            if (boundary.insideRegion(center) && ((closePoints).size() == 0)) {
+            if (boundary.insideRegion(center, 0) && ((closePoints).size() == 0)) {
                 double newDist = dist;
                 Vertex<Point> newV = new Vertex<>(center);
                 pointGraph.addVertex(newV);
@@ -530,8 +593,8 @@ public final class PointDistribution {
                     newV.connect(parent);
 
                 Point rotatingPoint = (parent == null) ? new Point(center.x + disLen, center.y) : parent.getData();
-                Point p1 = rotatingPoint.rotateAroundCenter(center, Math.toRadians(120)),
-                        p2 = rotatingPoint.rotateAroundCenter(center, Math.toRadians(240));
+                Point p1 = rotatingPoint.rotateAroundCenterWrongVersion(center, Math.toRadians(120)),
+                        p2 = rotatingPoint.rotateAroundCenterWrongVersion(center, Math.toRadians(240));
 
                 distributionVisualizationList.add(new SvgPathCommand(p1, SvgPathCommand.CommandType.LINE_TO));
                 distributionVisualizationList.add(new SvgPathCommand(p2, SvgPathCommand.CommandType.LINE_TO));
@@ -547,8 +610,6 @@ public final class PointDistribution {
         }
     }
 
-
-
     final class TTFTF implements Distribution {
         @Override
         public void generate(Point start) {
@@ -560,6 +621,35 @@ public final class PointDistribution {
         @Override
         public void generate(Point start) {
             squareToSquare(null, start, 0, disLen);
+        }
+    }
+
+    final class OneRow implements Distribution {
+        @Override
+        public void generate(Point start) {
+            onerow(null, start, 0, disLen);
+        }
+
+        private void onerow(Vertex<Point> parent, Point bottomRight, double angle, double dist) {
+            double x = bottomRight.x;
+            Point newP = new Point(x - dist, bottomRight.y);
+            while (boundary.insideRegion(newP, 0)) {
+                Vertex<Point> newV = new Vertex<>(newP);
+                pointGraph.addVertex(newV);
+                points.add(newP);
+                x = x - dist;
+                newP = new Point(x, bottomRight.y );
+            }
+
+            x = bottomRight.x;
+            newP = new Point(x + dist, bottomRight.y);
+            while (boundary.insideRegion(newP, 0)) {
+                Vertex<Point> newV = new Vertex<>(newP);
+                pointGraph.addVertex(newV);
+                points.add(newP);
+                x = x + dist;
+                newP = new Point(x, bottomRight.y);
+            }
         }
     }
 
@@ -582,30 +672,6 @@ public final class PointDistribution {
             System.out.println("Restriction size:" + angles.size());
             angleRestrictedBFS(null, start, angles, disLen, 0, true);
         }
-    }
-
-    public  static void writeoutToConcorderFormat(List<Point> points, String fileName) {
-        PrintWriter writer = null;
-        try {
-
-            writer = new PrintWriter("./out/" + fileName + ".tsp", "UTF-8");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-        writer.println(String.format("NAME : %s\n", fileName) +
-                "COMMENT : Jackie \n" +
-                "TYPE : TSP\n" +
-                String.format("DIMENSION : %d\n", points.size()) +
-                "EDGE_WEIGHT_TYPE : EUC_2D\n" +
-                "NODE_COORD_SECTION");
-        for (int i = 0; i < points.size(); i++) {
-            writer.println(String.format("%d %.3f %.2f", i, points.get(i).x, points.get(i).y));
-        }
-        writer.close();
-
     }
 
 

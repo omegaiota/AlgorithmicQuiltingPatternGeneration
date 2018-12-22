@@ -18,6 +18,7 @@ public class ConvexHullBound {
 
     }
 
+
     private static int orientation(Point p, Point q, Point r) {
         final int COLINEAR = 0, CW = 1, CCW = 2;
         double val = (q.y - p.y) * (r.x - q.x) -
@@ -32,23 +33,13 @@ public class ConvexHullBound {
         if (commands == null || commands.size() == 0)
             return ConvexHullBound.valueOf(new ArrayList<>());
 
-        points.add(commands.get(0).getDestinationPoint());
-        for (int i = 1; i < commands.size(); i++) {
+        for (int i = 0; i < commands.size(); i++) {
             if (commands.get(i).getCommandType() == SvgPathCommand.CommandType.CURVE_TO) {
-                Point start = commands.get(i - 1).getDestinationPoint(),
-                        c1 = commands.get(i).getControlPoint1(),
-                        c2 = commands.get(i).getControlPoint2(),
-                        end = commands.get(i).getDestinationPoint();
-                points.add(start);
-                points.add(Spline.evaluate(start, c1, c2, end, 0.2));
-                points.add(Spline.evaluate(start, c1, c2, end, 0.4));
-                points.add(Spline.evaluate(start, c1, c2, end, 0.6));
-                points.add(Spline.evaluate(start, c1, c2, end, 0.8));
-                points.add(end);
-            } else {
-                points.add(commands.get(i).getDestinationPoint());
-            }
+                points.add(commands.get(i).getControlPoint1());
+                points.add(commands.get(i).getControlPoint2());
 
+            }
+            points.add(commands.get(i).getDestinationPoint());
         }
 
         return ConvexHullBound.valueOf(points);
