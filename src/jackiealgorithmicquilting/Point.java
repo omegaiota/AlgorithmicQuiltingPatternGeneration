@@ -159,6 +159,13 @@ public class Point implements Comparable<Point> {
         return new Point(thisX / pointList.size(), thisY / pointList.size());
 
     }
+    public static boolean angleIsBetweenDegree(double thisAngle, double other1, double other2) {
+        if (other1 <= other2) {
+            return (thisAngle >= other1 && thisAngle <= other2);
+        } else {
+            return (thisAngle >= other1 || thisAngle <= other2);
+        }
+    }
 
     /**
      * return the angle between two points in radians

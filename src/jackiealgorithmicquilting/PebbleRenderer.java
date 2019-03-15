@@ -497,11 +497,6 @@ public final class PebbleRenderer extends PatternRenderer {
         Point zeroAnglePoint = new Point(thisNode.getData().x + thisNode.getBoundingCircle().getRadii(), thisNode.getData().y);
         Point startDrawingPoint = zeroAnglePoint.rotateAroundCenterWrongVersion(thisNode.getData(), Math.toRadians(angle));
         Point primitiveCentroid = thisNode.getData();
-//        renderedCommands.add(new SvgPathCommand(startDrawingPoint, SvgPathCommand.CommandType.LINE_TO));
-//        if (DEBUG) {
-//            SVGElement.outputSvgCommands(renderedCommands, "test", info);
-//        }
-        // Insert a kissing primitive instead of a pebble
         List<SvgPathCommand> scaledCommands = new ArrayList<>();
 
         if (decoCommands.size() != 0) {
@@ -512,60 +507,83 @@ public final class PebbleRenderer extends PatternRenderer {
             double scaleFactor = thisNode.getBoundingCircle().getRadii() / decoCommandsBound.getRadii();
             scaledCommands = PatternRenderer.translateAndRotatePattern(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     new Point(0,0)), startDrawingPoint, Math.toRadians(angle), false, false);
+            /** Pebbles : traverse whole pebble first. this is only needed to avoid aliasing when quilting! **/
             renderedCommands.addAll(scaledCommands);
 
         }
-        /** Pebbles : traverse whole pebble first. this is only needed to avoid aliasing when quilting! **/
-
-        for (int offset = 0; offset < 360; offset += gap) {
-            int currentAngle = (angle + offset) % 360;
-            TreeNode<Point> child;
-            Point cutPoint;
-            if (scaledCommands.size() != 0) {
-                if (!DRAW_BOUND)
-                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
-                else
-                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
-            } else {
-                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
-            }
-            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // render bubble
-//            if (DEBUG) {
-//                SVGElement.outputSvgCommands(renderedCommands, "test", info);
-//            }
-            for (int j = currentAngle; j < currentAngle + gap; j++) {
-                int searchAngle = j % 360;
-                int newAngle = (searchAngle + 180) % 360;
-                if (scaledCommands.size() != 0) {
-                    if (!DRAW_BOUND)
-                        cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
-                    else
-                        cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
-                } else {
-                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
-                }
-//                if (DEBUG) {
-//                    SVGElement.outputSvgCommands(renderedCommands, "test", info);
-//                }
-                if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
-                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
-                    pebbleRenderDraw(child, newAngle);
-                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
-                }
-            }
+        int n = scaledCommands.size();
+        double[] commandDegreeTable = new double[n];
+        for (int i = 0; i < n; i++) {
+            commandDegreeTable[i] = Math.toDegrees(Point.getAngle(primitiveCentroid, scaledCommands.get(i).getDestinationPoint()));
         }
-//        Point thisPoint;
-//        if (scaledCommands.size() != 0) {
-//            if (!DRAW_BOUND)
-//                thisPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, angle); // render primitive
-//            else
-//                thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
-//        } else {
-//            thisPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(angle));
-//        }
-////        renderedCommands.add(new SvgPathCommand(thisPoint, SvgPathCommand.CommandType.LINE_TO));
-//        if (DEBUG) {
-//            SVGElement.outputSvgCommands(renderedCommands, "test", info);
+
+        int currentAngle = angle % 360;
+        int startCommand = 0;
+        while (startCommand < n-1) {
+            if (Point.angleIsBetweenDegree(currentAngle, commandDegreeTable[startCommand], commandDegreeTable[startCommand+1]))
+                break;
+            startCommand++;
+        }
+
+        renderedCommands.add(new SvgPathCommand(scaledCommands.get((startCommand - 1 + n) % n).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
+        renderedCommands.add(scaledCommands.get(startCommand));
+        TreeNode<Point> child;
+        for (int i = 0; i < n; i++) {
+            int lastCommand = (startCommand + i) % n;
+            int thisCommand = (startCommand + i + 1) % n;
+            int startAngle = (int) commandDegreeTable[lastCommand];
+            double endAngle = (int) commandDegreeTable[thisCommand];
+            if (endAngle < startAngle)
+                endAngle += 360;
+            for (int searchAngle = startAngle; searchAngle < endAngle; searchAngle++) {
+                if ((child = degreeTreeNodeMap.get( (searchAngle % 360))) != null) {
+                    degreeTreeNodeMap.remove(searchAngle % 360);
+//                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+                    pebbleRenderDraw(child, (searchAngle + 180) % 360);
+//                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+                }
+            }
+            renderedCommands.add(scaledCommands.get(thisCommand));
+        }
+
+
+
+//        for (int offset = 0; offset < 360; offset += gap) {
+//            int currentAngle = (angle + offset) % 360;
+//            TreeNode<Point> child;
+//            Point cutPoint;
+//            if (scaledCommands.size() != 0) {
+//                if (!DRAW_BOUND)
+//                    cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, currentAngle); // render primitive
+//                else
+//                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
+//            } else {
+//                cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(currentAngle));
+//            }
+//            renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // render bubble
+////            if (DEBUG) {
+////                SVGElement.outputSvgCommands(renderedCommands, "test", info);
+////            }
+//            for (int j = currentAngle; j < currentAngle + gap; j++) {
+//                int searchAngle = j % 360;
+//                int newAngle = (searchAngle + 180) % 360;
+//                if (scaledCommands.size() != 0) {
+//                    if (!DRAW_BOUND)
+//                        cutPoint = pointOnPrimitiveWithDegreeToCenter(scaledCommands, primitiveCentroid, searchAngle); // render primitive
+//                    else
+//                        cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
+//                } else {
+//                    cutPoint = zeroAnglePoint.rotateAroundCenter(thisNode.getData(), Math.toRadians(searchAngle));
+//                }
+////                if (DEBUG) {
+////                    SVGElement.outputSvgCommands(renderedCommands, "test", info);
+////                }
+//                if ((child = degreeTreeNodeMap.get(searchAngle)) != null) {
+//                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+//                    pebbleRenderDraw(child, newAngle);
+//                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+//                }
+//            }
 //        }
 
     }
