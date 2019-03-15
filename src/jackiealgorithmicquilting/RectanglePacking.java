@@ -42,7 +42,7 @@ public class RectanglePacking extends PatternRenderer {
             if (Double.compare((Point.getDistance(treeRoot.getData(), firstChildren.getData())), dist) < 0)
                 dist = Point.getDistance(treeRoot.getData(), firstChildren.getData());
         }
-        System.out.println("Command distance is" + dist);
+//        System.out.println("Command distance is" + dist);
 
         /* Order children tobe counterclockwise*/
         TreeTraversal.treeOrdering(treeRoot, null);

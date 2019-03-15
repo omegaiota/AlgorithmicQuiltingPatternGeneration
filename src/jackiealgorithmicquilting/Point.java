@@ -133,9 +133,6 @@ public class Point implements Comparable<Point> {
 
     public static Point intermediatePointWithProportion(Point start, Point end, double propertion) {
         double dist = Point.getDistance(start, end);
-        System.out.println("Dist: " + dist);
-        System.out.println("Proportion: " + propertion);
-        System.out.println("Len: " + dist * propertion);
         return  intermediatePointWithLen(start, end, dist * propertion);
     }
 

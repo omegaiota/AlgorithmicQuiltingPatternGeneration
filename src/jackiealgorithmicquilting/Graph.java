@@ -44,10 +44,6 @@ public class Graph {
                      index = i;
                  }
              }
-                if (index != 0 && index != -1) {
-                    System.out.println("size:" + key.neighborSize() + " " + index);
-                    System.out.println(key.getWeight());
-                }
 
          }
          assert(toInclude.size() + vertexTreeNodeHashMap.size() == mVertices.size());

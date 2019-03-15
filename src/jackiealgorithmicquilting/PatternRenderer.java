@@ -155,7 +155,7 @@ public class PatternRenderer {
          * I'm assuming that rendered commands is holding the tree skeleton after combined to splines
          */
         boolean isBranching = info.skeletonRenderType == Main.SkeletonRenderType.CATMULL_ROM;
-        List<SvgPathCommand> skeletonPath = new ArrayList<>(),
+        List<SvgPathCommand> skeletonPath = new ArrayList<>(), preprocessingVisualizaiton = new ArrayList<>(),
                 collisionGeoCommands = info.collisionCommands;
         List<SvgPathCommand> reflectedDecoelmentCommands = SvgPathCommand.reflect(decoElmentCommands);
         List<SvgPathCommand> reflectedCollisionGeoCommands = SvgPathCommand.reflect(collisionGeoCommands);
@@ -224,6 +224,8 @@ public class PatternRenderer {
 
 
         skeletonPath.addAll(renderedCommands);
+        preprocessingVisualizaiton.addAll(renderedCommands);
+
         SVGElement.outputSvgCommands(skeletonPath, "splittedSpline", info);
         nodeType = beforeSplittedNodeType;
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
@@ -267,6 +269,7 @@ public class PatternRenderer {
                 if ((preprocessing == 1) && (isLeafNode)) {
                     System.out.println("hello from" + i + "size:" + leafNodeIndexCommandsMap.get(i).size());
                     skeletonPath.addAll(i + 1, leafNodeIndexCommandsMap.get(i));
+                    preprocessingVisualizaiton.addAll(i + 1, leafNodeIndexCommandsMap.get(i));
                     continue;
 
                 }
@@ -394,6 +397,7 @@ public class PatternRenderer {
             }
 
         }
+        SVGElement.outputSvgCommands(preprocessingVisualizaiton, "afterPreprocessing", info);
 
         renderedCommands = skeletonPath;
     }

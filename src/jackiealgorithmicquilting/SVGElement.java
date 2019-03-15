@@ -503,7 +503,7 @@ public class SVGElement {
     }
 
     public List<SvgPathCommand> getCommandList() {
-        return commandLists;
+        return new ArrayList<>(commandLists);
     }
 
     public String getfFileName() {
@@ -627,14 +627,14 @@ public class SVGElement {
             int first = touchIndex[0];
             List<SvgPathCommand> newCommandList = new ArrayList<>();
             for (int j = 0; j < commandLists.size(); j++) {
-                newCommandList.add(commandLists.get((j + first) % pointList.size()));
+                newCommandList.add(new SvgPathCommand(commandLists.get((j + first) % pointList.size())));
                 newCommandList.get(j).setCommandType(SvgPathCommand.CommandType.LINE_TO);
             }
             newCommandList.add(new SvgPathCommand(newCommandList.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
             newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
             commandLists.clear();
-            PatternRenderer.translateAndRotatePattern(newCommandList, newCommandList.get(0).getDestinationPoint(),
-                    -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false, false);
+            commandLists.addAll(PatternRenderer.translateAndRotatePattern(newCommandList, newCommandList.get(0).getDestinationPoint(),
+                    -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false, false));
             CircleBound newBound = SmallestEnclosingCircle.makeCircle(
                     getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList()));
             touchIndex = Arrays.stream(touchIndex).map(i -> (i - first + pointList.size()) % pointList.size()).toArray();

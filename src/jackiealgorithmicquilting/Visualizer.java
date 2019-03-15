@@ -74,7 +74,7 @@ public class Visualizer extends Application {
 
             }
             if (path.getElements().size()> 10) {
-                Plot newPlot = new Plot(path, axes, "rgb(200,200,70)");
+                Plot newPlot = new Plot(path, axes, "rgb(200,100,270)");
 //                Plot newPlot = new Plot(path, axes, String.format("rgb(%d,%d,70)",(int) (20 + 180 - i * 180.0 / commandList.size()), (int) (20 + i * 180.0 / commandList.size())));
                 myPane.getChildren().addAll(newPlot);
                 path = new Path();

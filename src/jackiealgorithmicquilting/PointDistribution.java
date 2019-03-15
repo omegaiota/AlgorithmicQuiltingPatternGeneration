@@ -69,11 +69,9 @@ public final class PointDistribution {
 //        double radius = Math.sqrt(area / NUM / 4.0);
         double radius = info.pointDistributionDist;
         double minDist = info.pointDistributionDist / 2;
-        System.out.println("radius:" + radius);
-        System.out.println("area:" + area);
+
         info.setPoissonRadius(radius);
         int NUM = (int) (area / (radius * radius * 3.5));
-        System.out.println("num:" + area);
         int consecutiveFail = 0;
         RectangleBound box = RectangleBound.valueOf(boundary.getPoints());
         double gridSize = minDist * 2;
@@ -113,25 +111,7 @@ public final class PointDistribution {
             }
             if (!succeeded)
                 consecutiveFail++;
-//        while (total < NUM) {
-//            double x = Math.random() * (maxPoint.x - minPoint.x) + minPoint.x,
-//                    y = Math.random() * (maxPoint.y - minPoint.y) + minPoint.y;
-//            Point tempPoint = new Point(x, y);
-//            if (boundary.insideRegion(tempPoint, minDist)) {
-//                boolean isValid = true;
-//                for (Point p : points) {
-//                    if (Point.getDistance(tempPoint, p) < radius) {
-//                        isValid = false;
-//                        break;
-//                    }
-//                }
-//                if (isValid) {
-//                    consecutiveFail = 0;
-//                    points.add(tempPoint);
-//                    total++;
-//                } else
-//                    consecutiveFail++;
-//            }
+
 
         }
 
@@ -174,7 +154,6 @@ public final class PointDistribution {
             }
 
             nodes.get(parentIndex).addChild(nodes.get(minPointIndex));
-            System.out.println(minDist + " " + minPointIndex + " " + parentIndex);
             pointsIncluded.add(minPointIndex);
             counter++;
             for (Integer seen : pointsIncluded) {
@@ -258,7 +237,6 @@ public final class PointDistribution {
             }
         }
         distributionVisualizationList.add(new SvgPathCommand(start, SvgPathCommand.CommandType.MOVE_TO));
-        System.out.println("starting point is inside boundary:" + boundary.insideRegion(start, 0));
         strategy.generate(start);
         toTraversal();
     }
@@ -303,7 +281,6 @@ public final class PointDistribution {
             boolean isFree = (closePoints.size() == 0) || (closePoints.size() == 1 && closePoints.get(0) == parent);
             if (pointGraph.getVertices().size() < restriction.size() + 1) {
                 if (parent == pointGraph.getVertices().get(0)) ;
-                System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current, 0) + " regionFreeSize:" + closePoints.size());
             }
             if (boundary.insideRegion(current, 0) && isFree) {
                 newV = new Vertex<>(current);
@@ -669,7 +646,6 @@ public final class PointDistribution {
 
         @Override
         public void generate(Point start) {
-            System.out.println("Restriction size:" + angles.size());
             angleRestrictedBFS(null, start, angles, disLen, 0, true);
         }
     }
