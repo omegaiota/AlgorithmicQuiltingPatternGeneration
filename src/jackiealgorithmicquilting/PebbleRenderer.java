@@ -508,7 +508,7 @@ public final class PebbleRenderer extends PatternRenderer {
             scaledCommands = PatternRenderer.translateAndRotatePattern(SvgPathCommand.commandsScaling(decoCommands, scaleFactor,
                     new Point(0,0)), startDrawingPoint, Math.toRadians(angle), false, false);
             /** Pebbles : traverse whole pebble first. this is only needed to avoid aliasing when quilting! **/
-            renderedCommands.addAll(scaledCommands);
+//            renderedCommands.addAll(scaledCommands);
 
         }
         int n = scaledCommands.size();
@@ -525,6 +525,11 @@ public final class PebbleRenderer extends PatternRenderer {
             startCommand++;
         }
 
+        System.out.println("Start command is " + startCommand);
+        System.out.println(currentAngle);
+
+        System.out.println(commandDegreeTable[startCommand]);
+        System.out.println(commandDegreeTable[startCommand+1]);
         renderedCommands.add(new SvgPathCommand(scaledCommands.get((startCommand - 1 + n) % n).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
         renderedCommands.add(scaledCommands.get(startCommand));
         TreeNode<Point> child;
@@ -532,17 +537,50 @@ public final class PebbleRenderer extends PatternRenderer {
             int lastCommand = (startCommand + i) % n;
             int thisCommand = (startCommand + i + 1) % n;
             int startAngle = (int) commandDegreeTable[lastCommand];
-            double endAngle = (int) commandDegreeTable[thisCommand];
-            if (endAngle < startAngle)
-                endAngle += 360;
-            for (int searchAngle = startAngle; searchAngle < endAngle; searchAngle++) {
-                if ((child = degreeTreeNodeMap.get( (searchAngle % 360))) != null) {
+            int endAngle = (int) commandDegreeTable[thisCommand];
+
+            /**
+             * This is assuming commands don't go across 180 degrees. So a command
+             * that goes from 0 to 357 assumes to take the arc of 0, 359, 358, 357
+             */
+            int stepNum = Math.abs(endAngle - startAngle);
+            int increment = (endAngle >= startAngle) ? 1 : -1;
+            if (Math.abs(endAngle - startAngle) > 180) {
+                stepNum = 360 - stepNum;
+                increment *= -1;
+            }
+            int searchAngle = startAngle;
+            for (int step = 0; step < stepNum; step++) {
+                searchAngle = (searchAngle + 360) % 360;
+                if ((child = degreeTreeNodeMap.get( searchAngle)) != null) {
                     degreeTreeNodeMap.remove(searchAngle % 360);
 //                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
                     pebbleRenderDraw(child, (searchAngle + 180) % 360);
 //                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
                 }
+                searchAngle += increment;
             }
+
+//            if (startAngle <= endAngle) {
+//                for (int searchAngle = startAngle; searchAngle < endAngle; searchAngle++) {
+//                    if ((child = degreeTreeNodeMap.get( (searchAngle % 360))) != null) {
+//                        degreeTreeNodeMap.remove(searchAngle % 360);
+////                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+//                        pebbleRenderDraw(child, (searchAngle + 180) % 360);
+////                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+//                    }
+//                }
+//            } else {
+//                for (int searchAngle = startAngle; searchAngle >= endAngle; searchAngle--) {
+//                    if ((child = degreeTreeNodeMap.get( (searchAngle % 360))) != null) {
+//                        degreeTreeNodeMap.remove(searchAngle % 360);
+////                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+//                        pebbleRenderDraw(child, (searchAngle + 180) % 360);
+////                    renderedCommands.add(new SvgPathCommand(cutPoint, SvgPathCommand.CommandType.LINE_TO)); // add a command to the branching point
+//                    }
+//                }
+//            }
+
             renderedCommands.add(scaledCommands.get(thisCommand));
         }
 

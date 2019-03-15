@@ -571,19 +571,20 @@ public class Main extends Application {
 
             /* Skeleton Path Generation */
             pointGeneration();
-            long pointTime = System.nanoTime();
+            float pointTime = (float) System.nanoTime();
 //            SVGElement.outputSvgCommands(info.skeletonPathCommands, "skeletonPath-", info);
 
             /* Tree Structure based rendering */
             determineSkeleton();
-            long skeletonTime = System.nanoTime();
+            float skeletonTime = (float) System.nanoTime();
 
 
 //            SVGElement.outputSvgCommands(info.skeletonPathCommands, "Skeleton path", info);
-            long endTime = System.nanoTime();
-            System.out.printf("Total Time for point generation: %.4f miliseconds", (pointTime-startTime) / 1000000.0 );
-            System.out.printf("Total Time for skeleton generation: %.4f miliseconds", (skeletonTime-pointTime) / 1000000.0 );
-            System.out.printf("Total Time: %.4f miliseconds", (endTime-startTime) / 1000000.0 );
+            float endTime =  (float) System.nanoTime();
+            System.out.printf("Total point number : %d", info.generatedPoints.size());
+            System.out.printf("\nTotal Time for point generation: %.4f seconds", (pointTime-startTime) / Math.pow(10, 9) );
+            System.out.printf("\nTotal Time for skeleton generation: %.4f seconds", (skeletonTime-pointTime) / Math.pow(10, 9) );
+            System.out.printf("\nTotal Time: %.4f seconds", (endTime-startTime) / Math.pow(10, 9) );
 
         });
     }

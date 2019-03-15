@@ -160,10 +160,16 @@ public class Point implements Comparable<Point> {
 
     }
     public static boolean angleIsBetweenDegree(double thisAngle, double other1, double other2) {
-        if (other1 <= other2) {
-            return (thisAngle >= other1 && thisAngle <= other2);
+        double startAngle = other1;
+        double endAngle = other2;
+        if (Math.abs(endAngle - startAngle) > 180) {
+            startAngle = other2;
+            endAngle = other1;
+        }
+        if (startAngle <= endAngle) {
+            return (thisAngle >= startAngle && thisAngle <= endAngle);
         } else {
-            return (thisAngle >= other1 || thisAngle <= other2);
+            return (thisAngle >= startAngle || thisAngle <= endAngle);
         }
     }
 
