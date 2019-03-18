@@ -157,7 +157,7 @@ public class ConvexHullBound {
     public boolean collidesWith(List<ConvexHullBound> bounds) {
         for (ConvexHullBound b : bounds) {
             if (this.collidesWith(b)) {
-                System.out.println("Colliding bounds:" + b + " " + this);
+//                System.out.println("Colliding bounds:" + b + " " + this);
                 return true;
             }
         }

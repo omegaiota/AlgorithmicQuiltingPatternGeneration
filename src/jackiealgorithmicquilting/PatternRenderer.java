@@ -226,7 +226,7 @@ public class PatternRenderer {
         skeletonPath.addAll(renderedCommands);
         preprocessingVisualizaiton.addAll(renderedCommands);
 
-        SVGElement.outputSvgCommands(skeletonPath, "splittedSpline", info);
+//        SVGElement.outputSvgCommands(skeletonPath, "splittedSpline", info);
         nodeType = beforeSplittedNodeType;
         Map<Point, SvgPathCommand> destinationCommandMap = new HashMap<>();
         List<ConvexHullBound> decoBounds = new ArrayList<>();
@@ -267,7 +267,6 @@ public class PatternRenderer {
                     continue;
 
                 if ((preprocessing == 1) && (isLeafNode)) {
-                    System.out.println("hello from" + i + "size:" + leafNodeIndexCommandsMap.get(i).size());
                     skeletonPath.addAll(i + 1, leafNodeIndexCommandsMap.get(i));
                     preprocessingVisualizaiton.addAll(i + 1, leafNodeIndexCommandsMap.get(i));
                     continue;
@@ -397,7 +396,7 @@ public class PatternRenderer {
             }
 
         }
-        SVGElement.outputSvgCommands(preprocessingVisualizaiton, "afterPreprocessing", info);
+//        SVGElement.outputSvgCommands(preprocessingVisualizaiton, "afterPreprocessing", info);
 
         renderedCommands = skeletonPath;
     }
@@ -410,7 +409,7 @@ public class PatternRenderer {
 
     private boolean collides(ConvexHullBound testBound, List<ConvexHullBound> bounds, List<SvgPathCommand> skeleton,
                              boolean testLocalNeighborhood, int currentSplineIndex) {
-        boolean DEBUG_OUTPUT = true;
+        boolean DEBUG_OUTPUT = false;
         if (DEBUG_OUTPUT) {
             System.out.println("\nSkeleton size:" + skeleton.size());
             System.out.println("Bounds size:" + bounds.size());

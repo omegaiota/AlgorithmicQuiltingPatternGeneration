@@ -206,15 +206,15 @@ public class Main extends Application {
 //        String regionName = "8in-8star"; // darkWhole-pebbleRegion
 //        String regionName = "darkWhole-smallDiamond"; // darkWhole-pebbleRegion
 //        String regionName = "long3"; // darkWhole-pebbleRegion
-        skeletonRenderTextField2.setText("5.5"); // Deco size
-        skeletonRenderTextField3.setText("1.0"); // Gap Length
+        skeletonRenderTextField2.setText(""); // Deco size
+        skeletonRenderTextField3.setText("0.5"); // Gap Length
 //        skeletonGenComboBox.setValue(ONEROW);
 //        skeletonGenComboBox.setValue(THREE_3_4_3_4_TESS);
 //        skeletonGenComboBox.setValue(GRID_TESS);
         skeletonGenComboBox.setValue(THREE_3_4_3_4_TESS);
 //        skeletonGenComboBox.setValue(HEXAGON_TESS);
 
-        skeletonRenderTextField4.setText(String.valueOf("50")); // deco density
+        skeletonRenderTextField4.setText(String.valueOf("55")); // deco density
 //        skeletonGenComboBox.setValue(SNAKE);
         skeletonGenTextField.setText("55"); // tessellation density
         skeletonRenderComboBox.setValue(PEBBLE);
@@ -225,8 +225,9 @@ public class Main extends Application {
 
 //        String patternName = "branching_fervent";
 //        String patternName = "leaf_silhouette_echoed";
+        String patternName = "porthole";
 //        String patternName = "branching_question_mark3";
-        String patternName = "heart";
+//        String patternName = "heart";
 //        String patternName = "wanderer-flower2";
 //        String regionName = "16in-star"; // darkWhole-pebbleRegion
 //        String regionName = "darkWhole-diamond"; // darkWhole-pebbleRegion
@@ -789,7 +790,6 @@ public class Main extends Application {
                 if (true || !info.regionConvexHull.collidesWith( ConvexHullBound.fromCommands(nonStrippedTranslated))) {
                     lastSucceeded = i;
                     outputCommands.addAll(0, nonStrippedTranslated);
-                    System.out.println("wtf");
                 }
 
 
@@ -843,7 +843,7 @@ public class Main extends Application {
                     skeletonrenderer.toCatmullRom();
                         /* A curved tree is not really "rendered"/ we still want to be able to put patterns on it. needs to add additional
                          * parameterization here for selecting how we want the deco elements put on the curved tree */
-                    SVGElement.outputSvgCommands(skeletonrenderer.getRenderedCommands(), "", info);
+//                    SVGElement.outputSvgCommands(skeletonrenderer.getRenderedCommands(), "", info);
                         /*TODO: rewrite code! below code is exactly the same as FIXED WIDTH FILL*/
                     if (!(patternSourceGroup.getSelectedToggle()).equals(PrimitiveSource.NONE.button)) {
                         final List<SvgPathCommand> renderedCommandsCopy = new ArrayList<>(renderedDecoCommands),
@@ -922,7 +922,7 @@ public class Main extends Application {
                     }
 
                     SVGElement.outputSvgCommands(skeletonrenderer.getRenderedCommands(), "", info);
-                    SVGElement.outputSvgCommandsWithBoundary(skeletonrenderer.getRenderedCommands(), "withboundary", info);
+//                    SVGElement.outputSvgCommandsWithBoundary(skeletonrenderer.getRenderedCommands(), "withboundary", info);
                     break;
                 case WANDERER:
                     try {
@@ -983,22 +983,22 @@ public class Main extends Application {
                     info.skeletonPathCommands.add(new SvgPathCommand(info.skeletonPathCommands.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
 
 
-                    SVGElement.outputSvgCommands(info.skeletonPathCommands, "Added Skeleton path", info);
-                    SVGElement.outputPoints(info.generatedPoints, info);
-                    SVGElement.outputSvgCommandsAndPoints(info.skeletonPathCommands, info.generatedPoints, "pointsAndCommand", info);
+//                    SVGElement.outputSvgCommands(info.skeletonPathCommands, "Added Skeleton path", info);
+//                    SVGElement.outputPoints(info.generatedPoints, info);
+//                    SVGElement.outputSvgCommandsAndPoints(info.skeletonPathCommands, info.generatedPoints, "pointsAndCommand", info);
                     info.skeletonPathCommands.addAll(info.regionFile.getCommandList());
                     SVGElement.outputSvgCommands(info.skeletonPathCommands, "skeletonWithBoundary", info);
 //                    info.skeletonPathCommands = info.regionFile.getBoundary().fitCommandsToRegionTrimToBoundary(info.skeletonPathCommands, info);
-                    Visualizer.addCommandsPlot(info.skeletonPathCommands, visualizationPane);
-                    Stage visualizationStage = new Stage();
-                    ScrollPane newPane = new ScrollPane();
-                    newPane.setContent(Visualizer.addCommandsPlot(info.skeletonPathCommands));
-                    newPane.setPrefWidth(visualizationPane.getPrefWidth());
-                    newPane.setPrefHeight(visualizationPane.getPrefHeight());
-                    visualizationStage.setScene(new Scene(newPane, Color.rgb(35, 39, 50)));
-                    visualizationStage.setHeight(visualizationPane.getPrefHeight());
-                    visualizationStage.setWidth(visualizationPane.getPrefWidth());
-                    visualizationStage.show();
+//                    Visualizer.addCommandsPlot(info.skeletonPathCommands, visualizationPane);
+//                    Stage visualizationStage = new Stage();
+//                    ScrollPane newPane = new ScrollPane();
+//                    newPane.setContent(Visualizer.addCommandsPlot(info.skeletonPathCommands));
+//                    newPane.setPrefWidth(visualizationPane.getPrefWidth());
+//                    newPane.setPrefHeight(visualizationPane.getPrefHeight());
+//                    visualizationStage.setScene(new Scene(newPane, Color.rgb(35, 39, 50)));
+//                    visualizationStage.setHeight(visualizationPane.getPrefHeight());
+//                    visualizationStage.setWidth(visualizationPane.getPrefWidth());
+//                    visualizationStage.show();
 
                     break;
                 case FIXED_WIDTH_FILL:
@@ -1356,9 +1356,9 @@ public class Main extends Application {
 
     enum SkeletonRenderType {
         NONE(), TILING(), ALONG_PATH(), RECTANGLE(),
-        FIXED_WIDTH_FILL("Deco Size", "3"), CATMULL_ROM("Deco Size", "1.5", "Gap Len", "1.2", "Initial Angle", "0"),
-        PEBBLE("Initial Len", "0.3", "Random Factor", "0.8"), STIPPLING("Deco Size", "3"),
-        WANDERER("Deco Size", "6", "Tangent Percentage", "0.5");
+        FIXED_WIDTH_FILL("Deco Size", "3"), CATMULL_ROM("Deco Size", "0.8", "Gap Len", "1.2", "Initial Angle", "0"),
+        PEBBLE("Initial Len", "0.5", "Random Factor", "0.8"), STIPPLING("Deco Size", "3"),
+        WANDERER("Deco Size", "4", "Tangent Percentage", "0.5");
 
         public final List<String> typeParameters, parameterDefaultVale;
 
