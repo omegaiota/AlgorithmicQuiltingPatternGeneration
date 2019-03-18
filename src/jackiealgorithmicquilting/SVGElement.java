@@ -623,17 +623,18 @@ public class SVGElement {
                 i -> Math.abs(Point.getDistance(bound.getCenter(), pointList.get(i)) - bound.getRadii()) < 0.5)
                 .toArray();
         System.out.println("Original size:" + touchIndex.length);
+        List<SvgPathCommand> commndListCpy = new ArrayList<>(commandLists);
         if (touchIndex.length != 0) {
             int first = touchIndex[0];
             List<SvgPathCommand> newCommandList = new ArrayList<>();
-            for (int j = 0; j < commandLists.size(); j++) {
-                newCommandList.add(new SvgPathCommand(commandLists.get((j + first) % pointList.size())));
+            for (int j = 0; j < commndListCpy.size(); j++) {
+                newCommandList.add(new SvgPathCommand(commndListCpy.get((j + first) % pointList.size())));
                 newCommandList.get(j).setCommandType(SvgPathCommand.CommandType.LINE_TO);
             }
             newCommandList.add(new SvgPathCommand(newCommandList.get(0).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
             newCommandList.get(0).setCommandType(SvgPathCommand.CommandType.MOVE_TO);
-            commandLists.clear();
-            commandLists.addAll(PatternRenderer.translateAndRotatePattern(newCommandList, newCommandList.get(0).getDestinationPoint(),
+            commndListCpy.clear();
+            commndListCpy.addAll(PatternRenderer.translateAndRotatePattern(newCommandList, newCommandList.get(0).getDestinationPoint(),
                     -1 * Point.getAngle(bound.getCenter(), pointList.get(first)), false, false));
             CircleBound newBound = SmallestEnclosingCircle.makeCircle(
                     getCommandList().stream().map(SvgPathCommand::getDestinationPoint).collect(Collectors.toList()));

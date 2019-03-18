@@ -213,18 +213,20 @@ public class Main extends Application {
 //        skeletonGenComboBox.setValue(GRID_TESS);
         skeletonGenComboBox.setValue(THREE_3_4_3_4_TESS);
 //        skeletonGenComboBox.setValue(HEXAGON_TESS);
+//         skeletonGenComboBox.setValue(POISSON_DISK);
 
         skeletonRenderTextField4.setText(String.valueOf("55")); // deco density
 //        skeletonGenComboBox.setValue(SNAKE);
-        skeletonGenTextField.setText("55"); // tessellation density
+        skeletonGenTextField.setText("80"); // tessellation density
         skeletonRenderComboBox.setValue(PEBBLE);
 //        skeletonRenderComboBox.setValue(WANDERER);
 //        skeletonRenderComboBox.setValue(STIPPLING);
 //        skeletonRenderComboBox.setValue(CATMULL_ROM);
-//        patternRenderComboBox.setValue("No Rendering");
+        patternRenderComboBox.setValue("No Rendering");
 
 //        String patternName = "branching_fervent";
 //        String patternName = "leaf_silhouette_echoed";
+//        String patternName = "leaf_2";
         String patternName = "porthole";
 //        String patternName = "branching_question_mark3";
 //        String patternName = "heart";
@@ -237,7 +239,8 @@ public class Main extends Application {
 //        String regionName = "balloon"; // darkWhole-pebbleRegion
 //        String regionName = "8in-cross"; // darkWhole-pebbleRegion
 //        String regionName = "8in-heart"; // darkWhole-pebbleRegion
-        String regionName = "8in-hexagon"; // darkWhole-pebbleRegion
+        String regionName = "8in-star"; // darkWhole-pebbleRegion
+//        String regionName = "8in-hexagon"; // darkWhole-pebbleRegion
         File file = new File(String.format("/Users/JacquelineLi/IdeaProjects/AlgorithmicQuilting/src/resources/Region/%s.svg", regionName));
         File collision = new File(String.format("/Users/JacquelineLi/IdeaProjects/AlgorithmicQuilting/src/resources/patterns/endpoints/%s_collision.svg", patternName));
         File deco = new File(String.format("/Users/JacquelineLi/IdeaProjects/AlgorithmicQuilting/src/resources/patterns/endpoints/%s.svg", patternName));
@@ -527,11 +530,11 @@ public class Main extends Application {
             startTime = System.nanoTime();
             seedNum = (int) (Math.random() * 100000);
             /* Pattern Selection */
-            List<SvgPathCommand> decoCommands = new ArrayList<>();
-            if (decoElementFile != null)
-                if (!( patternSourceGroup.getSelectedToggle()).equals(PrimitiveSource.NONE.button)) {
-                    decoCommands = decoElementFile.getCommandList();
-                }
+//            List<SvgPathCommand> decoCommands = new ArrayList<>();
+//            if (decoElementFile != null)
+//                if (!( patternSourceGroup.getSelectedToggle()).equals(PrimitiveSource.NONE.button)) {
+//                    decoCommands = decoElementFile.getCommandList();
+//                }
 
 
 
@@ -1042,6 +1045,7 @@ public class Main extends Application {
 
                     info.drawBound = false;
                     info.decoElementFile = decoElementFile;
+
                     if (info.spanningTree != null) {
                         skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info,
                                 info.skeletonRenderType != RECTANGLE && skeletonGenComboBox.getValue().equals(VINE));
@@ -1356,8 +1360,10 @@ public class Main extends Application {
 
     enum SkeletonRenderType {
         NONE(), TILING(), ALONG_PATH(), RECTANGLE(),
-        FIXED_WIDTH_FILL("Deco Size", "3"), CATMULL_ROM("Deco Size", "0.8", "Gap Len", "1.2", "Initial Angle", "0"),
-        PEBBLE("Initial Len", "0.5", "Random Factor", "0.8"), STIPPLING("Deco Size", "3"),
+        FIXED_WIDTH_FILL("Deco Size", "3"),
+        CATMULL_ROM("Deco Size", "1.0", "Gap Len", "0.3", "Initial Angle", "0"),
+        PEBBLE("Initial Len", "0.5", "Random Factor", "0.8"),
+        STIPPLING("Deco Size", "3"),
         WANDERER("Deco Size", "4", "Tangent Percentage", "0.5");
 
         public final List<String> typeParameters, parameterDefaultVale;

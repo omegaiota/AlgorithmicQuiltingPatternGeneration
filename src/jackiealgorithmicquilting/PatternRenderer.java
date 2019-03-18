@@ -78,12 +78,11 @@ public class PatternRenderer {
 
     public static List<SvgPathCommand> translateCommands(List<SvgPathCommand> patternCommands,
                                                                  Point newStartPoint) {
+        if (patternCommands.isEmpty()) return new ArrayList<>();
         Point shift = newStartPoint.minus(patternCommands.get(0).getDestinationPoint());
         List<SvgPathCommand> transformedDecoElmentCommands = new ArrayList<>();
-        if (patternCommands.size() == 0)
-            return transformedDecoElmentCommands;
-        for (int j = 0; j < patternCommands.size(); j++) {
-            transformedDecoElmentCommands.add(patternCommands.get(j).translateBy(shift));
+        for (SvgPathCommand patternCommand : patternCommands) {
+            transformedDecoElmentCommands.add(patternCommand.translateBy(shift));
         }
         return transformedDecoElmentCommands;
     }
