@@ -44,7 +44,6 @@ import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.NONE;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.PEBBLE;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.RECTANGLE;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.STIPPLING;
-import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.TILING;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.WANDERER;
 
 public class Main extends Application {
@@ -88,7 +87,7 @@ public class Main extends Application {
     private final Button loadSvgFileButton = new Button("Load SVG file");
     private final Button generateButton = new Button("Generate");
     private final Button loadConcrdePoints = new Button("Load Concorde Output");
-    List<String> tileList = new ArrayList<>(), alongPathList = new ArrayList<>(), endpointList = new ArrayList<>();
+    List<String> endpointList = new ArrayList<>();
     private PatternRenderer patternRenderer;
     /* Layout: VBox, HBox*/
     //Column
@@ -113,9 +112,7 @@ public class Main extends Application {
             TITLE_FONT = new Font("Luminari", 40);
     private Color labelColor = Color.ORANGE, columnLabelColor = Color.SILVER;
     /* Folder */
-    private final File TILE_LIB_PATH = new File("./src/resources/patterns/tiles/"),
-            ALONG_LIB_PATH = new File("./src/resources/patterns/alongPath/"),
-            ENDPOINTS_LIB_PATH = new File("./src/resources/patterns/endpoints/");
+    private final File ENDPOINTS_LIB_PATH = new File("./src/resources/patterns/endpoints/");
 
     /* File processor, renderer */
     private SVGElement decoElementFile = null;
@@ -330,8 +327,6 @@ public class Main extends Application {
         patternSelection.getChildren().addAll(patternSelectionLabel, patternSourceBox, fileSourceBox);
 
         /* initialize pattern library */
-        addLibraryFilesToList(TILE_LIB_PATH, tileList);
-        addLibraryFilesToList(ALONG_LIB_PATH, alongPathList);
         addLibraryFilesToList(ENDPOINTS_LIB_PATH, endpointList);
 
         /* Pattern rendering */
@@ -1129,7 +1124,6 @@ public class Main extends Application {
     private void setupListeners() {
         //Selection Listeners
         /* Pattern Source Listener */
-        patternLibraryComboBox.getItems().addAll("feather");
         patternSourceGroup.selectedToggleProperty().addListener((ov, toggle, new_toggle) -> {
             if (new_toggle == null) {
                 fileSourceBox.getChildren().setAll();
@@ -1142,13 +1136,7 @@ public class Main extends Application {
                     info.skeletonPathType = (SkeletonPathType) skeletonGenComboBox.getValue();
                     if (info.skeletonPathType.isTreeStructure) {
                         patternLibraryComboBox.getItems().setAll(endpointList);
-                    } else {
-                        if (skeletonRenderComboBox.getValue().equals(TILING))
-                            patternLibraryComboBox.getItems().setAll(tileList);
-                        else
-                            patternLibraryComboBox.getItems().setAll(alongPathList);
                     }
-
                     System.out.println(patternLibraryComboBox.getItems().toString());
                 } else {
                     fileSourceBox.getChildren().setAll();
@@ -1206,9 +1194,6 @@ public class Main extends Application {
                 patternSourceGroup.selectToggle(PrimitiveSource.FILE.button);
             }
 
-            if (newSkeletonRenderType.equals(TILING)) {
-                patternLibraryComboBox.getItems().setAll(tileList);
-            }
         });
 
 
@@ -1216,9 +1201,7 @@ public class Main extends Application {
         patternLibraryComboBox.valueProperty().addListener(((observable, oldValue, newValue) -> {
             System.out.println(patternLibraryComboBox.getItems().toString());
             String newPatternFile = patternLibraryComboBox.getValue().toString();
-            File library = ALONG_LIB_PATH;
-            if (skeletonRenderComboBox.getValue().equals(TILING))
-                library = TILE_LIB_PATH;
+            File library = ENDPOINTS_LIB_PATH;
             /* Tree Structured */
             info.skeletonPathType = (SkeletonPathType) skeletonGenComboBox.getValue();
             if (info.skeletonPathType.isTreeStructure)
