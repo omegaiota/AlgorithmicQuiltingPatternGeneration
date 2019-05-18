@@ -71,8 +71,6 @@ public class PatternRenderer {
             transformedDecoElmentCommands.add(newCommand);
         }
 
-//        if (destination != null)
-//            destination.addAll(transformedDecoElmentCommands);
         return transformedDecoElmentCommands;
     }
 
@@ -433,7 +431,6 @@ public class PatternRenderer {
                 System.out.println("Not inside region");
 //            return true;
         }
-
 
         // collision detection with skeleton
         for (int i = 1; i < skeleton.size(); i++) {

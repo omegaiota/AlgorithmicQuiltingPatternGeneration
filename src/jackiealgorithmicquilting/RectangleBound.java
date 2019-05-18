@@ -169,33 +169,6 @@ public class RectangleBound {
             if (tentativeWidth < 0.01 || tentativeHeight < 0.01)
                 return;
         }
-
-//        if (collidesWith(initialBound)) {
-//            double tentativeWidth = 0.1, tentativeHeight = 0.1;
-////            double distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5, distY = Math.abs(center.y - initialBound.getCenter().y) - height *0.5;
-//            double distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5 - tentativeWidth * 0.5, distY = Math.abs(center.y - initialBound.getCenter().y) - height *0.5 - tentativeHeight * 0.5;
-////            while ((tentativeWidth * 2) / 2 < distX) {
-////                tentativeWidth *= 2;
-////            }
-////            while (tentativeHeight * 2 / 2 < distY) {
-////                tentativeHeight *= 2;
-////            }
-//
-//            while (distX > 0.05) {
-//                tentativeWidth += distX * 0.25;
-//                distX = Math.abs(center.x - initialBound.getCenter().x) - width * 0.5 - tentativeWidth * 0.5;
-//            }
-//
-//            while (distY > 0.05) {
-//                tentativeHeight += distY * 0.25;
-//                distY = Math.abs(center.y - initialBound.getCenter().y) - height * 0.5 - tentativeHeight * 0.5;
-//            }
-//
-//
-//            initialBound.setWidth(tentativeWidth);
-//            initialBound.setHeight(tentativeHeight);
-//
-//    }
     }
 
 

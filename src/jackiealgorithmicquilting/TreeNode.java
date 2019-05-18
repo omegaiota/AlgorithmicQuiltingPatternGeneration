@@ -26,15 +26,6 @@ public class TreeNode<T> {
         this.neighbors = new ArrayList<>();
     }
 
-
-    public RectangleBound getBoundingRectangle() {
-        return boundingRectangle;
-    }
-
-    public void setBoundingRectangle(RectangleBound boundingRectangle) {
-        this.boundingRectangle = boundingRectangle;
-    }
-
     public CircleBound getBoundingCircle() {
         return boundingCircle;
     }

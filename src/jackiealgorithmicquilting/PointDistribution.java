@@ -1,8 +1,15 @@
 package src.jackiealgorithmicquilting;
+
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * Created by JacquelineLi on 6/21/17.
@@ -33,9 +40,6 @@ public final class PointDistribution {
             case TRIANGLE:
                 strategy = new Triangle();
                 break;
-            case VINE:
-                strategy = new TTFTF();
-                break;
             case HEXAGON:
                 strategy = new Hexagon();
                 break;
@@ -49,13 +53,6 @@ public final class PointDistribution {
 
 
         }
-    }
-
-    public PointDistribution(List<Double> restrictions, GenerationInfo info) {
-        this.type = RenderType.ANGLE_RESTRICTED;
-        this.info = info;
-        initialization();
-        strategy = new AngleRestriction(restrictions);
     }
 
     public static List<Point> poissonDiskSamples(GenerationInfo info) {
@@ -81,7 +78,7 @@ public final class PointDistribution {
         minDist = 0;
         while (consecutiveFail < 100) {
             boolean succeeded = false;
-            for (int yIndex = 0; yIndex < yTotal ; yIndex++) {
+            for (int yIndex = 0; yIndex < yTotal; yIndex++) {
                 for (int xIndex = 0; xIndex < xTotal; xIndex++) {
 //                    int trialTotal = (int) ((1 - counts[yIndex][xIndex] * 1.0 / points.size()) * consecutiveFail) + 5;
                     int trialTotal = 2;
@@ -179,7 +176,7 @@ public final class PointDistribution {
         }
     }
 
-    public  static void writeoutToConcorderFormat(List<Point> points, String fileName) {
+    public static void writeoutToConcorderFormat(List<Point> points, String fileName) {
         PrintWriter writer = null;
         try {
 
@@ -307,62 +304,16 @@ public final class PointDistribution {
 
     }
 
-    private void angleRestrictedDFS(Vertex<Point> parent, Point current, List<Double> restriction, double dist, double currentAngle, boolean continueRecurse) {
-        List<Vertex<Point>> closePoints = regionFree(current, dist);
-        boolean isFree = (closePoints.size() == 0) || (closePoints.size() == 1 && closePoints.get(0) == parent);
-//        if (pointGraph.getVertices().size() != 0) {
-//            if (parent == pointGraph.getVertices().get(0));
-//            System.out.println("First child:" + Math.toDegrees(currentAngle) + " " + boundary.insideRegion(current) + " regionFreeSize:" + closePoints.size());
-//        }
-        if (boundary.insideRegion(current, 0) && isFree) {
-            double newDist = dist;
-            Vertex<Point> newV = new Vertex<>(current);
-            pointGraph.addVertex(newV);
-            if (parent != null)
-                newV.connect(parent);
-            Point zeroAnglePoint = new Point(current.x + dist, current.y);
-            if (continueRecurse) {
-                for (double angle : restriction) {
-                    Point newPoint = zeroAnglePoint.rotateAroundCenterWrongVersion(current, currentAngle + angle);
-                    double newAngle = (angle + currentAngle + Math.PI);
-                    while (newAngle > Math.PI * 2)
-                        newAngle -= Math.PI * 2;
-                    while (newAngle < 0)
-                        newAngle += Math.PI * 2;
-                    angleRestrictedDFS(newV, newPoint, restriction, dist, newAngle, continueRecurse);
-                }
-            }
-
-        } else {
-
-        }
-    }
-
-    private boolean tightgrowInside(Point testP, double d) {
-        for (Point p : boundary.getPoints()) {
-            if (Point.getDistance(testP, p) < 0.7 * d) // hardcode for d =0.7. This func makes sure pebbles never grow outside of boundary
-                return false;
-        }
-        return true;
-    }
-
     private void squareToTriangle(Vertex<Point> parent, Point bottomRight, double angle, double dist, boolean consecFail) {
         List<Vertex<Point>> closePoints = regionFree(bottomRight, 0.005);
-        boolean fail = false;
         if (boundary.insideRegion(bottomRight, 0) && ((closePoints).size() == 0)) {
             double newDist = dist;
             Vertex<Point> newV = parent;
-//            if (tightgrowInside(bottomRight, dist / 2.0)) {
-                newV = new Vertex<>(bottomRight);
-                pointGraph.addVertex(newV);
-                points.add(bottomRight);
-                if (parent != null)
-                    newV.connect(parent);
-//            } else {
-//                if (consecFail)
-//                    return;
-//                fail = true;
-//            }
+            newV = new Vertex<>(bottomRight);
+            pointGraph.addVertex(newV);
+            points.add(bottomRight);
+            if (parent != null)
+                newV.connect(parent);
 
 
             Point upperLeft = new Point(bottomRight.x - dist, bottomRight.y - dist);
@@ -402,17 +353,12 @@ public final class PointDistribution {
         if (boundary.insideRegion(bottomLeft, 0) && ((closePoints).size() == 0)) {
             double newDist = dist;
             Vertex<Point> newV = parent;
-//            if (tightgrowInside(bottomLeft, dist)) {
-                newV = new Vertex<>(bottomLeft);
-                pointGraph.addVertex(newV);
-                points.add(bottomLeft);
-                if (parent != null && add)
-                    newV.connect(parent);
-//            } else {
-//                if (fail)
-//                    return;
-//                failure = true;
-//            }
+            newV = new Vertex<>(bottomLeft);
+            pointGraph.addVertex(newV);
+            points.add(bottomLeft);
+            if (parent != null && add)
+                newV.connect(parent);
+
 
             Point bottomRight = new Point(bottomLeft.x + dist, bottomLeft.y).rotateAroundCenterWrongVersion(bottomLeft, angle);
 
@@ -538,11 +484,11 @@ public final class PointDistribution {
     }
 
 
-
     public enum RenderType {
-        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, ANGLE_RESTRICTED, VINE, HEXAGON, ONEROW;
+        THREE_THREE_FOUR_THREE_FOUR, GRID, RANDOM, TRIANGLE, HEXAGON, ONEROW;
+
         public static RenderType getDefault() {
-            return  THREE_THREE_FOUR_THREE_FOUR;
+            return THREE_THREE_FOUR_THREE_FOUR;
         }
     }
 
@@ -615,7 +561,7 @@ public final class PointDistribution {
                 pointGraph.addVertex(newV);
                 points.add(newP);
                 x = x - dist;
-                newP = new Point(x, bottomRight.y );
+                newP = new Point(x, bottomRight.y);
             }
 
             x = bottomRight.x;

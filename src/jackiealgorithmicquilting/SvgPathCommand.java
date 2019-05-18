@@ -115,13 +115,6 @@ public class SvgPathCommand {
         return output;
     }
 
-    public static SvgPathCommand commandFromShiftAndRotate(SvgPathCommand oldCommand, Point originalStart, Point finalStart, double angle) {
-        SvgPathCommand copy = new SvgPathCommand(oldCommand);
-        copy.setDestinationPoint(copy.getDestinationPoint().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));
-        copy.setControlPoint1(copy.getControlPoint1().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));
-        copy.setControlPoint2(copy.getControlPoint2().minus(originalStart).rotateAroundOrigin(angle).add(finalStart));
-        return copy;
-    }
 
     /**
      * generate a path command from an old command whose center point is shifted
@@ -155,27 +148,6 @@ public class SvgPathCommand {
         return returnCommands;
     }
 
-    public static List<SvgPathCommand> sguiggalized(Point parentNodeData, Point data, CommandType type) {
-        double newDist = Point.getDistance(parentNodeData, data);
-        double angle = Point.getAngle(parentNodeData, data);
-        List<SvgPathCommand> squiggleCommands = squiggleList.get((int) (Math.random() * squiggleList.size()));
-        System.out.println("read squiggle size:" + squiggleCommands.size());
-        Point squiggleStart = squiggleCommands.get(0).getDestinationPoint(),
-                squiggleEnd = squiggleCommands.get(squiggleCommands.size() - 1).getDestinationPoint();
-        double squiggleDist = Point.getDistance(squiggleStart, squiggleEnd);
-        List<SvgPathCommand> returnList = new ArrayList<>();
-        for (SvgPathCommand command : squiggleCommands) {
-            returnList.add(SvgPathCommand.commandFromShiftAndRotate(command, squiggleStart, parentNodeData, angle));
-
-        }
-
-        returnList.get(0).setCommandType(CommandType.LINE_TO);
-
-
-        return SvgPathCommand.commandsScaling(returnList, newDist / squiggleDist, parentNodeData);
-    }
-
-
     public static List<Point> toPoints(List<SvgPathCommand> decoElmentCommands) {
         List<Point> ans = new ArrayList<>();
         for (SvgPathCommand c : decoElmentCommands) {
@@ -196,23 +168,12 @@ public class SvgPathCommand {
      * @return
      */
     public static List<SvgPathCommand> reflect(List<SvgPathCommand> decoElmentCommands) {
-//        double maxX = decoElmentCommands.stream().map(c -> c.getDestinationPoint().x).reduce(Double.MIN_VALUE, Double::max);
         List<SvgPathCommand> reflected = new ArrayList<>();
         for (SvgPathCommand c : decoElmentCommands) {
-//            SvgPathCommand newCommand;
-//            if (c.getCommandType() == CommandType.LINE_TO || c.getCommandType() == CommandType.MOVE_TO) {
-//                newCommand = new SvgPathCommand(c);
-//                newCommand.setDestinationPoint(new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y));
-//            } else {
-//                newCommand = new SvgPathCommand(new Point(maxX - c.getControlPoint1().x, c.getControlPoint1().y),
-//                        new Point(maxX - c.getControlPoint2().x, c.getControlPoint2().y),
-//                        new Point(maxX - c.getDestinationPoint().x, c.getDestinationPoint().y), CommandType.CURVE_TO);
-//            }
+
             SvgPathCommand newCommand = c.multiplyXBy(-1);
             reflected.add(newCommand);
         }
-//
-//        reflected = SvgPathCommand.commandsShift(reflected, decoElmentCommands.get(0).destinationPoint);
         return reflected;
     }
 
@@ -225,28 +186,6 @@ public class SvgPathCommand {
             default:
                 return new SvgPathCommand(new Point(destinationPoint.x * scale, destinationPoint.y), commandType);
         }
-    }
-
-
-    public static SvgPathCommand catmullRomSegment(SvgPathCommand prevprevCommand, SvgPathCommand prevCommand, SvgPathCommand thisCommand, SvgPathCommand nextCommand) {
-        Point p2 = thisCommand.getDestinationPoint(),
-                p1 = prevCommand.getDestinationPoint();
-        Point p3, p0;
-        if (prevprevCommand == null)
-            p0 = p1.minus(p2.minus(p1));
-        else
-            p0 = prevprevCommand.getDestinationPoint();
-        if (nextCommand == null)
-            p3 = p2.add(p2.minus(p1));
-        else
-            p3 = nextCommand.getDestinationPoint();
-        Point c1 = p2.minus(p0).divide(6).add(p1),
-                c2 = p2.minus(p3.minus(p1).divide(6));
-        return (new SvgPathCommand(c1, c2, p2, SvgPathCommand.CommandType.CURVE_TO));
-    }
-
-    public void setLineTo() {
-        this.commandType = CommandType.LINE_TO;
     }
 
     public boolean isMoveTo() {

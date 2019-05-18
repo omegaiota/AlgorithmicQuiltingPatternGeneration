@@ -35,11 +35,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static src.jackiealgorithmicquilting.Main.PrimitiveSource.*;
-import static src.jackiealgorithmicquilting.Main.SkeletonPathType.ONEROW;
 import static src.jackiealgorithmicquilting.Main.SkeletonPathType.POISSON_DISK;
-import static src.jackiealgorithmicquilting.Main.SkeletonPathType.SNAKE;
 import static src.jackiealgorithmicquilting.Main.SkeletonPathType.THREE_3_4_3_4_TESS;
-import static src.jackiealgorithmicquilting.Main.SkeletonPathType.VINE;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.ALONG_PATH;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.CATMULL_ROM;
 import static src.jackiealgorithmicquilting.Main.SkeletonRenderType.FIXED_WIDTH_FILL;
@@ -683,8 +680,6 @@ public class Main extends Application {
         System.out.println("N is:" + N);
         for (int i = N - 1; i >= -1; i--) {
             boolean isLast = i == info.skeletonPathCommands.size() - 1;
-//            Point prevPoint = isLast ? info.skeletonPathCommands.get(i).getDestinationPoint() : info.skeletonPathCommands.get(i + 1).getDestinationPoint();
-//            Point prevPoint =  info.skeletonPathCommands.get( (i + 1 + N)  % N ).getDestinationPoint();
             Point prevPoint =  info.skeletonPathCommands.get( (lastSucceeded + N)  % N ).getDestinationPoint();
             Point thisPoint = info.skeletonPathCommands.get( (i + N ) % N ).getDestinationPoint();
             Point nextPoint = info.skeletonPathCommands.get( (i - 1 + N) % N ).getDestinationPoint();
@@ -699,17 +694,10 @@ public class Main extends Application {
             if (between > Math.PI)
                 between = Math.PI * 2 - between;
             double rotation = nextVec.add(prevVec).getAngle() - Math.PI * 0.5; // angle divider
-//            double decoAngle = decoElementAngleMap.get(insertDeco) ;
-//            double rotation = (decoAngle + (Math.PI - decoAngle) / 2.0 ) * -1 + nextVec.getAngle() + (betweenAngle) * 0.6;
-//            double rotation = (decoAngle + (Math.PI - decoAngle) / 2.0 ) * -1 + nextVec.getAngle();
             while (rotation > Math.PI * 2.0)
                 rotation -= Math.PI * 2.0;
             while (rotation < 0)
                 rotation += Math.PI * 2.0;
-
-//            output += SVGElement.outputText(String.format("%.1f-%s-%.1f-%d", between / Math.PI * 180, insertDeco.getfFileName(), decoElementAngleMap.get(insertDeco) / Math.PI * 180, i), thisPoint, "FF0000");
-//            if (i != -1)
-//            output += SVGElement.outputText(String.format("%.1f-%.1f-%d", between / Math.PI * 180 , decoElementAngleMap.get(insertDeco) / Math.PI * 180, i), thisPoint, "FF0000");
 
             List<SvgPathCommand> nonStrippedDecoCommands = insertDeco.getCommandList();
             List<SvgPathCommand> nonStrippedRotated = PatternRenderer.translateAndRotatePattern(nonStrippedDecoCommands, nonStrippedDecoCommands.get(0).getDestinationPoint(), rotation, false, false);
@@ -940,15 +928,6 @@ public class Main extends Application {
 
                     String concordeSessionName = "concordeInput";
                     List<SvgPathCommand> concordeTSPPath = toConcordePath(info.generatedPoints, concordeSessionName);
-                    if (info.skeletonPathType == ONEROW) {
-                        info.generatedPoints.sort( (i,j) -> (int) (i.x - j.x) );
-                        List<SvgPathCommand> pathCommands = new ArrayList<>();
-                        pathCommands.add(new SvgPathCommand(info.generatedPoints.get(0), SvgPathCommand.CommandType.MOVE_TO));
-                        for (int i = 1; i < info.generatedPoints.size(); i++) {
-                            pathCommands.add(new SvgPathCommand(info.generatedPoints.get(1), SvgPathCommand.CommandType.LINE_TO));
-                        }
-                        concordeTSPPath = pathCommands;
-                    }
                     try {
                         toWandererVersion3(new ArrayList<>(concordeTSPPath));
                     } catch (ParserConfigurationException | SAXException | IOException e) {
@@ -993,7 +972,7 @@ public class Main extends Application {
 
                     if (info.spanningTree != null) {
                         skeletonrenderer = new PebbleRenderer(renderedDecoCommands, info,
-                                info.skeletonRenderType != RECTANGLE && skeletonGenComboBox.getValue().equals(VINE));
+                                info.skeletonRenderType != RECTANGLE);
                         info.randomFactor = Double.valueOf(skeletonRenderTextField2.getText());
                         info.initialLength = Double.valueOf(skeletonRenderTextField1.getText());
                         long startPebble = System.nanoTime();
@@ -1186,8 +1165,6 @@ public class Main extends Application {
             if (info.skeletonPathType.isTreeStructure || info.skeletonPathType == POISSON_DISK) {
                 patternLibraryComboBox.getItems().setAll(endpointList);
                 skeletonRenderComboBox.getItems().setAll(NONE, FIXED_WIDTH_FILL, PEBBLE, RECTANGLE, CATMULL_ROM, STIPPLING, WANDERER);
-            } else if (info.skeletonPathType.equals(SNAKE)) {
-                skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH, TILING);
             } else {
                 skeletonRenderComboBox.getItems().setAll(NONE, ALONG_PATH);
             }
@@ -1272,10 +1249,7 @@ public class Main extends Application {
     public enum SkeletonPathType {
         GRID_TESS(true, true, "Distribution Len", PointDistribution.RenderType.GRID), TRIANGLE_TESS(true, true, "Distribution Len", PointDistribution.RenderType.TRIANGLE),
         HEXAGON_TESS(true, true, "Distribution Len", PointDistribution.RenderType.HEXAGON), THREE_3_4_3_4_TESS(true, true, "Distribution Len", PointDistribution.RenderType.THREE_THREE_FOUR_THREE_FOUR),
-        POISSON_DISK(false, true, "Distribution Len", PointDistribution.RenderType.getDefault()), HILBERT_CURVE(false, false, "Level:", PointDistribution.RenderType.getDefault()),
-        ECHO(false, false, "Repetitions:", PointDistribution.RenderType.getDefault()), MEDIAL_AXIS(false, false, "", PointDistribution.RenderType.getDefault()),
-        SNAKE(false, false, "Rows:", PointDistribution.RenderType.getDefault()), VINE(false, true, "", PointDistribution.RenderType.VINE),
-        ONEROW(true, true, "Distribution Len",  PointDistribution.RenderType.ONEROW);
+        POISSON_DISK(false, true, "Distribution Len", PointDistribution.RenderType.getDefault());
         public final boolean isTessellation, isTreeStructure;
         public final String parameterLabel;
         public final PointDistribution.RenderType pointDistributionType;
