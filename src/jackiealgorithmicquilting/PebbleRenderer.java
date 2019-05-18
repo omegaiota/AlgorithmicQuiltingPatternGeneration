@@ -109,7 +109,7 @@ public final class PebbleRenderer extends PatternRenderer {
         SVGElement.outputSvgCommands(renderedCommands, "boundOnly", info);
         renderedCommands.addAll(decoElemOnly);
         SVGElement.outputSvgCommands(renderedCommands, "boundWithDeco", info);
-
+        renderedCommands = decoElemOnly;
         long stage7 = System.nanoTime();
         System.out.printf("\nTotal time for stage%d-stage%d:: %.4f miliseconds\n", 0, 1, (stage1 - stage0) / 1000000.0);
         System.out.printf("Total time for stage%d-stage%d:: %.4f miliseconds\n", 1, 2, (stage2 - stage1) / 1000000.0);
@@ -392,13 +392,6 @@ public final class PebbleRenderer extends PatternRenderer {
                             .rotateAroundCenter(scaledNoTranslate.get(0).getDestinationPoint(), Math.toRadians(angle))
             .add(translateVector));
             transformedDecoCommands = PatternRenderer.translateCommands(scaledAndRotate,  startDrawingPoint.add(thisNode.getBoundingCircle().getCenter().minus(newBound.getCenter())));
-//            transformedDecoCommands = PatternRenderer.translateAndRotatePattern(scaledNoTranslate,  startDrawingPoint, Math.toRadians(angle), false, false);
-
-//            .add(thisNode.getBoundingCircle().getCenter().minus(newBound.getCenter()))
-//            transformedDecoCommands = PatternRenderer.translateAndRotatePattern(transformedDecoCommands, startDrawingPoint.add(thisNode.getBoundingCircle().getCenter().minus(newBound.getCenter())),
-//                    0,
-//                    false,
-//                    false);
 
             /** Pebbles : traverse whole pebble first. this is only needed to avoid aliasing when quilting! **/
         }
@@ -457,11 +450,6 @@ public final class PebbleRenderer extends PatternRenderer {
             startCommand++;
         }
 
-        System.out.println("Start command is " + startCommand);
-        System.out.println(currentAngle);
-
-        System.out.println(commandDegreeTable[startCommand]);
-        System.out.println(commandDegreeTable[startCommand + 1]);
         renderedCommands.add(new SvgPathCommand(transformedDecoCommands.get((startCommand - 1 + n) % n).getDestinationPoint(), SvgPathCommand.CommandType.LINE_TO));
         renderedCommands.add(transformedDecoCommands.get(startCommand));
         TreeNode<Point> child;
@@ -475,7 +463,7 @@ public final class PebbleRenderer extends PatternRenderer {
              * This is assuming commands don't go across 180 degrees. So a command
              * that goes from 0 to 357 assumes to take the arc of 0, 359, 358, 357
              */
-            int stepNum = Math.abs(endAngle - startAngle);
+            int stepNum = Integer.max(Math.abs(endAngle - startAngle),1);
             int increment = (endAngle >= startAngle) ? 1 : -1;
             if (Math.abs(endAngle - startAngle) > 180) {
                 stepNum = 360 - stepNum;
